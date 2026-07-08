@@ -1,0 +1,22 @@
+# Node modules
+node_modules/
+server/node_modules/
+
+# Firebase Admin Key
+server/serviceAccountKey.json
+
+# Environment variables
+.env
+server/.env
+
+# Build folder
+dist/
+
+# Python
+.venv/
+
+# VS Code
+.vscode/
+
+# Firebase
+.firebase/

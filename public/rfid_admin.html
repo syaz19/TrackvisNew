@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RFID Admin</title>
+  <style>body{font-family:Arial,sans-serif;max-width:720px;margin:32px}</style>
+  <style>
+    .visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  </style>
+</head>
+<body>
+  <h2>Visitor Registration</h2>
+  <label for="name" class="visually-hidden">Visitor Name</label>
+  <input id="name" placeholder="Name"><br><br>
+  <label for="epcSelect">Select RFID Tag (EPC)</label>
+  <select id="epcSelect" aria-label="EPC select"></select><br><br>
+  <button onclick="register()">REGISTER (Entrance)</button>
+
+  <script>
+    // Replace with your deployed Cloud Function URL
+    const API_REGISTER = "https://us-central1-trackvis-c9599.cloudfunctions.net/registerVisitor";
+
+    // Sample EPC list (replace by fetching Firestore list if desired)
+    const epcs = ["E2806915000040281DB525BE","E2806915000040281DB529BE","E2806915000040281DB531BE", "E2806915000040281DB53DBE",
+                  "E2806915000040281DB545BE", "E2806915000040281DB549BE", "E28069150000402D9DF3D97D", "E28069150000402D9DF3FA89",
+                  "E2806915000050281DB52DBE", "E2806915000050281DB535BE", "E2806915000050281DB539BE", "E2806915000050281DB541BE",
+                  "E28069150000502D9DF2EE8A"
+    ];
+    const select = document.getElementById("epcSelect");
+
+    epcs.forEach(e => {
+      let opt = document.createElement("option");
+      opt.value = e;
+      opt.innerText = e;
+      select.appendChild(opt);
+    });
+
+    async function register() {
+      const epc = select.value;
+      const name = document.getElementById("name").value;
+      if (!epc || !name) { alert('Enter name and select EPC'); return; }
+
+      await fetch(API_REGISTER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          epc,
+          visitorInfo: { name }
+        })
+      });
+      alert("Registered at Entrance!");
+    }
+  </script>
+</body>
+</html>
