@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import {  OrbitControls, useGLTF, Environment, Html } from "@react-three/drei";
 
 function SchoolModel() {
-  const modelUrl = `${import.meta.env.BASE_URL}models/school.glb`;
+  const modelUrl = `${import.meta.env.BASE_URL}models/schools.glb`;
   const { scene } = useGLTF(modelUrl);
 
   scene.traverse((child) => {
@@ -51,7 +51,7 @@ class ModelErrorBoundary extends Component {
             }}>
               <strong>Model load failed.</strong>
               <div style={{ marginTop: "8px", fontSize: "0.95rem" }}>
-                Check the browser console for the GLTF error and confirm <code>/models/school.glb</code> is valid.
+                Check the browser console for the GLTF error and confirm <code>/models/schools.glb</code> is valid.
               </div>
             </div>
           </Html>
