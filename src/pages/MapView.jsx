@@ -98,6 +98,7 @@ class ModelErrorBoundary extends Component {
 export default function MapView() {
   const navigate = useNavigate();
   const [visitorMarkers, setVisitorMarkers] = useState([]);
+  const [showEnvironment, setShowEnvironment] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
@@ -105,14 +106,23 @@ export default function MapView() {
         .map((doc) => ({ id: doc.id, ...doc.data() }))
         .filter((visitor) => {
           const status = (visitor.status || "").toString().toLowerCase();
-          const hasLocation = Boolean(visitor.currentLocation || visitor.location || visitor.lastSeen);
-          return status === "active" && hasLocation;
+          const hasScanSignal = Boolean(
+            visitor.lastSeen ||
+            visitor.currentLocation ||
+            visitor.location
+          );
+          return status === "active" && hasScanSignal;
         });
 
       setVisitorMarkers(activeVisitors);
     });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowEnvironment(true), 180);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleBack = () => {
@@ -139,7 +149,7 @@ export default function MapView() {
               {visitorMarkers.map((visitor, index) => (
                 <VisitorMarker key={visitor.id || `${visitor.uid}-${index}`} visitor={visitor} index={index} />
               ))}
-              <Environment preset="city" />
+              {showEnvironment && <Environment preset="city" />}
             </Suspense>
           </ModelErrorBoundary>
           <OrbitControls enablePan enableZoom enableRotate />
