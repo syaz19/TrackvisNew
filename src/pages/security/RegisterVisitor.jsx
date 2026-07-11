@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { setDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
+import { addDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
 export default function RegisterVisitor() {
@@ -100,16 +100,13 @@ export default function RegisterVisitor() {
         hours: 3600000
       };
       const endTime = startTime + durationValue * unitMultipliers[form.durationUnit];
-      // create visitor document with UID/EPC as document ID
-      await setDoc(doc(db, "visitors", uid), {
+      // create visitor document with auto-generated ID, store UID as field
+      await addDoc(collection(db, "visitors"), {
         name: form.name,
         purpose: form.purpose,
         destination: form.destination,
-        location: form.location,
-        currentLocation: form.location || "",
         duration: durationValue,
         durationUnit: form.durationUnit,
-        lastSeen: startTime,
         uid: uid || "",
         startTime,
         endTime,

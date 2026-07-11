@@ -58,29 +58,29 @@ app.post("/scan", async (req, res) => {
 
     // -----------------------------
     // FIND ACTIVE VISITOR
+    // Query by UID field instead of using UID as document ID
     // -----------------------------
-    const visitorRef = db.collection("visitors").doc(epc);
-    const visitorDoc = await visitorRef.get();
-
-    if (!visitorDoc.exists) {
+    const visitorQ = admin.firestore().collection("visitors")
+      .where("uid", "==", epc)
+      .where("status", "==", "active")
+      .limit(1);
+    
+    const visitorSnap = await visitorQ.get();
+    
+    if (visitorSnap.empty) {
       return res.json({
         success: true,
-        message: "Visitor not found. Reader scan saved."
+        message: "Active visitor not found for this EPC. Reader scan saved."
       });
     }
 
+    const visitorDoc = visitorSnap.docs[0];
     const visitorData = visitorDoc.data();
-    if (visitorData?.status !== "active") {
-      return res.json({
-        success: true,
-        message: "Visitor is not active. Reader scan saved."
-      });
-    }
 
     // -----------------------------
     // UPDATE CURRENT LOCATION
     // -----------------------------
-    await visitorRef.update({
+    await visitorDoc.ref.update({
       currentLocation: location,
       location: location,
       lastSeen: now
@@ -88,9 +88,9 @@ app.post("/scan", async (req, res) => {
 
     // -----------------------------
     // VISITOR HISTORY
-    // Document ID = EPC
+    // Use visitor document ID for history tracking
     // -----------------------------
-    const historyRef = db.collection("visitor_history").doc(epc);
+    const historyRef = db.collection("visitor_history").doc(visitorDoc.id);
 
     await historyRef.set({
 
