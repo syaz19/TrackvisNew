@@ -1,5 +1,4 @@
 import { Suspense, Component, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, Html } from "@react-three/drei";
 import { collection, onSnapshot } from "firebase/firestore";
@@ -46,7 +45,7 @@ function SchoolModel() {
     }
   });
 
-  return <primitive object={scene} dispose={null} scale={0.1} position={[0, -1.2, 0]} />;
+  return <primitive object={scene} dispose={null} scale={0.18} position={[0, -1.1, 0]} />;
 }
 
 class ModelErrorBoundary extends Component {
@@ -96,7 +95,6 @@ class ModelErrorBoundary extends Component {
 }
 
 export default function MapView() {
-  const navigate = useNavigate();
   const [visitorMarkers, setVisitorMarkers] = useState([]);
   const [showEnvironment, setShowEnvironment] = useState(false);
 
@@ -125,15 +123,11 @@ export default function MapView() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const handleBack = () => {
-    navigate(-1); // Go back to previous page
-  };
-
   return (
     <div>
       <h1>Campus 3D Map / Model</h1>
-      <div style={{ width: "100%", height: "520px", borderRadius: 16, overflow: "hidden", background: "#0b1220" }}>
-        <Canvas shadows camera={{ position: [5, 4, 12], fov: 45 }}>
+      <div style={{ width: "100%", height: "640px", borderRadius: 16, overflow: "hidden", background: "#0b1220" }}>
+        <Canvas shadows camera={{ position: [5, 4, 10], fov: 40 }}>
           <ambientLight intensity={0.7} />
           <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
           <ModelErrorBoundary>
@@ -155,24 +149,6 @@ export default function MapView() {
           <OrbitControls enablePan enableZoom enableRotate />
         </Canvas>
       </div>
-      
-      <button
-        onClick={handleBack}
-        className="btn-outline"
-        style={{
-          marginTop: 12,
-          display: "inline-block",
-          padding: "10px 16px",
-          background: "transparent",
-          border: "1px solid rgba(148, 163, 184, 0.35)",
-          borderRadius: "14px",
-          color: "#e5e7eb",
-          cursor: "pointer",
-          fontWeight: "600"
-        }}
-      >
-        Back
-      </button>
     </div>
   );
 }

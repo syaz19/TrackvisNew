@@ -1,19 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from "chart.js";
-import { Line } from "react-chartjs-2";
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default function Dashboard() {
   const [visitors, setVisitors] = useState([]);
@@ -155,28 +142,6 @@ export default function Dashboard() {
     (v) => new Date(v.startTime).toDateString() === today
   ).length;
 
-  const getDate = (timestamp) => {
-    return new Date(timestamp).toLocaleDateString();
-  };
-
-  const chartData = useMemo(() => {
-    const counts = {};
-    visitors.forEach((v) => {
-      const date = getDate(v.startTime);
-      counts[date] = (counts[date] || 0) + 1;
-    });
-    return {
-      labels: Object.keys(counts),
-      datasets: [
-        {
-          label: "Visitors per Day",
-          data: Object.values(counts),
-          borderColor: "#38bdf8",
-          backgroundColor: "rgba(56, 189, 248, 0.2)"
-        }
-      ]
-    };
-  }, [visitors]);
 
   return (
     <div className="page-grid">
@@ -217,12 +182,10 @@ export default function Dashboard() {
         <div className="section-header">
           <div>
             <p className="section-kicker">Analytics</p>
-            <h3>Growth Dashboard</h3>
+            <h3>Growth Summary</h3>
           </div>
         </div>
-        <div className="chart-panel">
-          <Line data={chartData} />
-        </div>
+        <div className="section-note">Growth analytics have moved to the Growth page for easier review.</div>
       </section>
 
       <section className="card summary-card">
