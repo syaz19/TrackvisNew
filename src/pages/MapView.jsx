@@ -7,7 +7,7 @@ import { db } from "../firebase";
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
 
 function VisitorMarker({ visitor, index }) {
-  const basePosition = [-6.5, 1.5, 0];
+  const basePosition = [-6.8, 1.5, 0];
   const position = [basePosition[0] + index * 0.7, basePosition[1], basePosition[2] + index * 0.35];
   const color = markerColors[index % markerColors.length];
 
