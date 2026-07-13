@@ -127,7 +127,7 @@ export default function MapView() {
     <div>
       <h1>Campus 3D Map / Model</h1>
       <div style={{ width: "100%", height: "640px", borderRadius: 16, overflow: "hidden", background: "#0b1220" }}>
-        <Canvas shadows camera={{ position: [5, 4, 10], fov: 40 }}>
+        <Canvas shadows camera={{ position: [0, 2.2, 12], fov: 35 }}>
           <ambientLight intensity={0.7} />
           <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
           <ModelErrorBoundary>

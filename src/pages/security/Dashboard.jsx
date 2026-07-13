@@ -164,31 +164,11 @@ export default function Dashboard() {
       <section className="card summary-card">
         <div className="section-header">
           <div>
-            <p className="section-kicker">Status</p>
-            <h3>Visitor Operations</h3>
+            <p className="section-kicker">Active list</p>
+            <h3>Current Visitors</h3>
           </div>
-          <span className="status-pill status-pill--active">{activeVisitors} on site</span>
+          <span className="status-pill status-pill--active">{activeVisitorsList.length} active</span>
         </div>
-        {loading ? (
-          <p className="empty-state">Loading visitors...</p>
-        ) : activeVisitors === 0 ? (
-          <p className="empty-state">No active visitors yet — registration is ready.</p>
-        ) : (
-          <p className="section-note">Visitors currently checked in and awaiting processing.</p>
-        )}
-      </section>
-
-      <section className="card summary-card">
-        <div className="section-header">
-          <div>
-            <p className="section-kicker">Analytics</p>
-            <h3>Growth Summary</h3>
-          </div>
-        </div>
-        <div className="section-note">Growth analytics have moved to the Growth page for easier review.</div>
-      </section>
-
-      <section className="card summary-card">
         <div className="section-header">
           <div>
             <p className="section-kicker">Active list</p>
