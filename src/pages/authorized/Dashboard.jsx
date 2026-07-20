@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { collection, onSnapshot, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../../firebase";
-import { auth } from "../../firebase";
+import { db, auth } from "../../firebase";
 
 export default function Dashboard() {
   const [visitors, setVisitors] = useState([]);
@@ -10,14 +9,16 @@ export default function Dashboard() {
 
   useEffect(() => {
     const currentUser = auth.currentUser;
+
     if (!currentUser) {
-      queueMicrotask(() => setLoading(false));
+      setLoading(false);
       return;
     }
 
-    const fetchUserData = async () => {
+    async function loadUserData() {
       try {
         const userDoc = await getDoc(doc(db, "users", currentUser.email));
+
         if (userDoc.exists()) {
           setUserData(userDoc.data());
         }
@@ -26,9 +27,9 @@ export default function Dashboard() {
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    fetchUserData();
+    loadUserData();
   }, []);
 
   useEffect(() => {
@@ -36,56 +37,70 @@ export default function Dashboard() {
       return;
     }
 
-    const unsub = onSnapshot(collection(db, "visitors"), (snapshot) => {
-      const data = snapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data()
+    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
+      const list = snapshot.docs
+        .map((item) => ({
+          id: item.id,
+          ...item.data()
         }))
         .filter((visitor) => visitor.destination === userData.subRole);
 
-      setVisitors(data);
+      setVisitors(list);
       setLoading(false);
     });
 
-    return () => unsub();
+    return () => unsubscribe();
   }, [userData]);
 
-  const isHistoricalVisitor = (visitor) => {
+  function isHistoricalVisitor(visitor) {
     const status = (visitor.status || "").toLowerCase();
-    if (["deactivated", "expired", "completed", "done", "inactive", "cancelled"].includes(status)) {
+    const knownStatuses = ["deactivated", "expired", "completed", "done", "inactive", "cancelled"];
+
+    if (knownStatuses.includes(status)) {
       return true;
     }
 
     return Boolean(visitor.endTime || visitor.timeOut);
-  };
+  }
 
-  const handleConfirmVisitor = async (visitorId) => {
+  async function handleConfirmVisitor(visitorId) {
     try {
-        await updateDoc(doc(db, "visitors", visitorId), {
+      await updateDoc(doc(db, "visitors", visitorId), {
         confirmStatus: "Done",
         confirmedAt: serverTimestamp(),
         confirmedBy: auth.currentUser?.email || null
       });
-      // optimistically update local list so UI moves item out of pending immediately
-      setVisitors((prev) => prev.map((v) => (v.id === visitorId ? { ...v, confirmStatus: "Done", confirmedAt: Date.now(), confirmedBy: auth.currentUser?.email || null } : v)));
+
+      setVisitors((oldVisitors) =>
+        oldVisitors.map((visitor) => {
+          if (visitor.id === visitorId) {
+            return {
+              ...visitor,
+              confirmStatus: "Done",
+              confirmedAt: Date.now(),
+              confirmedBy: auth.currentUser?.email || null
+            };
+          }
+
+          return visitor;
+        })
+      );
     } catch (error) {
       alert("Error confirming visitor: " + error.message);
     }
-  };
+  }
 
-  const pendingVisitors = useMemo(
-    () => visitors.filter((visitor) => visitor.status === "active" && (visitor.confirmStatus || "") !== "Done"),
-    [visitors]
+  const pendingVisitors = visitors.filter(
+    (visitor) => visitor.status === "active" && (visitor.confirmStatus || "") !== "Done"
   );
 
-  const confirmedHistory = useMemo(
-    () =>
-      visitors
-        .filter((visitor) => visitor.confirmStatus === "Done" || isHistoricalVisitor(visitor))
-        .sort((a, b) => (b.confirmedAt || b.endTime || b.startTime || 0) - (a.confirmedAt || a.endTime || a.startTime || 0)),
-    [visitors]
-  );
+  const confirmedHistory = visitors
+    .filter((visitor) => visitor.confirmStatus === "Done" || isHistoricalVisitor(visitor))
+    .sort((first, second) => {
+      const firstTime = first.confirmedAt || first.endTime || first.startTime || 0;
+      const secondTime = second.confirmedAt || second.endTime || second.startTime || 0;
+      return secondTime - firstTime;
+    });
 
   if (loading) {
     return (

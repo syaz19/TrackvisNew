@@ -16,52 +16,61 @@ export default function RegisterVisitor() {
   const [tagsLoading, setTagsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setForm({ ...form, [name]: value });
+  }
 
-  const formatTagLabel = (tag) => {
+  function formatTagLabel(tag) {
     const status = (tag.Status || tag.status || "").toString() || "Unknown";
     const usedBy = tag.UsedBy || tag.usedBy || "";
     const assignedAt = tag.assignedAt || tag.timeIn || tag.timeInStamp || "";
 
     let label = `${tag.id} — ${status}`;
+
     if (usedBy) {
       label += ` • ${usedBy}`;
     }
+
     if (assignedAt) {
       label += ` • ${new Date(assignedAt).toLocaleString()}`;
     }
+
     return label;
-  };
+  }
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "rfid_tags"), (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setTags(data);
-      setTagsLoading(false);
-    }, (error) => {
-      console.error("Failed to load RFID tags:", error);
-      setTagsLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      collection(db, "rfid_tags"),
+      (snapshot) => {
+        const list = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+        setTags(list);
+        setTagsLoading(false);
+      },
+      (error) => {
+        console.error("Failed to load RFID tags:", error);
+        setTagsLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
 
-  const handleSubmit = async () => {
-    // VALIDATION
+  async function handleSubmit() {
     if (!form.name || !form.purpose || !form.destination || !form.location || !form.duration) {
       alert("Please complete all required fields.");
       return;
     }
 
     const durationValue = Number(form.duration);
+
     if (!durationValue || durationValue <= 0) {
       alert("Please enter a valid duration greater than 0.");
       return;
     }
 
     setLoading(true);
+
     try {
       const uid = form.uid.trim();
 
@@ -72,6 +81,7 @@ export default function RegisterVisitor() {
       }
 
       const selectedTag = tags.find((tag) => tag.id === uid);
+
       if (!selectedTag) {
         alert("Selected RFID tag was not found. Please choose a valid tag.");
         setLoading(false);
@@ -79,15 +89,21 @@ export default function RegisterVisitor() {
       }
 
       const tagStatus = (selectedTag.Status || selectedTag.status || "").toString().toLowerCase();
+
       if (tagStatus && tagStatus !== "available") {
         alert("Selected RFID tag is currently in use. Please choose another one.");
         setLoading(false);
         return;
       }
 
-      const sameUidQ = query(collection(db, "visitors"), where("uid", "==", uid), where("status", "==", "active"));
-      const sameUidSnap = await getDocs(sameUidQ);
-      if (!sameUidSnap.empty) {
+      const sameUidQuery = query(
+        collection(db, "visitors"),
+        where("uid", "==", uid),
+        where("status", "==", "active")
+      );
+      const sameUidSnapshot = await getDocs(sameUidQuery);
+
+      if (!sameUidSnapshot.empty) {
         alert("This RFID tag is already assigned to an active visitor.");
         setLoading(false);
         return;
@@ -100,7 +116,7 @@ export default function RegisterVisitor() {
         hours: 3600000
       };
       const endTime = startTime + durationValue * unitMultipliers[form.durationUnit];
-      // create visitor document with auto-generated ID, store UID as field
+
       await addDoc(collection(db, "visitors"), {
         name: form.name,
         purpose: form.purpose,
@@ -118,19 +134,17 @@ export default function RegisterVisitor() {
         confirmedBy: null
       });
 
-      // Mark the selected RFID tag as in use in Firestore
       try {
         await updateDoc(doc(db, "rfid_tags", uid), {
           Status: "In Use",
           UsedBy: form.name || "",
           assignedAt: startTime
         });
-      } catch (e) {
-        console.warn("Failed to update RFID tag status:", e);
+      } catch (error) {
+        console.warn("Failed to update RFID tag status:", error);
       }
 
       alert("Visitor Registered Successfully!");
-      // RESET FORM
       setForm({
         name: "",
         purpose: "",
@@ -143,8 +157,9 @@ export default function RegisterVisitor() {
     } catch (error) {
       alert(error.message);
     }
+
     setLoading(false);
-  };
+  }
 
   return (
     <div>
@@ -239,7 +254,6 @@ export default function RegisterVisitor() {
             <p style={{ marginTop: "0.5rem", color: "#64748b", fontSize: "0.95rem" }}>
               Available tags are selectable. In-use tags are shown but disabled.
             </p>
-            {/* removed the white 'Selected Tag Details' card per request; keep only a subtle inline note */}
             {form.uid && (
               <p style={{ marginTop: "0.5rem", color: "#94a3b8", fontSize: "0.95rem" }}>Selected tag: {form.uid}</p>
             )}
@@ -253,4 +267,3 @@ export default function RegisterVisitor() {
     </div>
   );
 }
-

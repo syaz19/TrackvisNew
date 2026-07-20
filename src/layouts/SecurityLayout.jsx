@@ -5,18 +5,26 @@ import Topbar from "../components/Topbar";
 export default function SecurityLayout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  function toggleMenu() {
+    setMenuOpen(!menuOpen);
+  }
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
   return (
     <div className="container">
-      <Sidebar role="security" isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <div className="main" onClick={() => menuOpen && setMenuOpen(false)}>
+      <Sidebar role="security" isOpen={menuOpen} onClose={closeMenu} />
+      <div className="main" onClick={() => menuOpen && closeMenu()}>
         <Topbar
           role="security"
           title="Security Operations"
           subtitle="Monitor active visitors, violations, and daily progress."
-          onMenuToggle={() => setMenuOpen((prev) => !prev)}
+          onMenuToggle={toggleMenu}
           menuOpen={menuOpen}
         />
-        {children}
+        <div className="content-body">{children}</div>
       </div>
     </div>
   );

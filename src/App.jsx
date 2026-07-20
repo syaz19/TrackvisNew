@@ -15,50 +15,73 @@ import Growth from "./pages/security/Growth";
 import AuthorizedDashboard from "./pages/authorized/Dashboard";
 import MapView from "./pages/MapView";
 
+const initialAuthState = { status: "loading", user: null, userData: null };
+
 function PrivateRoute({ children, user }) {
-  return user ? children : <Navigate to="/" replace />;
+  if (user) {
+    return children;
+  }
+
+  return <Navigate to="/" replace />;
+}
+
+function buildAuthState(user, userData, status = "ready") {
+  return { status, user, userData };
+}
+
+function getRedirectPath(userData) {
+  if (userData !== null && userData.role === "security") {
+    return "/security";
+  }
+
+  if (userData !== null && userData.role === "authorized") {
+    return "/authorized";
+  }
+
+  return "/";
 }
 
 export default function App() {
-  const [authState, setAuthState] = useState({ status: "loading", user: null, userData: null });
+  const [authState, setAuthState] = useState(initialAuthState);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        setAuthState({ status: "ready", user: null, userData: null });
+        setAuthState(buildAuthState(null, null));
         return;
       }
 
       try {
-        // users documents are keyed by email now
         const userDoc = await getDoc(doc(db, "users", user.email));
-        setAuthState({
-          status: "ready",
-          user,
-          userData: userDoc.exists() ? userDoc.data() : null
-        });
+        let userData = null;
+
+        if (userDoc.exists()) {
+          userData = userDoc.data();
+        }
+
+        setAuthState(buildAuthState(user, userData));
       } catch {
-        setAuthState({ status: "ready", user, userData: null });
+        setAuthState(buildAuthState(user, null));
       }
     });
 
     return unsubscribe;
   }, []);
 
-  // register setter so other components can clear auth immediately
   useEffect(() => {
     registerAuthSetter(setAuthState);
-    return () => unregisterAuthSetter();
+    return unregisterAuthSetter;
   }, []);
 
-  // Listen for manual logout events from other components to update UI immediately
   useEffect(() => {
-    const onLogout = () => setAuthState({ status: "ready", user: null, userData: null });
-    window.addEventListener("trackvis-logout", onLogout);
-    return () => window.removeEventListener("trackvis-logout", onLogout);
+    function handleLogout() {
+      setAuthState(buildAuthState(null, null));
+    }
+
+    window.addEventListener("trackvis-logout", handleLogout);
+    return () => window.removeEventListener("trackvis-logout", handleLogout);
   }, []);
 
-  // Sign out on a fresh browser session, but keep the same tab session alive across refreshes.
   useEffect(() => {
     const unloadKey = "trackvis-pending-unload";
     const sessionKey = "trackvis-session-active";
@@ -67,19 +90,19 @@ export default function App() {
 
     if (pendingUnload && !isReload) {
       queueMicrotask(() => {
-        setAuthState({ status: "ready", user: null, userData: null });
+        setAuthState(buildAuthState(null, null));
       });
       signOut(auth).catch(() => {
-        /* ignore errors during initial sign-out */
+        // ignore errors during initial sign-out
       });
     }
 
     sessionStorage.setItem(sessionKey, "1");
     localStorage.removeItem(unloadKey);
 
-    const handleUnload = () => {
+    function handleUnload() {
       localStorage.setItem(unloadKey, "1");
-    };
+    }
 
     window.addEventListener("beforeunload", handleUnload);
     window.addEventListener("pagehide", handleUnload);
@@ -98,86 +121,37 @@ export default function App() {
     );
   }
 
-  const getRedirect = () => {
-    if (authState.userData?.role === "security") return <Navigate to="/security" replace />;
-    if (authState.userData?.role === "authorized") return <Navigate to="/authorized" replace />;
-    return <Navigate to="/" replace />;
-  };
+  const redirectPath = getRedirectPath(authState.userData);
+  const protectedRoutes = [
+    { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout },
+    { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout },
+    { path: "/security/history", element: <History />, layout: SecurityLayout },
+    { path: "/security/growth", element: <Growth />, layout: SecurityLayout },
+    { path: "/authorized", element: <AuthorizedDashboard />, layout: AuthorizedLayout },
+    { path: "/security/map", element: <MapView />, layout: SecurityLayout },
+    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout }
+  ];
 
   return (
     <Routes>
-      <Route path="/" element={authState.user ? getRedirect() : <Login />} />
-      <Route path="/signup" element={authState.user ? getRedirect() : <Signup />} />
-      <Route
-        path="/security"
-        element={
-          <PrivateRoute user={authState.user}>
-            <SecurityLayout>
-              <SecurityDashboard />
-            </SecurityLayout>
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/security/register"
-        element={
-          <PrivateRoute user={authState.user}>
-            <SecurityLayout>
-              <RegisterVisitor />
-            </SecurityLayout>
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/security/history"
-        element={
-          <PrivateRoute user={authState.user}>
-            <SecurityLayout>
-              <History />
-            </SecurityLayout>
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/security/growth"
-        element={
-          <PrivateRoute user={authState.user}>
-            <SecurityLayout>
-              <Growth />
-            </SecurityLayout>
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/authorized"
-        element={
-          <PrivateRoute user={authState.user}>
-            <AuthorizedLayout>
-              <AuthorizedDashboard />
-            </AuthorizedLayout>
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/security/map"
-        element={
-          <PrivateRoute user={authState.user}>
-            <SecurityLayout>
-              <MapView />
-            </SecurityLayout>
-          </PrivateRoute>
-        }
-      />
-      <Route
-        path="/authorized/map"
-        element={
-          <PrivateRoute user={authState.user}>
-            <AuthorizedLayout>
-              <MapView />
-            </AuthorizedLayout>
-          </PrivateRoute>
-        }
-      />
+      <Route path="/" element={authState.user ? <Navigate to={redirectPath} replace /> : <Login />} />
+      <Route path="/signup" element={authState.user ? <Navigate to={redirectPath} replace /> : <Signup />} />
+
+      {protectedRoutes.map((route) => {
+        const Layout = route.layout;
+
+        return (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              <PrivateRoute user={authState.user}>
+                <Layout>{route.element}</Layout>
+              </PrivateRoute>
+            }
+          />
+        );
+      })}
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

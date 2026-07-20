@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase";
 import {
@@ -16,134 +16,153 @@ import { Line } from "react-chartjs-2";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default function Growth() {
-  const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const [summary, setSummary] = useState({ todayCount: 0, weekCount: 0, totalCount: 0 });
+  const [chartDataState, setChartDataState] = useState({ labels: [], datasets: [] });
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "visitors"), (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
+    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
+      const list = snapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data()
       }));
-      setVisitors(data);
+
       setLoading(false);
+
+      // compute derived summary and chart data here to avoid Date.now() in render
+      const current = Date.now();
+      const today = new Date(current).toDateString();
+      const weekAgo = new Date(current - 7 * 24 * 60 * 60 * 1000);
+
+      const todayCount = list.filter((visitor) => new Date(visitor.startTime).toDateString() === today).length;
+      const weekCount = list.filter((visitor) => new Date(visitor.startTime) > weekAgo).length;
+      const totalCount = list.length;
+
+      setSummary({ todayCount, weekCount, totalCount });
+
+      const counts = {};
+      list.forEach((visitor) => {
+        const ts = visitor.startTime || visitor.timeIn || current;
+        const date = new Date(ts).toLocaleDateString();
+        counts[date] = (counts[date] || 0) + 1;
+      });
+
+      const sortedDates = Object.keys(counts).sort((a, b) => new Date(a) - new Date(b));
+      const chart = {
+        labels: sortedDates,
+        datasets: [
+          {
+            label: "Visitors per Day",
+            data: sortedDates.map((date) => counts[date]),
+            borderColor: "#38bdf8",
+            backgroundColor: "rgba(56, 189, 248, 0.25)",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointBackgroundColor: "#38bdf8"
+          }
+        ]
+      };
+
+      setChartDataState(chart);
     });
 
-    return () => unsub();
+    return () => unsubscribe();
   }, []);
 
-  // Calculate today's visitors
-  const today = new Date().toDateString();
-  const todayCount = visitors.filter(
-    (v) => new Date(v.startTime).toDateString() === today
-  ).length;
+  useEffect(() => {
+    // removed standalone Date.now() effect; now is set when visitors change below
+  }, []);
 
-  // Calculate this week's visitors (last 7 days)
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const weekCount = visitors.filter((v) => new Date(v.startTime) > weekAgo).length;
+  const summaryCards = [
+    {
+      label: "Today",
+      className: "summary-card-item summary-card-item--success",
+      valueColor: "#10b981"
+    },
+    {
+      label: "This Week",
+      className: "summary-card-item summary-card-item--info",
+      valueColor: "#3b82f6"
+    },
+    {
+      label: "Total",
+      className: "summary-card-item summary-card-item--purple",
+      valueColor: "#a855f7"
+    }
+  ];
+ 
 
-  // Calculate total visitors
-  const totalCount = visitors.length;
+  const chartData = chartDataState;
 
-  const getDate = (timestamp) => {
-    const date = new Date(timestamp || Date.now());
-    return date.toLocaleDateString();
-  };
-
-  const chartData = useMemo(() => {
-    const counts = {};
-    visitors.forEach((v) => {
-      const date = getDate(v.startTime || v.timeIn);
-      counts[date] = (counts[date] || 0) + 1;
-    });
-
-    const sortedDates = Object.keys(counts).sort((a, b) => new Date(a) - new Date(b));
-    return {
-      labels: sortedDates,
-      datasets: [
-        {
-          label: "Visitors per Day",
-          data: sortedDates.map((date) => counts[date]),
-          borderColor: "#38bdf8",
-          backgroundColor: "rgba(56, 189, 248, 0.25)",
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: "#38bdf8"
-        }
-      ]
-    };
-  }, [visitors]);
-
-  const chartOptions = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        },
-        title: {
-          display: true,
-          text: "Visitors per Day",
-          color: "#cbd5e1",
-          font: {
-            size: 16,
-            weight: "600"
-          }
-        }
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
       },
-      scales: {
-        x: {
-          ticks: {
-            color: "#cbd5e1"
-          },
-          grid: {
-            color: "rgba(148, 163, 184, 0.1)"
-          }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: {
-            color: "#cbd5e1"
-          },
-          grid: {
-            color: "rgba(148, 163, 184, 0.1)"
-          }
+      title: {
+        display: true,
+        text: "Visitors per Day",
+        color: "#cbd5e1",
+        font: {
+          size: 16,
+          weight: "600"
         }
       }
-    }),
-    []
-  );
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: "#cbd5e1"
+        },
+        grid: {
+          color: "rgba(148, 163, 184, 0.1)"
+        }
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: "#cbd5e1"
+        },
+        grid: {
+          color: "rgba(148, 163, 184, 0.1)"
+        }
+      }
+    }
+  };
+  
 
   return (
     <div className="page-card">
       <div className="card">
-        <h1>Growth Analytics</h1>
-        <p className="section-note">Visitor trends and daily statistics.</p>
+        <div className="page-heading">
+          <h1>Growth Analytics</h1>
+          <p className="section-note">Visitor trends and daily statistics.</p>
+        </div>
+
         {loading ? (
           <p>Loading analytics...</p>
         ) : (
-          <div style={{ display: "grid", gap: "20px" }}>
-            <div style={{ display: "grid", gap: "20px", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
-              <div style={{ background: "rgba(16, 185, 129, 0.1)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
-                <p style={{ margin: "0 0 8px", color: "#9ca3af", fontSize: "0.9rem" }}>Today</p>
-                <p style={{ margin: "0", fontSize: "2rem", fontWeight: "700", color: "#10b981" }}>{todayCount}</p>
-              </div>
-              <div style={{ background: "rgba(59, 130, 246, 0.1)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
-                <p style={{ margin: "0 0 8px", color: "#9ca3af", fontSize: "0.9rem" }}>This Week</p>
-                <p style={{ margin: "0", fontSize: "2rem", fontWeight: "700", color: "#3b82f6" }}>{weekCount}</p>
-              </div>
-              <div style={{ background: "rgba(168, 85, 247, 0.1)", padding: "16px", borderRadius: "12px", textAlign: "center" }}>
-                <p style={{ margin: "0 0 8px", color: "#9ca3af", fontSize: "0.9rem" }}>Total</p>
-                <p style={{ margin: "0", fontSize: "2rem", fontWeight: "700", color: "#a855f7" }}>{totalCount}</p>
-              </div>
+          <div className="page-card">
+            <div className="summary-grid">
+              {summaryCards.map((card) => (
+                <div key={card.label} className={card.className}>
+                  <p className="summary-card-label">{card.label}</p>
+                  <p className="summary-card-value" style={{ color: card.valueColor }}>
+                    {card.label === "Today" ? summary.todayCount : card.label === "This Week" ? summary.weekCount : summary.totalCount}
+                  </p>
+                </div>
+              ))}
             </div>
-            <div style={{ background: "rgba(15, 23, 42, 0.9)", padding: "18px", borderRadius: "16px", minHeight: "360px" }}>
-              <div style={{ marginBottom: "14px" }}>
-                <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.95rem", fontWeight: 600 }}>Growth Dashboard</p>
+
+            <div className="chart-card">
+              <div className="chart-card-header">
+                <p className="chart-card-title">Growth Dashboard</p>
               </div>
-              <div style={{ height: "300px" }}>
+              <div className="chart-shell">
                 <Line data={chartData} options={chartOptions} />
               </div>
             </div>

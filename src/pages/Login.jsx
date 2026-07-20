@@ -9,13 +9,19 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const login = async () => {
+  async function handleLogin(event) {
+    event.preventDefault();
+
     try {
-      const res = await signInWithEmailAndPassword(auth, email, password);
-      // users stored by email as document id
-      const userDoc = await getDoc(doc(db, "users", res.user.email));
-      const data = userDoc.data();
-      if (data?.role === "security") {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await getDoc(doc(db, "users", result.user.email));
+      let userData = null;
+
+      if (userDoc.exists()) {
+        userData = userDoc.data();
+      }
+
+      if (userData !== null && userData.role === "security") {
         navigate("/security", { replace: true });
       } else {
         navigate("/authorized", { replace: true });
@@ -23,7 +29,7 @@ export default function Login() {
     } catch (error) {
       alert(error.message);
     }
-  };
+  }
 
   return (
     <div style={styles.page}>
@@ -33,7 +39,7 @@ export default function Login() {
           <p style={styles.subtitle}>Access your TrackVis account.</p>
         </div>
 
-        <div style={styles.form}>
+        <form onSubmit={handleLogin} style={styles.form}>
           <label style={styles.label} htmlFor="email">
             Email
           </label>
@@ -41,7 +47,7 @@ export default function Login() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
             style={styles.input}
           />
@@ -53,15 +59,15 @@ export default function Login() {
             id="password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             placeholder="********"
             style={styles.input}
           />
 
-          <button onClick={login} style={styles.button}>
+          <button type="submit" style={styles.button}>
             Login
           </button>
-        </div>
+        </form>
 
         <div style={styles.footer}>
           <span style={styles.footerText}>No account yet?</span>

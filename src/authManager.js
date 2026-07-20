@@ -1,17 +1,21 @@
-let _setter = null;
+let authSetter = null;
 
-export function registerAuthSetter(fn) {
-  _setter = fn;
+function createEmptyAuthState() {
+  return { status: "ready", user: null, userData: null };
+}
+
+export function registerAuthSetter(func) {
+  authSetter = func;
 }
 
 export function clearAuthState() {
-  if (typeof _setter === "function") {
-    _setter({ status: "ready", user: null, userData: null });
+  if (typeof authSetter === "function") {
+    authSetter(createEmptyAuthState());
   }
 }
 
 export function unregisterAuthSetter() {
-  _setter = null;
+  authSetter = null;
 }
 
 export default { registerAuthSetter, clearAuthState, unregisterAuthSetter };

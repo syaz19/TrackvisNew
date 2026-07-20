@@ -22,12 +22,8 @@ app.get("/", (req, res) => {
   res.send("TrackVis backend is running");
 });
 
-// =========================
-// RFID SCAN API
-// =========================
 app.post("/scan", async (req, res) => {
   try {
-
     const { epc, location } = req.body;
 
     if (!epc || !location) {
@@ -38,93 +34,70 @@ app.post("/scan", async (req, res) => {
     }
 
     const now = admin.firestore.FieldValue.serverTimestamp();
-
-    // -----------------------------
-    // READER SCANS
-    // Document ID = EPC
-    // -----------------------------
     const readerRef = db.collection("reader_scans").doc(epc);
 
-    await readerRef.set({
-      epc: epc,
-      lastLocation: location,
-      lastScan: now
-    }, { merge: true });
+    await readerRef.set(
+      {
+        epc,
+        lastLocation: location,
+        lastScan: now
+      },
+      { merge: true }
+    );
 
     await readerRef.collection("history").add({
-      location: location,
+      location,
       timestamp: now
     });
 
-    // -----------------------------
-    // FIND ACTIVE VISITOR
-    // Query by UID field instead of using UID as document ID
-    // -----------------------------
-    const visitorQ = admin.firestore().collection("visitors")
+    const visitorSnapshot = await db
+      .collection("visitors")
       .where("uid", "==", epc)
       .where("status", "==", "active")
-      .limit(1);
-    
-    const visitorSnap = await visitorQ.get();
-    
-    if (visitorSnap.empty) {
+      .limit(1)
+      .get();
+
+    if (visitorSnapshot.empty) {
       return res.json({
         success: true,
         message: "Active visitor not found for this EPC. Reader scan saved."
       });
     }
 
-    const visitorDoc = visitorSnap.docs[0];
-    const visitorData = visitorDoc.data();
+    const visitorDoc = visitorSnapshot.docs[0];
 
-    // -----------------------------
-    // UPDATE CURRENT LOCATION
-    // -----------------------------
     await visitorDoc.ref.update({
       currentLocation: location,
-      location: location,
+      location,
       lastSeen: now
     });
 
-    // -----------------------------
-    // VISITOR HISTORY
-    // Use visitor document ID for history tracking
-    // -----------------------------
     const historyRef = db.collection("visitor_history").doc(visitorDoc.id);
 
-    await historyRef.set({
-
-      uid: epc,
-      visitorId: visitorDoc.id,
-      updatedAt: now
-
-    }, { merge: true });
+    await historyRef.set(
+      {
+        uid: epc,
+        visitorId: visitorDoc.id,
+        updatedAt: now
+      },
+      { merge: true }
+    );
 
     await historyRef.collection("history").add({
-
-      location: location,
+      location,
       timestamp: now
-
     });
 
     res.json({
-
       success: true,
       message: "Visitor location updated."
-
     });
-
-  } catch (err) {
-
-    console.error(err);
-
+  } catch (error) {
+    console.error(error);
     res.status(500).json({
-
       success: false,
-      error: err.message
-
+      error: error.message
     });
-
   }
 });
 

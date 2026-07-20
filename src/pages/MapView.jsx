@@ -18,15 +18,17 @@ function VisitorMarker({ visitor, index }) {
         <meshStandardMaterial color={color} />
       </mesh>
       <Html position={[position[0], position[1] + 0.5, position[2]]} center>
-        <div style={{
-          background: "rgba(15, 23, 42, 0.9)",
-          color: "#fff",
-          padding: "4px 8px",
-          borderRadius: "999px",
-          fontSize: "11px",
-          whiteSpace: "nowrap",
-          border: "1px solid rgba(255, 255, 255, 0.15)"
-        }}>
+        <div
+          style={{
+            background: "rgba(15, 23, 42, 0.9)",
+            color: "#fff",
+            padding: "4px 8px",
+            borderRadius: "999px",
+            fontSize: "11px",
+            whiteSpace: "nowrap",
+            border: "1px solid rgba(255, 255, 255, 0.15)"
+          }}
+        >
           {visitor.name || visitor.id}
         </div>
       </Html>
@@ -71,15 +73,17 @@ class ModelErrorBoundary extends Component {
             <meshStandardMaterial color="orange" />
           </mesh>
           <Html center>
-            <div style={{
-              color: "#fff",
-              background: "rgba(15, 23, 42, 0.9)",
-              padding: "12px 16px",
-              borderRadius: "14px",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-              maxWidth: "320px",
-              textAlign: "center"
-            }}>
+            <div
+              style={{
+                color: "#fff",
+                background: "rgba(15, 23, 42, 0.9)",
+                padding: "12px 16px",
+                borderRadius: "14px",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                maxWidth: "320px",
+                textAlign: "center"
+              }}
+            >
               <strong>Model load failed.</strong>
               <div style={{ marginTop: "8px", fontSize: "0.95rem" }}>
                 Check the browser console for the GLTF error and confirm <code>/models/schools.glb</code> is valid.
@@ -101,14 +105,10 @@ export default function MapView() {
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
       const activeVisitors = snapshot.docs
-        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .map((item) => ({ id: item.id, ...item.data() }))
         .filter((visitor) => {
           const status = (visitor.status || "").toString().toLowerCase();
-          const hasScanSignal = Boolean(
-            visitor.lastSeen ||
-            visitor.currentLocation ||
-            visitor.location
-          );
+          const hasScanSignal = Boolean(visitor.lastSeen || visitor.currentLocation || visitor.location);
           return status === "active" && hasScanSignal;
         });
 

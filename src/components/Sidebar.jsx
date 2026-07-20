@@ -6,19 +6,33 @@ import { clearAuthState } from "../authManager";
 export default function Sidebar({ role, isOpen, onClose }) {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
+  async function handleLogout() {
     try {
       await signOut(auth);
-      // dispatch a custom event so App can update auth state immediately
-      // also clear auth state via manager (immediate)
       clearAuthState();
-      // dispatch legacy event for compatibility
       window.dispatchEvent(new Event("trackvis-logout"));
       navigate("/", { replace: true });
     } catch (error) {
       alert(error.message);
     }
-  };
+  }
+
+  let links = [];
+
+  if (role === "security") {
+    links = [
+      { to: "/security", label: "Dashboard" },
+      { to: "/security/register", label: "Register Visitor" },
+      { to: "/security/history", label: "History" },
+      { to: "/security/growth", label: "Growth" },
+      { to: "/security/map", label: "View Map" }
+    ];
+  } else if (role === "authorized") {
+    links = [
+      { to: "/authorized", label: "Dashboard" },
+      { to: "/authorized/map", label: "View Map" }
+    ];
+  }
 
   return (
     <>
@@ -38,35 +52,11 @@ export default function Sidebar({ role, isOpen, onClose }) {
         </div>
 
         <nav className="nav-links">
-          {role === "security" && (
-            <>
-              <Link to="/security" onClick={onClose}>
-                Dashboard
-              </Link>
-              <Link to="/security/register" onClick={onClose}>
-                Register Visitor
-              </Link>
-              <Link to="/security/history" onClick={onClose}>
-                History
-              </Link>
-              <Link to="/security/growth" onClick={onClose}>
-                Growth
-              </Link>
-              <Link to="/security/map" onClick={onClose}>
-                View Map
-              </Link>
-            </>
-          )}
-          {role === "authorized" && (
-            <>
-              <Link to="/authorized" onClick={onClose}>
-                Dashboard
-              </Link>
-              <Link to="/authorized/map" onClick={onClose}>
-                View Map
-              </Link>
-            </>
-          )}
+          {links.map((link) => (
+            <Link key={link.to} to={link.to} onClick={onClose}>
+              {link.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="sidebar-footer">

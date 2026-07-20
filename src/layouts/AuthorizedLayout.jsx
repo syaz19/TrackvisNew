@@ -5,18 +5,26 @@ import Topbar from "../components/Topbar";
 export default function AuthorizedLayout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  function toggleMenu() {
+    setMenuOpen(!menuOpen);
+  }
+
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
   return (
     <div className="container">
-      <Sidebar role="authorized" isOpen={menuOpen} onClose={() => setMenuOpen(false)} />
-      <div className="main" onClick={() => menuOpen && setMenuOpen(false)}>
+      <Sidebar role="authorized" isOpen={menuOpen} onClose={closeMenu} />
+      <div className="main" onClick={() => menuOpen && closeMenu()}>
         <Topbar
           role="authorized"
           title="Authorized Personnel"
           subtitle="Review visitor assignments, confirmations, and notes."
-          onMenuToggle={() => setMenuOpen((prev) => !prev)}
+          onMenuToggle={toggleMenu}
           menuOpen={menuOpen}
         />
-        {children}
+        <div className="content-body">{children}</div>
       </div>
     </div>
   );

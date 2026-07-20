@@ -5,29 +5,30 @@ import { doc, setDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
-  const nav = useNavigate();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("security");
   const [subRole, setSubRole] = useState("Admin");
 
-  const register = async () => {
+  async function handleSignup(event) {
+    event.preventDefault();
+
     try {
-      const res = await createUserWithEmailAndPassword(auth, email, password);
-      // use email as document ID so it displays in Firestore
-      await setDoc(doc(db, "users", res.user.email), {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const userData = {
         email,
         role,
         subRole: role === "authorized" ? subRole : null
-      });
-      // Sign out the newly created user so they can log in on the login page
+      };
+
+      await setDoc(doc(db, "users", result.user.email), userData);
       await signOut(auth);
-      // Navigate to login page without refreshing (replace: true prevents back navigation)
-      nav("/", { replace: true });
+      navigate("/", { replace: true });
     } catch (error) {
       alert(error.message);
     }
-  };
+  }
 
   return (
     <div style={styles.page}>
@@ -37,7 +38,7 @@ export default function Signup() {
           <p style={styles.subtitle}>Register your role and access TrackVis securely.</p>
         </div>
 
-        <div style={styles.form}>
+        <form onSubmit={handleSignup} style={styles.form}>
           <label style={styles.label} htmlFor="email">
             Email
           </label>
@@ -45,7 +46,7 @@ export default function Signup() {
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
             style={styles.input}
           />
@@ -57,7 +58,7 @@ export default function Signup() {
             id="password"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             placeholder="********"
             style={styles.input}
           />
@@ -65,12 +66,7 @@ export default function Signup() {
           <label style={styles.label} htmlFor="role">
             Role
           </label>
-          <select
-            id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            style={styles.input}
-          >
+          <select id="role" value={role} onChange={(event) => setRole(event.target.value)} style={styles.input}>
             <option value="security">Security</option>
             <option value="authorized">Authorized Personnel</option>
           </select>
@@ -83,7 +79,7 @@ export default function Signup() {
               <select
                 id="subRole"
                 value={subRole}
-                onChange={(e) => setSubRole(e.target.value)}
+                onChange={(event) => setSubRole(event.target.value)}
                 style={styles.input}
               >
                 <option value="Admin">Admin</option>
@@ -97,10 +93,10 @@ export default function Signup() {
             </>
           )}
 
-          <button onClick={register} style={styles.button}>
+          <button type="submit" style={styles.button}>
             Create Account
           </button>
-        </div>
+        </form>
 
         <div style={styles.footer}>
           <span style={styles.footerText}>Already registered?</span>

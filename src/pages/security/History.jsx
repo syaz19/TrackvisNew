@@ -1,22 +1,42 @@
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase";
 
-const getViolationLabel = (visitor) => {
-  const violationType = visitor.violationType;
-  if (violationType === "Both") return "Both";
-  if (violationType === "No Confirmation") return "No Confirmation";
-  if (violationType === "Exceed Time") return "Exceed Time";
-  if (visitor.status === "expired") return "Expired";
-  if (visitor.status === "deactivated") return "Completed";
-  return visitor.status || "Unknown";
-};
+function getViolationLabel(visitor) {
+  if (visitor.violationType === "Both") {
+    return "Both";
+  }
 
-const getPillClass = (visitor) => {
-  if (visitor.status === "deactivated") return "status-pill--done";
-  if (visitor.violationType || visitor.status === "expired") return "status-pill--expired";
+  if (visitor.violationType === "No Confirmation") {
+    return "No Confirmation";
+  }
+
+  if (visitor.violationType === "Exceed Time") {
+    return "Exceed Time";
+  }
+
+  if (visitor.status === "expired") {
+    return "Expired";
+  }
+
+  if (visitor.status === "deactivated") {
+    return "Completed";
+  }
+
+  return visitor.status || "Unknown";
+}
+
+function getPillClass(visitor) {
+  if (visitor.status === "deactivated") {
+    return "status-pill--done";
+  }
+
+  if (visitor.violationType || visitor.status === "expired") {
+    return "status-pill--expired";
+  }
+
   return "status-pill--done";
-};
+}
 
 export default function History() {
   const [visitors, setVisitors] = useState([]);
@@ -24,43 +44,41 @@ export default function History() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "visitors"), (snapshot) => {
-      const data = snapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data()
+    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
+      const list = snapshot.docs
+        .map((item) => ({
+          id: item.id,
+          ...item.data()
         }))
-        .filter((v) => v.status === "deactivated" || v.status === "expired")
-        .sort((a, b) => (b.endTime || b.startTime) - (a.endTime || a.startTime));
-      setVisitors(data);
+        .filter((visitor) => visitor.status === "deactivated" || visitor.status === "expired")
+        .sort((first, second) => (second.endTime || second.startTime) - (first.endTime || first.startTime));
+
+      setVisitors(list);
       setLoading(false);
     });
 
-    return () => unsub();
+    return () => unsubscribe();
   }, []);
 
-  const normalizedSearch = search.trim().toLowerCase();
-  const filteredVisitors = useMemo(() => {
-    if (!normalizedSearch) {
-      return visitors;
-    }
+  const searchText = search.trim().toLowerCase();
+  let filteredVisitors = visitors;
 
-    const startsWith = [];
-    const contains = [];
+  if (searchText) {
+    const exactMatches = [];
+    const otherMatches = [];
 
     visitors.forEach((visitor) => {
       const name = (visitor.name || "").toLowerCase();
-      if (name.startsWith(normalizedSearch)) {
-        startsWith.push(visitor);
-      } else if (name.includes(normalizedSearch)) {
-        contains.push(visitor);
+
+      if (name.startsWith(searchText)) {
+        exactMatches.push(visitor);
+      } else if (name.includes(searchText)) {
+        otherMatches.push(visitor);
       }
     });
 
-    const sortAlpha = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
-
-    return [...startsWith.sort(sortAlpha), ...contains.sort(sortAlpha)];
-  }, [visitors, normalizedSearch]);
+    filteredVisitors = [...exactMatches, ...otherMatches];
+  }
 
   return (
     <div className="page-card">
@@ -77,7 +95,7 @@ export default function History() {
         <div className="search-row">
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Search visitor name"
             className="search-input"
           />
@@ -99,26 +117,26 @@ export default function History() {
           </div>
         ) : (
           <div className="history-grid">
-            {filteredVisitors.map((v) => (
-              <div key={v.id} className="visitor-card visitor-card--history">
+            {filteredVisitors.map((visitor) => (
+              <div key={visitor.id} className="visitor-card visitor-card--history">
                 <div className="visitor-card__top">
                   <div>
-                    <p className="visitor-card__title">{v.name}</p>
-                    <p className="visitor-card__subtitle">{v.purpose}</p>
+                    <p className="visitor-card__title">{visitor.name}</p>
+                    <p className="visitor-card__subtitle">{visitor.purpose}</p>
                   </div>
-                  <span className={`status-pill ${getPillClass(v)}`}>
-                    {getViolationLabel(v)}
+                  <span className={`status-pill ${getPillClass(visitor)}`}>
+                    {getViolationLabel(visitor)}
                   </span>
                 </div>
 
                 <div className="visitor-meta">
-                  <span>📍 {v.location || "Entrance"}</span>
-                  <span>🎯 {v.destination}</span>
-                  <span>✓ Confirmation: {v.confirmStatus === "Done" ? "Confirmed" : "Not Confirmed"}</span>
-                  <span>🪪 UID/EPC: {v.uid || "N/A"}</span>
-                  <span>⏱ Duration: {v.duration} {v.durationUnit || "minutes"}</span>
-                  <span>🕒 Time In: {v.timeIn ? new Date(v.timeIn).toLocaleString() : "N/A"}</span>
-                  <span>⏳ Time Out: {v.timeOut ? new Date(v.timeOut).toLocaleString() : "N/A"}</span>
+                  <span>📍 {visitor.location || "Entrance"}</span>
+                  <span>🎯 {visitor.destination}</span>
+                  <span>✓ Confirmation: {visitor.confirmStatus === "Done" ? "Confirmed" : "Not Confirmed"}</span>
+                  <span>🪪 UID/EPC: {visitor.uid || "N/A"}</span>
+                  <span>⏱ Duration: {visitor.duration} {visitor.durationUnit || "minutes"}</span>
+                  <span>🕒 Time In: {visitor.timeIn ? new Date(visitor.timeIn).toLocaleString() : "N/A"}</span>
+                  <span>⏳ Time Out: {visitor.timeOut ? new Date(visitor.timeOut).toLocaleString() : "N/A"}</span>
                 </div>
               </div>
             ))}
