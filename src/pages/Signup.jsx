@@ -6,12 +6,15 @@ import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const navigate = useNavigate();
+
+  // Ini-store ang input at role para sa pag-create ng account.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("security");
   const [subRole, setSubRole] = useState("Admin");
 
   async function handleSignup(event) {
+    // Pinipigilan ang default na submit at sinusubukan ang pag-register.
     event.preventDefault();
 
     try {

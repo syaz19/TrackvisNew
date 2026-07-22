@@ -7,6 +7,7 @@ export default function Sidebar({ role, isOpen, onClose }) {
   const navigate = useNavigate();
 
   async function handleLogout() {
+    // Sinisiguro ang logout sa Firebase at sa local app state.
     try {
       await signOut(auth);
       clearAuthState();
@@ -17,6 +18,7 @@ export default function Sidebar({ role, isOpen, onClose }) {
     }
   }
 
+  // Pinipili ang mga link base sa role ng user.
   let links = [];
 
   if (role === "security") {

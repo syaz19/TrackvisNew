@@ -3,13 +3,16 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 
 export default function SecurityLayout({ children }) {
+  // Ini-store ang estado ng mobile sidebar.
   const [menuOpen, setMenuOpen] = useState(false);
 
   function toggleMenu() {
+    // Pinapalit ang estado kapag pinindot ang menu button.
     setMenuOpen(!menuOpen);
   }
 
   function closeMenu() {
+    // Isinara ang sidebar kapag nag-click sa overlay o link.
     setMenuOpen(false);
   }
 

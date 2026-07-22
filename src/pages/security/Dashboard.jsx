@@ -3,11 +3,13 @@ import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
 export default function Dashboard() {
+  // Ini-store ang listahan ng visitors at ang current time.
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
 
   useEffect(() => {
+    // Tinutunghayan ang collection ng visitors sa Firestore.
     const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
       const list = snapshot.docs.map((item) => ({
         id: item.id,
@@ -22,6 +24,7 @@ export default function Dashboard() {
   }, []);
 
   function getViolationType(visitor, timeValue) {
+    // Tinutukoy ang uri ng violation base sa confirmation at end time.
     const isConfirmed = visitor.confirmStatus === "Done";
     const originalEndTime = Number(visitor.endTime || 0);
     const exceededTime = originalEndTime > 0 && originalEndTime <= Number(timeValue || 0);
@@ -42,6 +45,7 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    // Tinitingnan ang bawat active visitor bawat segundo at ina-update ang status kapag natapos ang time.
     const timer = setInterval(() => {
       visitors.forEach(async (visitor) => {
         if (visitor.status === "active" && visitor.endTime <= currentTime) {
@@ -77,6 +81,7 @@ export default function Dashboard() {
   }, [visitors, currentTime]);
 
   useEffect(() => {
+    // Ini-update ang oras sa bawat segundo para sa countdown at status.
     const timer = setTimeout(() => {
       setCurrentTime(Date.now());
     }, 0);
@@ -92,6 +97,7 @@ export default function Dashboard() {
   }, []);
 
   function getRemainingTime(endTime) {
+    // Kinukuwenta ang natitirang oras sa text format.
     const diff = endTime - currentTime;
 
     if (diff <= 0) {
@@ -122,6 +128,7 @@ export default function Dashboard() {
   }
 
   async function deactivateVisitor(visitor) {
+    // Ginagamit para tanggalin ang visitor sa active list at i-release ang RFID.
     try {
       const isConfirmed = visitor.confirmStatus === "Done";
       const violationType = getViolationType(visitor, currentTime);
@@ -154,6 +161,16 @@ export default function Dashboard() {
   const violations = visitors.filter((visitor) => visitor.status === "expired").length;
   const today = new Date(currentTime).toDateString();
   const todayVisitors = visitors.filter((visitor) => new Date(visitor.startTime).toDateString() === today).length;
+
+  if (loading) {
+    return (
+      <div className="page-card">
+        <div className="card">
+          <p className="empty-state">Loading live visitor data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-grid">

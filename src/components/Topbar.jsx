@@ -1,4 +1,5 @@
 export default function Topbar({ title, subtitle, onMenuToggle, menuOpen }) {
+  // I-render ang subtitle lamang kung may laman.
   let subtitleBlock = null;
 
   if (subtitle) {

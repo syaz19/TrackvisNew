@@ -3,6 +3,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase";
 
 function getViolationLabel(visitor) {
+  // Binabasa ang status ng visitor para makita ang label sa history card.
   if (visitor.violationType === "Both") {
     return "Both";
   }
@@ -27,6 +28,7 @@ function getViolationLabel(visitor) {
 }
 
 function getPillClass(visitor) {
+  // Pinipili ang kulay base sa status.
   if (visitor.status === "deactivated") {
     return "status-pill--done";
   }
@@ -39,11 +41,13 @@ function getPillClass(visitor) {
 }
 
 export default function History() {
+  // Ini-store ang history records, search text, at loading state.
   const [visitors, setVisitors] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Tinutunghayan ang visitors collection at pinipili ang completed/expired records.
     const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
       const list = snapshot.docs
         .map((item) => ({
@@ -64,6 +68,7 @@ export default function History() {
   let filteredVisitors = visitors;
 
   if (searchText) {
+    // Pinapadali ang paghahanap sa visitor name.
     const exactMatches = [];
     const otherMatches = [];
 

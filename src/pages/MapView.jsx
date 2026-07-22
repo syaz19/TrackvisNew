@@ -7,6 +7,7 @@ import { db } from "../firebase";
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
 
 function VisitorMarker({ visitor, index }) {
+  // Gumagawa ng marker para sa bawat active visitor sa 3D scene.
   const basePosition = [-6.8, 1.5, 0];
   const position = [basePosition[0] + index * 0.7, basePosition[1], basePosition[2] + index * 0.35];
   const color = markerColors[index % markerColors.length];
@@ -37,6 +38,7 @@ function VisitorMarker({ visitor, index }) {
 }
 
 function SchoolModel() {
+  // Naglo-load ng 3D model sa public/models folder.
   const modelUrl = `${import.meta.env.BASE_URL}models/schools.glb`;
   const { scene } = useGLTF(modelUrl);
 
@@ -99,10 +101,12 @@ class ModelErrorBoundary extends Component {
 }
 
 export default function MapView() {
+  // Ini-store ang active visitors na ipapakita sa map at ang environment state.
   const [visitorMarkers, setVisitorMarkers] = useState([]);
   const [showEnvironment, setShowEnvironment] = useState(false);
 
   useEffect(() => {
+    // Tinutunghayan ang visitor records at pinipili ang active ones na may location signal.
     const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
       const activeVisitors = snapshot.docs
         .map((item) => ({ id: item.id, ...item.data() }))
@@ -119,6 +123,7 @@ export default function MapView() {
   }, []);
 
   useEffect(() => {
+    // Pinapahintay nang konti bago i-enable ang environment para sa smoother render.
     const timer = window.setTimeout(() => setShowEnvironment(true), 180);
     return () => window.clearTimeout(timer);
   }, []);

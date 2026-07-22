@@ -3,6 +3,7 @@ import { addDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc }
 import { db } from "../../firebase";
 
 export default function RegisterVisitor() {
+  // Ini-store ang form values at listahan ng RFID tags.
   const [form, setForm] = useState({
     name: "",
     purpose: "",
@@ -17,11 +18,13 @@ export default function RegisterVisitor() {
   const [loading, setLoading] = useState(false);
 
   function handleChange(event) {
+    // Ina-update ang form state base sa input name at value.
     const { name, value } = event.target;
     setForm({ ...form, [name]: value });
   }
 
   function formatTagLabel(tag) {
+    // Ginagawa ang label ng tag para madaling makita ang status at owner.
     const status = (tag.Status || tag.status || "").toString() || "Unknown";
     const usedBy = tag.UsedBy || tag.usedBy || "";
     const assignedAt = tag.assignedAt || tag.timeIn || tag.timeInStamp || "";
@@ -40,6 +43,7 @@ export default function RegisterVisitor() {
   }
 
   useEffect(() => {
+    // Tinutunghayan ang RFID tags sa Firestore.
     const unsubscribe = onSnapshot(
       collection(db, "rfid_tags"),
       (snapshot) => {
@@ -57,6 +61,7 @@ export default function RegisterVisitor() {
   }, []);
 
   async function handleSubmit() {
+    // Pinipigilan ang pag-save kung kulang ang entries.
     if (!form.name || !form.purpose || !form.destination || !form.location || !form.duration) {
       alert("Please complete all required fields.");
       return;

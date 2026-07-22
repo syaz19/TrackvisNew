@@ -16,12 +16,13 @@ import { Line } from "react-chartjs-2";
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export default function Growth() {
+  // Ini-store ang loading state, summary, at chart data.
   const [loading, setLoading] = useState(true);
-  
   const [summary, setSummary] = useState({ todayCount: 0, weekCount: 0, totalCount: 0 });
   const [chartDataState, setChartDataState] = useState({ labels: [], datasets: [] });
 
   useEffect(() => {
+    // Tinutunghayan ang visitors at kinukuwenta ang analytics.
     const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
       const list = snapshot.docs.map((item) => ({
         id: item.id,
@@ -30,7 +31,6 @@ export default function Growth() {
 
       setLoading(false);
 
-      // compute derived summary and chart data here to avoid Date.now() in render
       const current = Date.now();
       const today = new Date(current).toDateString();
       const weekAgo = new Date(current - 7 * 24 * 60 * 60 * 1000);
@@ -71,10 +71,6 @@ export default function Growth() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    // removed standalone Date.now() effect; now is set when visitors change below
-  }, []);
-
   const summaryCards = [
     {
       label: "Today",
@@ -92,7 +88,6 @@ export default function Growth() {
       valueColor: "#a855f7"
     }
   ];
- 
 
   const chartData = chartDataState;
 
@@ -133,7 +128,6 @@ export default function Growth() {
       }
     }
   };
-  
 
   return (
     <div className="page-card">

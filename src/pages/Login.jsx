@@ -5,23 +5,21 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 export default function Login() {
+  // Ini-store ang input ng user sa form.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
   async function handleLogin(event) {
+    // Pinipigilan ang default form submit behavior at sinusubukan ang login.
     event.preventDefault();
 
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const userDoc = await getDoc(doc(db, "users", result.user.email));
-      let userData = null;
+      const userData = userDoc.exists() ? userDoc.data() : null;
 
-      if (userDoc.exists()) {
-        userData = userDoc.data();
-      }
-
-      if (userData !== null && userData.role === "security") {
+      if (userData?.role === "security") {
         navigate("/security", { replace: true });
       } else {
         navigate("/authorized", { replace: true });

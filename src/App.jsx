@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { registerAuthSetter, unregisterAuthSetter } from "./authManager";
 import { doc, getDoc } from "firebase/firestore";
+import { registerAuthSetter, unregisterAuthSetter } from "./authManager";
 import { auth, db } from "./firebase";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -15,9 +15,11 @@ import Growth from "./pages/security/Growth";
 import AuthorizedDashboard from "./pages/authorized/Dashboard";
 import MapView from "./pages/MapView";
 
+// Ginagamit ang initial state habang naglo-load ang app.
 const initialAuthState = { status: "loading", user: null, userData: null };
 
 function PrivateRoute({ children, user }) {
+  // Kung may logged-in user, ipakita ang page; kung wala, ibalik sa login.
   if (user) {
     return children;
   }
@@ -26,15 +28,17 @@ function PrivateRoute({ children, user }) {
 }
 
 function buildAuthState(user, userData, status = "ready") {
+  // Pinapadali ang pagbuo ng auth state sa bawat update.
   return { status, user, userData };
 }
 
 function getRedirectPath(userData) {
-  if (userData !== null && userData.role === "security") {
+  // Pinipili ang tamang landing page base sa role ng user.
+  if (userData?.role === "security") {
     return "/security";
   }
 
-  if (userData !== null && userData.role === "authorized") {
+  if (userData?.role === "authorized") {
     return "/authorized";
   }
 
@@ -42,9 +46,11 @@ function getRedirectPath(userData) {
 }
 
 export default function App() {
+  // Ini-store ang current authentication state sa component.
   const [authState, setAuthState] = useState(initialAuthState);
 
   useEffect(() => {
+    // Pinapansin ang Firebase auth state para malaman kung naka-login o hindi.
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         setAuthState(buildAuthState(null, null));
@@ -52,12 +58,9 @@ export default function App() {
       }
 
       try {
+        // Kinukuha ang data ng user sa Firestore base sa email.
         const userDoc = await getDoc(doc(db, "users", user.email));
-        let userData = null;
-
-        if (userDoc.exists()) {
-          userData = userDoc.data();
-        }
+        const userData = userDoc.exists() ? userDoc.data() : null;
 
         setAuthState(buildAuthState(user, userData));
       } catch {
@@ -69,11 +72,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // I-register ang setter para magamit ng ibang module.
     registerAuthSetter(setAuthState);
     return unregisterAuthSetter;
   }, []);
 
   useEffect(() => {
+    // Kapag may logout event, reset ang auth state.
     function handleLogout() {
       setAuthState(buildAuthState(null, null));
     }
@@ -83,6 +88,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Ginagamit ang local/session storage para maiwasan ang stuck session sa reload.
     const unloadKey = "trackvis-pending-unload";
     const sessionKey = "trackvis-session-active";
     const pendingUnload = localStorage.getItem(unloadKey);
@@ -92,8 +98,9 @@ export default function App() {
       queueMicrotask(() => {
         setAuthState(buildAuthState(null, null));
       });
+
       signOut(auth).catch(() => {
-        // ignore errors during initial sign-out
+        // Hindi mahalaga kung may error sa unang sign out.
       });
     }
 

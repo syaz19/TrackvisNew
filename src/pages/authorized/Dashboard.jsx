@@ -3,11 +3,13 @@ import { collection, onSnapshot, updateDoc, doc, getDoc, serverTimestamp } from 
 import { db, auth } from "../../firebase";
 
 export default function Dashboard() {
+  // Ini-store ang listahan ng visitors, loading state, at user data.
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
+    // Kinukuha ang active user at ang role data sa Firestore.
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
@@ -33,6 +35,7 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    // Pinipili ang visitors na para sa role ng authorized user.
     if (!userData || !userData.subRole) {
       return;
     }
@@ -53,6 +56,7 @@ export default function Dashboard() {
   }, [userData]);
 
   function isHistoricalVisitor(visitor) {
+    // Tinutukoy kung ang visitor ay historical record na.
     const status = (visitor.status || "").toLowerCase();
     const knownStatuses = ["deactivated", "expired", "completed", "done", "inactive", "cancelled"];
 
@@ -64,6 +68,7 @@ export default function Dashboard() {
   }
 
   async function handleConfirmVisitor(visitorId) {
+    // Iniu-update ang confirmation status sa Firestore.
     try {
       await updateDoc(doc(db, "visitors", visitorId), {
         confirmStatus: "Done",
