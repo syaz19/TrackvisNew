@@ -9,7 +9,9 @@ const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
 function VisitorMarker({ visitor, index }) {
   // Gumagawa ng marker para sa bawat active visitor sa 3D scene.
   const basePosition = [-6.8, 1.5, 0];
-  const position = [basePosition[0] + index * 0.7, basePosition[1], basePosition[2] + index * 0.35];
+  const offset = index * 0.7;
+  const depthOffset = index * 0.35;
+  const position = [basePosition[0] + offset, basePosition[1], basePosition[2] + depthOffset];
   const color = markerColors[index % markerColors.length];
 
   return (
@@ -42,7 +44,7 @@ function SchoolModel() {
   const modelUrl = `${import.meta.env.BASE_URL}models/schools.glb`;
   const { scene } = useGLTF(modelUrl);
 
-  scene.traverse((child) => {
+  scene.traverse(function (child) {
     if (child.isMesh) {
       child.castShadow = true;
       child.receiveShadow = true;
@@ -100,32 +102,44 @@ class ModelErrorBoundary extends Component {
   }
 }
 
+function isActiveVisitorWithLocation(visitor) {
+  // Tsek lang kung ang visitor ay active at may location signal.
+  const status = (visitor.status || "").toString().toLowerCase();
+  const hasScanSignal = Boolean(visitor.lastSeen || visitor.currentLocation || visitor.location);
+
+  return status === "active" && hasScanSignal;
+}
+
 export default function MapView() {
   // Ini-store ang active visitors na ipapakita sa map at ang environment state.
   const [visitorMarkers, setVisitorMarkers] = useState([]);
   const [showEnvironment, setShowEnvironment] = useState(false);
 
-  useEffect(() => {
+  useEffect(function () {
     // Tinutunghayan ang visitor records at pinipili ang active ones na may location signal.
-    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
-      const activeVisitors = snapshot.docs
-        .map((item) => ({ id: item.id, ...item.data() }))
-        .filter((visitor) => {
-          const status = (visitor.status || "").toString().toLowerCase();
-          const hasScanSignal = Boolean(visitor.lastSeen || visitor.currentLocation || visitor.location);
-          return status === "active" && hasScanSignal;
-        });
+    const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
+      const visitorList = snapshot.docs.map(function (item) {
+        return { id: item.id, ...item.data() };
+      });
+      const activeVisitors = visitorList.filter(isActiveVisitorWithLocation);
 
       setVisitorMarkers(activeVisitors);
     });
 
-    return () => unsubscribe();
+    return function () {
+      unsubscribe();
+    };
   }, []);
 
-  useEffect(() => {
+  useEffect(function () {
     // Pinapahintay nang konti bago i-enable ang environment para sa smoother render.
-    const timer = window.setTimeout(() => setShowEnvironment(true), 180);
-    return () => window.clearTimeout(timer);
+    const timer = window.setTimeout(function () {
+      setShowEnvironment(true);
+    }, 180);
+
+    return function () {
+      window.clearTimeout(timer);
+    };
   }, []);
 
   return (
@@ -145,9 +159,9 @@ export default function MapView() {
               }
             >
               <SchoolModel />
-              {visitorMarkers.map((visitor, index) => (
-                <VisitorMarker key={visitor.id || `${visitor.uid}-${index}`} visitor={visitor} index={index} />
-              ))}
+              {visitorMarkers.map(function (visitor, index) {
+                return <VisitorMarker key={visitor.id || `${visitor.uid}-${index}`} visitor={visitor} index={index} />;
+              })}
               {showEnvironment && <Environment preset="city" />}
             </Suspense>
           </ModelErrorBoundary>

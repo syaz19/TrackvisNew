@@ -2,29 +2,40 @@ import { useState, useEffect } from "react";
 import { addDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
+const initialFormState = {
+  name: "",
+  purpose: "",
+  destination: "",
+  location: "Entrance",
+  duration: "",
+  durationUnit: "minutes",
+  uid: ""
+};
+
 export default function RegisterVisitor() {
-  // Ini-store ang form values at listahan ng RFID tags.
-  const [form, setForm] = useState({
-    name: "",
-    purpose: "",
-    destination: "",
-    location: "Entrance",
-    duration: "",
-    durationUnit: "minutes",
-    uid: ""
-  });
+  // I-store ang form values at listahan ng RFID tags.
+  const [form, setForm] = useState(initialFormState);
   const [tags, setTags] = useState([]);
   const [tagsLoading, setTagsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
 
   function handleChange(event) {
-    // Ina-update ang form state base sa input name at value.
+    // I-update ang form base sa input na pinindot.
     const { name, value } = event.target;
-    setForm({ ...form, [name]: value });
+    const nextForm = {
+      ...form,
+      [name]: value
+    };
+
+    setForm(nextForm);
+  }
+
+  function resetForm() {
+    setForm(initialFormState);
   }
 
   function formatTagLabel(tag) {
-    // Ginagawa ang label ng tag para madaling makita ang status at owner.
+    // Lumikha ng mas madaling basahin na label para sa RFID tag.
     const status = (tag.Status || tag.status || "").toString() || "Unknown";
     const usedBy = tag.UsedBy || tag.usedBy || "";
     const assignedAt = tag.assignedAt || tag.timeIn || tag.timeInStamp || "";
@@ -42,27 +53,37 @@ export default function RegisterVisitor() {
     return label;
   }
 
-  useEffect(() => {
-    // Tinutunghayan ang RFID tags sa Firestore.
+  useEffect(function () {
+    // Pakinggan ang RFID tags sa Firestore.
     const unsubscribe = onSnapshot(
       collection(db, "rfid_tags"),
-      (snapshot) => {
-        const list = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-        setTags(list);
+      function (snapshot) {
+        const tagList = snapshot.docs.map(function (item) {
+          return { id: item.id, ...item.data() };
+        });
+        setTags(tagList);
         setTagsLoading(false);
       },
-      (error) => {
+      function (error) {
         console.error("Failed to load RFID tags:", error);
         setTagsLoading(false);
       }
     );
 
-    return () => unsubscribe();
+    return function () {
+      unsubscribe();
+    };
   }, []);
 
-  async function handleSubmit() {
-    // Pinipigilan ang pag-save kung kulang ang entries.
-    if (!form.name || !form.purpose || !form.destination || !form.location || !form.duration) {
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    // Step 1: siguraduhin na may laman ang lahat ng kailangan.
+    // Step 2: suriin ang duration at RFID tag.
+    // Step 3: i-save ang visitor at i-update ang tag status.
+    const isFormComplete = form.name && form.purpose && form.destination && form.location && form.duration;
+
+    if (!isFormComplete) {
       alert("Please complete all required fields.");
       return;
     }
@@ -77,15 +98,17 @@ export default function RegisterVisitor() {
     setLoading(true);
 
     try {
-      const uid = form.uid.trim();
+      const selectedUid = form.uid.trim();
 
-      if (!uid) {
+      if (!selectedUid) {
         alert("Please select an RFID tag to use.");
         setLoading(false);
         return;
       }
 
-      const selectedTag = tags.find((tag) => tag.id === uid);
+      const selectedTag = tags.find(function (tag) {
+        return tag.id === selectedUid;
+      });
 
       if (!selectedTag) {
         alert("Selected RFID tag was not found. Please choose a valid tag.");
@@ -94,8 +117,9 @@ export default function RegisterVisitor() {
       }
 
       const tagStatus = (selectedTag.Status || selectedTag.status || "").toString().toLowerCase();
+      const isTagAvailable = tagStatus === "available";
 
-      if (tagStatus && tagStatus !== "available") {
+      if (!isTagAvailable) {
         alert("Selected RFID tag is currently in use. Please choose another one.");
         setLoading(false);
         return;
@@ -103,7 +127,7 @@ export default function RegisterVisitor() {
 
       const sameUidQuery = query(
         collection(db, "visitors"),
-        where("uid", "==", uid),
+        where("uid", "==", selectedUid),
         where("status", "==", "active")
       );
       const sameUidSnapshot = await getDocs(sameUidQuery);
@@ -115,12 +139,12 @@ export default function RegisterVisitor() {
       }
 
       const startTime = Date.now();
-      const unitMultipliers = {
+      const durationMultipliers = {
         seconds: 1000,
         minutes: 60000,
         hours: 3600000
       };
-      const endTime = startTime + durationValue * unitMultipliers[form.durationUnit];
+      const endTime = startTime + durationValue * durationMultipliers[form.durationUnit];
 
       await addDoc(collection(db, "visitors"), {
         name: form.name,
@@ -128,7 +152,7 @@ export default function RegisterVisitor() {
         destination: form.destination,
         duration: durationValue,
         durationUnit: form.durationUnit,
-        uid: uid || "",
+        uid: selectedUid || "",
         startTime,
         endTime,
         timeIn: startTime,
@@ -140,7 +164,7 @@ export default function RegisterVisitor() {
       });
 
       try {
-        await updateDoc(doc(db, "rfid_tags", uid), {
+        await updateDoc(doc(db, "rfid_tags", selectedUid), {
           Status: "In Use",
           UsedBy: form.name || "",
           assignedAt: startTime
@@ -150,15 +174,7 @@ export default function RegisterVisitor() {
       }
 
       alert("Visitor Registered Successfully!");
-      setForm({
-        name: "",
-        purpose: "",
-        destination: "",
-        location: "Entrance",
-        duration: "",
-        durationUnit: "minutes",
-        uid: ""
-      });
+      resetForm();
     } catch (error) {
       alert(error.message);
     }
@@ -169,7 +185,7 @@ export default function RegisterVisitor() {
   return (
     <div>
       <h1>Register Visitor</h1>
-      <div className="form-card">
+      <form className="form-card" onSubmit={handleSubmit}>
         <input
           className="form-control"
           name="name"
@@ -247,7 +263,7 @@ export default function RegisterVisitor() {
               <option value="" style={{ color: "#94a3b8" }}>
                 -- Select RFID Tag / EPC --
               </option>
-              {tags.map((tag) => {
+              {tags.map(function (tag) {
                 const status = (tag.Status || tag.status || "").toString();
                 return (
                   <option key={tag.id} value={tag.id} disabled={status.toLowerCase() !== "available"}>
@@ -265,10 +281,10 @@ export default function RegisterVisitor() {
           </>
         )}
         <br /><br />
-        <button className="primary-button" onClick={handleSubmit} disabled={loading || tagsLoading}>
+        <button className="primary-button" type="submit" disabled={loading || tagsLoading}>
           {loading ? "Saving..." : "Register Visitor"}
         </button>
-      </div>
+      </form>
     </div>
   );
 }

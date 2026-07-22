@@ -16,10 +16,16 @@ export default function AuthorizedLayout({ children }) {
     setMenuOpen(false);
   }
 
+  function handleMainClick() {
+    if (menuOpen) {
+      closeMenu();
+    }
+  }
+
   return (
     <div className="container">
       <Sidebar role="authorized" isOpen={menuOpen} onClose={closeMenu} />
-      <div className="main" onClick={() => menuOpen && closeMenu()}>
+      <div className="main" onClick={handleMainClick}>
         <Topbar
           role="authorized"
           title="Authorized Personnel"

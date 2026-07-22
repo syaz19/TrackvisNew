@@ -17,10 +17,13 @@ const firebaseConfig = {
 
 // Inisyalisa ang Firebase app.
 const app = initializeApp(firebaseConfig);
+const authService = getAuth(app);
+const dbService = getFirestore(app);
+const analyticsService = getAnalytics(app);
 
 // Inilalabas ang services para magamit sa ibang file.
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth = authService;
+export const db = dbService;
 
 // Optional ang analytics, pero pinapanatili para hindi magbago ang feature.
-export const analytics = getAnalytics(app);
+export const analytics = analyticsService;

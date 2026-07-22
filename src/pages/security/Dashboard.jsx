@@ -3,33 +3,37 @@ import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
 export default function Dashboard() {
-  // Ini-store ang listahan ng visitors at ang current time.
+  // I-store ang listahan ng visitors at ang current time.
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
 
-  useEffect(() => {
-    // Tinutunghayan ang collection ng visitors sa Firestore.
-    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
-      const list = snapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data()
-      }));
+  useEffect(function () {
+    // Pakinggan ang visitors sa Firestore.
+    const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
+      const visitorList = snapshot.docs.map(function (item) {
+        return {
+          id: item.id,
+          ...item.data()
+        };
+      });
 
-      setVisitors(list);
+      setVisitors(visitorList);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return function () {
+      unsubscribe();
+    };
   }, []);
 
   function getViolationType(visitor, timeValue) {
-    // Tinutukoy ang uri ng violation base sa confirmation at end time.
+    // Tukuyin ang uri ng violation base sa confirmation at sa end time.
     const isConfirmed = visitor.confirmStatus === "Done";
-    const originalEndTime = Number(visitor.endTime || 0);
-    const exceededTime = originalEndTime > 0 && originalEndTime <= Number(timeValue || 0);
+    const visitorEndTime = Number(visitor.endTime || 0);
+    const hasReachedDeadline = visitorEndTime > 0 && visitorEndTime <= Number(timeValue || 0);
 
-    if (!isConfirmed && exceededTime) {
+    if (!isConfirmed && hasReachedDeadline) {
       return "Both";
     }
 
@@ -37,75 +41,87 @@ export default function Dashboard() {
       return "No Confirmation";
     }
 
-    if (exceededTime) {
+    if (hasReachedDeadline) {
       return "Exceed Time";
     }
 
     return "";
   }
 
-  useEffect(() => {
-    // Tinitingnan ang bawat active visitor bawat segundo at ina-update ang status kapag natapos ang time.
-    const timer = setInterval(() => {
-      visitors.forEach(async (visitor) => {
-        if (visitor.status === "active" && visitor.endTime <= currentTime) {
+  async function checkVisitorDeadlines() {
+    for (let index = 0; index < visitors.length; index += 1) {
+      const visitor = visitors[index];
+      const isExpiredVisitor = visitor.status === "active" && visitor.endTime <= currentTime;
+
+      if (!isExpiredVisitor) {
+        continue;
+      }
+
+      try {
+        const violationType = getViolationType(visitor, currentTime);
+
+        await updateDoc(doc(db, "visitors", visitor.id), {
+          status: "expired",
+          timeOut: currentTime,
+          lastSeen: currentTime,
+          violationType
+        });
+
+        if (visitor.uid) {
           try {
-            const violationType = getViolationType(visitor, currentTime);
-
-            await updateDoc(doc(db, "visitors", visitor.id), {
-              status: "expired",
-              timeOut: currentTime,
-              lastSeen: currentTime,
-              violationType
+            await updateDoc(doc(db, "rfid_tags", visitor.uid), {
+              Status: "Available",
+              UsedBy: "",
+              assignedAt: null
             });
-
-            if (visitor.uid) {
-              try {
-                await updateDoc(doc(db, "rfid_tags", visitor.uid), {
-                  Status: "Available",
-                  UsedBy: "",
-                  assignedAt: null
-                });
-              } catch (error) {
-                console.warn("Failed to release RFID tag on expire:", error);
-              }
-            }
           } catch (error) {
-            console.warn("Failed to mark visitor expired:", error);
+            console.warn("Failed to release RFID tag on expire:", error);
           }
         }
-      });
+      } catch (error) {
+        console.warn("Failed to mark visitor expired:", error);
+      }
+    }
+  }
+
+  useEffect(function () {
+    // Suriin ang bawat active visitor kada segundo at i-update ang status pag dating ng deadline.
+    const timer = setInterval(function () {
+      checkVisitorDeadlines();
     }, 1000);
 
-    return () => clearInterval(timer);
+    return function () {
+      clearInterval(timer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visitors, currentTime]);
 
-  useEffect(() => {
-    // Ini-update ang oras sa bawat segundo para sa countdown at status.
-    const timer = setTimeout(() => {
+  useEffect(function () {
+    // I-update ang oras sa bawat segundo para sa countdown at status.
+    const timer = setTimeout(function () {
       setCurrentTime(Date.now());
     }, 0);
 
-    const clock = setInterval(() => {
+    const clock = setInterval(function () {
       setCurrentTime(Date.now());
     }, 1000);
 
-    return () => {
+    return function () {
       clearTimeout(timer);
       clearInterval(clock);
     };
   }, []);
 
   function getRemainingTime(endTime) {
-    // Kinukuwenta ang natitirang oras sa text format.
-    const diff = endTime - currentTime;
+    // I-convert ang natitirang oras sa text format para sa UI.
+    const difference = endTime - currentTime;
 
-    if (diff <= 0) {
+    if (difference <= 0) {
       return "0m 0s";
     }
 
-    const minutes = Math.floor(diff / 1000 / 60);
-    const seconds = Math.floor((diff / 1000) % 60);
+    const minutes = Math.floor(difference / 1000 / 60);
+    const seconds = Math.floor((difference / 1000) % 60);
     return `${minutes}m ${seconds}s`;
   }
 
@@ -114,13 +130,26 @@ export default function Dashboard() {
   }
 
   function renderDuration(value, unit) {
-    const unitLabel = unit === "seconds" ? "sec" : unit === "minutes" ? "min" : "hr";
-    return `${value} ${unitLabel}${value === 1 ? "" : "s"}`;
+    let unitLabel = "hr";
+
+    if (unit === "seconds") {
+      unitLabel = "sec";
+    } else if (unit === "minutes") {
+      unitLabel = "min";
+    }
+
+    let suffix = "s";
+
+    if (value === 1) {
+      suffix = "";
+    }
+
+    return `${value} ${unitLabel}${suffix}`;
   }
 
   function isWarning(endTime) {
-    const remaining = getRemainingMinutes(endTime);
-    return remaining <= 5 && remaining > 0;
+    const remainingMinutes = getRemainingMinutes(endTime);
+    return remainingMinutes <= 5 && remainingMinutes > 0;
   }
 
   function isExpired(endTime) {
@@ -128,13 +157,16 @@ export default function Dashboard() {
   }
 
   async function deactivateVisitor(visitor) {
-    // Ginagamit para tanggalin ang visitor sa active list at i-release ang RFID.
+    // Step 1: tukuyin kung confirmed ba ang visitor.
+    // Step 2: i-update ang visitor status sa Firestore.
+    // Step 3: i-release ang RFID tag para maging available ulit.
     try {
       const isConfirmed = visitor.confirmStatus === "Done";
       const violationType = getViolationType(visitor, currentTime);
+      const nextStatus = isConfirmed ? "deactivated" : "expired";
 
       await updateDoc(doc(db, "visitors", visitor.id), {
-        status: isConfirmed ? "deactivated" : "expired",
+        status: nextStatus,
         endTime: visitor.endTime || currentTime,
         timeOut: currentTime,
         violationType: isConfirmed ? "" : violationType
@@ -156,11 +188,21 @@ export default function Dashboard() {
     }
   }
 
-  const activeVisitorsList = visitors.filter((visitor) => visitor.status === "active");
-  const activeVisitors = activeVisitorsList.length;
-  const violations = visitors.filter((visitor) => visitor.status === "expired").length;
-  const today = new Date(currentTime).toDateString();
-  const todayVisitors = visitors.filter((visitor) => new Date(visitor.startTime).toDateString() === today).length;
+  function handleDeactivateButtonClick(visitor) {
+    deactivateVisitor(visitor);
+  }
+
+  const activeVisitorsList = visitors.filter(function (visitor) {
+    return visitor.status === "active";
+  });
+  const activeVisitorsCount = activeVisitorsList.length;
+  const violationsCount = visitors.filter(function (visitor) {
+    return visitor.status === "expired";
+  }).length;
+  const todayLabel = new Date(currentTime).toDateString();
+  const todayVisitorsCount = visitors.filter(function (visitor) {
+    return new Date(visitor.startTime).toDateString() === todayLabel;
+  }).length;
 
   if (loading) {
     return (
@@ -177,17 +219,17 @@ export default function Dashboard() {
       <section className="card highlight-card">
         <p className="section-kicker">Live overview</p>
         <h3>Active Visitors</h3>
-        <p className="metric">{activeVisitors}</p>
+        <p className="metric">{activeVisitorsCount}</p>
       </section>
       <section className="card highlight-card">
         <p className="section-kicker">Safety</p>
         <h3>Violations (Overstay)</h3>
-        <p className="metric red">{violations}</p>
+        <p className="metric red">{violationsCount}</p>
       </section>
       <section className="card highlight-card">
         <p className="section-kicker">Today</p>
         <h3>Today&apos;s Visitors</h3>
-        <p className="metric">{todayVisitors}</p>
+        <p className="metric">{todayVisitorsCount}</p>
       </section>
 
       <section className="card summary-card">
@@ -203,40 +245,67 @@ export default function Dashboard() {
           <div className="empty-state">No active visitors right now.</div>
         ) : (
           <div className="visitor-list">
-            {activeVisitorsList.map((visitor) => (
-              <article
-                key={visitor.id}
-                className={`visitor-card ${isExpired(visitor.endTime) ? "visitor-card--danger" : isWarning(visitor.endTime) ? "visitor-card--warning" : "visitor-card--active"}`}
-              >
-                <div className="visitor-card__top">
-                  <div>
-                    <h4 className="visitor-card__title">{visitor.name}</h4>
-                    <p className="visitor-card__subtitle">{visitor.purpose}</p>
+            {activeVisitorsList.map(function (visitor) {
+              let cardClassName = "visitor-card visitor-card--active";
+              let statusLabel = "Active";
+              let statusClassName = "status-pill status-pill--active";
+              const isAlreadyExpired = isExpired(visitor.endTime);
+              const isNearWarning = isWarning(visitor.endTime);
+
+              if (isAlreadyExpired) {
+                cardClassName = "visitor-card visitor-card--danger";
+                statusLabel = "Expired";
+                statusClassName = "status-pill status-pill--expired";
+              } else if (isNearWarning) {
+                cardClassName = "visitor-card visitor-card--warning";
+                statusLabel = "Warning";
+                statusClassName = "status-pill status-pill--warning";
+              }
+
+              let confirmLabel = "Pending";
+
+              if (visitor.confirmStatus === "Done") {
+                confirmLabel = "Done";
+              }
+
+              let timeInLabel = "N/A";
+
+              if (visitor.timeIn) {
+                timeInLabel = new Date(visitor.timeIn).toLocaleTimeString();
+              }
+
+              return (
+                <article key={visitor.id} className={cardClassName}>
+                  <div className="visitor-card__top">
+                    <div>
+                      <h4 className="visitor-card__title">{visitor.name}</h4>
+                      <p className="visitor-card__subtitle">{visitor.purpose}</p>
+                    </div>
+                    <span className={statusClassName}>{statusLabel}</span>
                   </div>
-                  <span className={`status-pill ${isExpired(visitor.endTime) ? "status-pill--expired" : isWarning(visitor.endTime) ? "status-pill--warning" : "status-pill--active"}`}>
-                    {isExpired(visitor.endTime) ? "Expired" : isWarning(visitor.endTime) ? "Warning" : "Active"}
-                  </span>
-                </div>
 
-                <div className="visitor-meta">
-                  <span>📍 {visitor.location || "Entrance"}</span>
-                  <span>🎯 {visitor.destination}</span>
-                  <span>✓ Confirm: {visitor.confirmStatus === "Done" ? "Done" : "Pending"}</span>
-                  <span>🕒 Time In: {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString() : "N/A"}</span>
-                  <span>⏱ Duration: {renderDuration(visitor.duration, visitor.durationUnit || "minutes")}</span>
-                  <span>⏳ Time Left: {getRemainingTime(visitor.endTime)}</span>
-                </div>
+                  <div className="visitor-meta">
+                    <span>📍 {visitor.location || "Entrance"}</span>
+                    <span>🎯 {visitor.destination}</span>
+                    <span>✓ Confirm: {confirmLabel}</span>
+                    <span>🕒 Time In: {timeInLabel}</span>
+                    <span>⏱ Duration: {renderDuration(visitor.duration, visitor.durationUnit || "minutes")}</span>
+                    <span>⏳ Time Left: {getRemainingTime(visitor.endTime)}</span>
+                  </div>
 
-                {isWarning(visitor.endTime) && <p className="alert-text">⚠ Less than 5 minutes left.</p>}
-                {isExpired(visitor.endTime) && <p className="alert-text alert-text--danger">🔴 Visitor has expired.</p>}
+                  {isNearWarning && <p className="alert-text">⚠ Less than 5 minutes left.</p>}
+                  {isAlreadyExpired && <p className="alert-text alert-text--danger">🔴 Visitor has expired.</p>}
 
-                <div className="visitor-actions">
-                  <button className="action-button action-button--danger" onClick={() => deactivateVisitor(visitor)}>
-                    Deactivate
-                  </button>
-                </div>
-              </article>
-            ))}
+                  <div className="visitor-actions">
+                    <button className="action-button action-button--danger" onClick={function () {
+                      handleDeactivateButtonClick(visitor);
+                    }}>
+                      Deactivate
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>

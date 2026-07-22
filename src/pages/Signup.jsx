@@ -4,33 +4,84 @@ import { auth, db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
 
+const pageBackground = "radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 20%), linear-gradient(180deg, #07101f 0%, #0f172a 100%)";
+const cardBackground = "#111827";
+const inputBackground = "#0f172a";
+const borderColor = "rgba(148, 163, 184, 0.18)";
+const accentColor = "#2563eb";
+
 export default function Signup() {
   const navigate = useNavigate();
 
-  // Ini-store ang input at role para sa pag-create ng account.
+  // I-store ang input at role para sa pag-create ng account.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("security");
   const [subRole, setSubRole] = useState("Admin");
 
+  function handleEmailChange(event) {
+    setEmail(event.target.value);
+  }
+
+  function handlePasswordChange(event) {
+    setPassword(event.target.value);
+  }
+
+  function handleRoleChange(event) {
+    setRole(event.target.value);
+  }
+
+  function handleSubRoleChange(event) {
+    setSubRole(event.target.value);
+  }
+
   async function handleSignup(event) {
-    // Pinipigilan ang default na submit at sinusubukan ang pag-register.
+    // Step 1: pigilan ang pag-submit ng form.
+    // Step 2: gumawa ng Firebase account.
+    // Step 3: i-save ang role at sub-role sa Firestore.
+    // Step 4: mag-sign out at bumalik sa login page.
     event.preventDefault();
 
     try {
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const signupResult = await createUserWithEmailAndPassword(auth, email, password);
+      const isAuthorizedRole = role === "authorized";
       const userData = {
         email,
         role,
-        subRole: role === "authorized" ? subRole : null
+        subRole: null
       };
 
-      await setDoc(doc(db, "users", result.user.email), userData);
+      if (isAuthorizedRole) {
+        userData.subRole = subRole;
+      }
+
+      await setDoc(doc(db, "users", signupResult.user.email), userData);
       await signOut(auth);
       navigate("/", { replace: true });
     } catch (error) {
       alert(error.message);
     }
+  }
+
+  let subRoleSection = null;
+
+  if (role === "authorized") {
+    subRoleSection = (
+      <>
+        <label style={styles.label} htmlFor="subRole">
+          Authorized Role
+        </label>
+        <select id="subRole" value={subRole} onChange={handleSubRoleChange} style={styles.input}>
+          <option value="Admin">Admin</option>
+          <option value="Registrar">Registrar</option>
+          <option value="Guidance Counselor">Guidance Counselor</option>
+          <option value="CABA Dean">CABA Dean</option>
+          <option value="IT Dean">IT Dean</option>
+          <option value="Criminology Dean">Criminology Dean</option>
+          <option value="Education Dean">Education Dean</option>
+        </select>
+      </>
+    );
   }
 
   return (
@@ -49,7 +100,7 @@ export default function Signup() {
             id="email"
             type="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={handleEmailChange}
             placeholder="you@example.com"
             style={styles.input}
           />
@@ -61,7 +112,7 @@ export default function Signup() {
             id="password"
             type="password"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={handlePasswordChange}
             placeholder="********"
             style={styles.input}
           />
@@ -69,32 +120,12 @@ export default function Signup() {
           <label style={styles.label} htmlFor="role">
             Role
           </label>
-          <select id="role" value={role} onChange={(event) => setRole(event.target.value)} style={styles.input}>
+          <select id="role" value={role} onChange={handleRoleChange} style={styles.input}>
             <option value="security">Security</option>
             <option value="authorized">Authorized Personnel</option>
           </select>
 
-          {role === "authorized" && (
-            <>
-              <label style={styles.label} htmlFor="subRole">
-                Authorized Role
-              </label>
-              <select
-                id="subRole"
-                value={subRole}
-                onChange={(event) => setSubRole(event.target.value)}
-                style={styles.input}
-              >
-                <option value="Admin">Admin</option>
-                <option value="Registrar">Registrar</option>
-                <option value="Guidance Counselor">Guidance Counselor</option>
-                <option value="CABA Dean">CABA Dean</option>
-                <option value="IT Dean">IT Dean</option>
-                <option value="Criminology Dean">Criminology Dean</option>
-                <option value="Education Dean">Education Dean</option>
-              </select>
-            </>
-          )}
+          {subRoleSection}
 
           <button type="submit" style={styles.button}>
             Create Account
@@ -119,14 +150,14 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     padding: "24px",
-    background: "radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 20%), linear-gradient(180deg, #07101f 0%, #0f172a 100%)"
+    background: pageBackground
   },
   card: {
     width: "100%",
     maxWidth: "520px",
     padding: "42px",
     borderRadius: "28px",
-    background: "#111827",
+    background: cardBackground,
     border: "1px solid rgba(96, 165, 250, 0.35)",
     boxShadow: "0 35px 90px rgba(15, 23, 42, 0.55)",
     overflow: "hidden"
@@ -157,8 +188,8 @@ const styles = {
     width: "100%",
     padding: "14px 16px",
     borderRadius: "16px",
-    border: "1px solid rgba(148, 163, 184, 0.18)",
-    background: "#0f172a",
+    border: `1px solid ${borderColor}`,
+    background: inputBackground,
     color: "#f8fafc",
     fontSize: "1rem",
     outline: "none"
@@ -168,7 +199,7 @@ const styles = {
     padding: "14px 16px",
     borderRadius: "16px",
     border: "none",
-    background: "#2563eb",
+    background: accentColor,
     color: "#f8fafc",
     fontSize: "1rem",
     fontWeight: 600,

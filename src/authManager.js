@@ -1,6 +1,6 @@
 let authSetter = null;
 
-// Gumagawa ng blank auth state na puwedeng i-set ulit.
+// Gumawa ng blank auth state na puwedeng gamitin ulit.
 function createEmptyAuthState() {
   return { status: "ready", user: null, userData: null };
 }
@@ -13,12 +13,13 @@ export function registerAuthSetter(func) {
 export function clearAuthState() {
   // I-reset ang auth state kapag gusto mag-logout o mag-clear.
   if (typeof authSetter === "function") {
-    authSetter(createEmptyAuthState());
+    const emptyState = createEmptyAuthState();
+    authSetter(emptyState);
   }
 }
 
 export function unregisterAuthSetter() {
-  // Inaalis ang setter kapag hindi na kailangan.
+  // Alisin ang setter kapag hindi na kailangan.
   authSetter = null;
 }
 

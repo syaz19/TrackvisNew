@@ -3,16 +3,17 @@ import { collection, onSnapshot, updateDoc, doc, getDoc, serverTimestamp } from 
 import { db, auth } from "../../firebase";
 
 export default function Dashboard() {
-  // Ini-store ang listahan ng visitors, loading state, at user data.
+  // I-store ang listahan ng visitors, loading state, at user data.
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);
 
-  useEffect(() => {
-    // Kinukuha ang active user at ang role data sa Firestore.
+  useEffect(function () {
+    // Kunin ang active user at ang role data sa Firestore.
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
@@ -34,29 +35,35 @@ export default function Dashboard() {
     loadUserData();
   }, []);
 
-  useEffect(() => {
-    // Pinipili ang visitors na para sa role ng authorized user.
+  useEffect(function () {
+    // I-filter ang visitors para sa authorized role ng logged-in user.
     if (!userData || !userData.subRole) {
       return;
     }
 
-    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
-      const list = snapshot.docs
-        .map((item) => ({
-          id: item.id,
-          ...item.data()
-        }))
-        .filter((visitor) => visitor.destination === userData.subRole);
+    const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
+      const visitorList = snapshot.docs
+        .map(function (item) {
+          return {
+            id: item.id,
+            ...item.data()
+          };
+        })
+        .filter(function (visitor) {
+          return visitor.destination === userData.subRole;
+        });
 
-      setVisitors(list);
+      setVisitors(visitorList);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return function () {
+      unsubscribe();
+    };
   }, [userData]);
 
   function isHistoricalVisitor(visitor) {
-    // Tinutukoy kung ang visitor ay historical record na.
+    // Tukuyin kung ang visitor ay historical record na.
     const status = (visitor.status || "").toLowerCase();
     const knownStatuses = ["deactivated", "expired", "completed", "done", "inactive", "cancelled"];
 
@@ -68,40 +75,54 @@ export default function Dashboard() {
   }
 
   async function handleConfirmVisitor(visitorId) {
-    // Iniu-update ang confirmation status sa Firestore.
+    // Step 1: i-update ang confirmation status sa Firestore.
+    // Step 2: palitan din ang local state para agad makita ang pagbabago.
     try {
+      const currentUser = auth.currentUser;
+      let confirmedByValue = null;
+
+      if (currentUser) {
+        confirmedByValue = currentUser.email;
+      }
+
       await updateDoc(doc(db, "visitors", visitorId), {
         confirmStatus: "Done",
         confirmedAt: serverTimestamp(),
-        confirmedBy: auth.currentUser?.email || null
+        confirmedBy: confirmedByValue
       });
 
-      setVisitors((oldVisitors) =>
-        oldVisitors.map((visitor) => {
+      setVisitors(function (oldVisitors) {
+        return oldVisitors.map(function (visitor) {
           if (visitor.id === visitorId) {
             return {
               ...visitor,
               confirmStatus: "Done",
               confirmedAt: Date.now(),
-              confirmedBy: auth.currentUser?.email || null
+              confirmedBy: confirmedByValue
             };
           }
 
           return visitor;
-        })
-      );
+        });
+      });
     } catch (error) {
       alert("Error confirming visitor: " + error.message);
     }
   }
 
-  const pendingVisitors = visitors.filter(
-    (visitor) => visitor.status === "active" && (visitor.confirmStatus || "") !== "Done"
-  );
+  function handleConfirmButtonClick(visitorId) {
+    handleConfirmVisitor(visitorId);
+  }
+
+  const pendingVisitors = visitors.filter(function (visitor) {
+    return visitor.status === "active" && (visitor.confirmStatus || "") !== "Done";
+  });
 
   const confirmedHistory = visitors
-    .filter((visitor) => visitor.confirmStatus === "Done" || isHistoricalVisitor(visitor))
-    .sort((first, second) => {
+    .filter(function (visitor) {
+      return visitor.confirmStatus === "Done" || isHistoricalVisitor(visitor);
+    })
+    .sort(function (first, second) {
       const firstTime = first.confirmedAt || first.endTime || first.startTime || 0;
       const secondTime = second.confirmedAt || second.endTime || second.startTime || 0;
       return secondTime - firstTime;
@@ -136,32 +157,48 @@ export default function Dashboard() {
             <div className="empty-state">No pending visitors for {userData?.subRole || "your role"}.</div>
           ) : (
             <div className="visitor-list">
-              {pendingVisitors.map((visitor) => (
-                <article key={visitor.id} className="visitor-card visitor-card--active">
-                  <div className="visitor-card__top">
-                    <div>
-                      <h4 className="visitor-card__title">{visitor.name}</h4>
-                      <p className="visitor-card__subtitle">{visitor.purpose}</p>
-                    </div>
-                    <span className="status-pill status-pill--active">Pending</span>
-                  </div>
+              {pendingVisitors.map(function (visitor) {
+                let confirmLabel = "Awaiting confirmation";
 
-                  <div className="visitor-meta">
-                    <span>📍 {visitor.location || "Entrance"}</span>
-                    <span>🎯 {visitor.destination}</span>
-                    <span>✓ Confirm Status: {visitor.confirmStatus === "Done" ? "Done" : "Awaiting confirmation"}</span>
-                    <span>🕒 Time In: {visitor.timeIn ? new Date(visitor.timeIn).toLocaleTimeString() : "N/A"}</span>
-                  </div>
+                if (visitor.confirmStatus === "Done") {
+                  confirmLabel = "Done";
+                }
 
-                  {visitor.confirmStatus !== "Done" && (
-                    <div className="visitor-actions">
-                      <button className="action-button action-button--primary" onClick={() => handleConfirmVisitor(visitor.id)}>
-                        Confirm Arrival
-                      </button>
+                let timeInLabel = "N/A";
+
+                if (visitor.timeIn) {
+                  timeInLabel = new Date(visitor.timeIn).toLocaleTimeString();
+                }
+
+                return (
+                  <article key={visitor.id} className="visitor-card visitor-card--active">
+                    <div className="visitor-card__top">
+                      <div>
+                        <h4 className="visitor-card__title">{visitor.name}</h4>
+                        <p className="visitor-card__subtitle">{visitor.purpose}</p>
+                      </div>
+                      <span className="status-pill status-pill--active">Pending</span>
                     </div>
-                  )}
-                </article>
-              ))}
+
+                    <div className="visitor-meta">
+                      <span>📍 {visitor.location || "Entrance"}</span>
+                      <span>🎯 {visitor.destination}</span>
+                      <span>✓ Confirm Status: {confirmLabel}</span>
+                      <span>🕒 Time In: {timeInLabel}</span>
+                    </div>
+
+                    {visitor.confirmStatus !== "Done" && (
+                      <div className="visitor-actions">
+                        <button className="action-button action-button--primary" onClick={function () {
+                          handleConfirmButtonClick(visitor.id);
+                        }}>
+                          Confirm Arrival
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
@@ -179,26 +216,47 @@ export default function Dashboard() {
             <div className="empty-state">No confirmed visitor history yet.</div>
           ) : (
             <div className="history-grid">
-              {confirmedHistory.map((visitor) => (
-                <article key={visitor.id} className="visitor-card visitor-card--history">
-                  <div className="visitor-card__top">
-                    <div>
-                      <h4 className="visitor-card__title">{visitor.name}</h4>
-                      <p className="visitor-card__subtitle">{visitor.purpose}</p>
-                    </div>
-                    <span className={`status-pill ${visitor.status === "deactivated" ? "status-pill--done" : "status-pill--expired"}`}>
-                      {visitor.status === "deactivated" ? "Completed" : visitor.confirmStatus === "Done" ? "Confirmed" : "Processed"}
-                    </span>
-                  </div>
+              {confirmedHistory.map(function (visitor) {
+                let statusLabel = "Processed";
+                let statusClassName = "status-pill status-pill--expired";
 
-                  <div className="visitor-meta">
-                    <span>📍 {visitor.location || "Entrance"}</span>
-                    <span>🎯 {visitor.destination}</span>
-                    <span>🕒 Time In: {visitor.timeIn ? new Date(visitor.timeIn).toLocaleString() : "N/A"}</span>
-                    <span>⏱ Time Out: {visitor.timeOut ? new Date(visitor.timeOut).toLocaleString() : "N/A"}</span>
-                  </div>
-                </article>
-              ))}
+                if (visitor.status === "deactivated") {
+                  statusLabel = "Completed";
+                  statusClassName = "status-pill status-pill--done";
+                } else if (visitor.confirmStatus === "Done") {
+                  statusLabel = "Confirmed";
+                }
+
+                let timeInLabel = "N/A";
+                let timeOutLabel = "N/A";
+
+                if (visitor.timeIn) {
+                  timeInLabel = new Date(visitor.timeIn).toLocaleString();
+                }
+
+                if (visitor.timeOut) {
+                  timeOutLabel = new Date(visitor.timeOut).toLocaleString();
+                }
+
+                return (
+                  <article key={visitor.id} className="visitor-card visitor-card--history">
+                    <div className="visitor-card__top">
+                      <div>
+                        <h4 className="visitor-card__title">{visitor.name}</h4>
+                        <p className="visitor-card__subtitle">{visitor.purpose}</p>
+                      </div>
+                      <span className={statusClassName}>{statusLabel}</span>
+                    </div>
+
+                    <div className="visitor-meta">
+                      <span>📍 {visitor.location || "Entrance"}</span>
+                      <span>🎯 {visitor.destination}</span>
+                      <span>🕒 Time In: {timeInLabel}</span>
+                      <span>⏱ Time Out: {timeOutLabel}</span>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>

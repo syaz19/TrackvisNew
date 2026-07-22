@@ -7,7 +7,9 @@ export default function Sidebar({ role, isOpen, onClose }) {
   const navigate = useNavigate();
 
   async function handleLogout() {
-    // Sinisiguro ang logout sa Firebase at sa local app state.
+    // Step 1: lumabas sa Firebase.
+    // Step 2: i-clear ang local auth state.
+    // Step 3: dalhin ulit ang user sa login page.
     try {
       await signOut(auth);
       clearAuthState();
@@ -18,11 +20,11 @@ export default function Sidebar({ role, isOpen, onClose }) {
     }
   }
 
-  // Pinipili ang mga link base sa role ng user.
-  let links = [];
+  // Piliin ang listahan ng menu base sa role ng user.
+  let menuLinks = [];
 
   if (role === "security") {
-    links = [
+    menuLinks = [
       { to: "/security", label: "Dashboard" },
       { to: "/security/register", label: "Register Visitor" },
       { to: "/security/history", label: "History" },
@@ -30,16 +32,24 @@ export default function Sidebar({ role, isOpen, onClose }) {
       { to: "/security/map", label: "View Map" }
     ];
   } else if (role === "authorized") {
-    links = [
+    menuLinks = [
       { to: "/authorized", label: "Dashboard" },
       { to: "/authorized/map", label: "View Map" }
     ];
   }
 
+  let overlayClassName = "mobile-menu-overlay";
+  let sidebarClassName = "sidebar";
+
+  if (isOpen) {
+    overlayClassName = "mobile-menu-overlay open";
+    sidebarClassName = "sidebar open";
+  }
+
   return (
     <>
-      <div className={`mobile-menu-overlay ${isOpen ? "open" : ""}`} onClick={onClose} />
-      <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+      <div className={overlayClassName} onClick={onClose} />
+      <aside className={sidebarClassName}>
         <div className="sidebar-header">
           <div className="brand-block">
             <div className="brand-mark">TV</div>
@@ -54,11 +64,13 @@ export default function Sidebar({ role, isOpen, onClose }) {
         </div>
 
         <nav className="nav-links">
-          {links.map((link) => (
-            <Link key={link.to} to={link.to} onClick={onClose}>
-              {link.label}
-            </Link>
-          ))}
+          {menuLinks.map(function (link) {
+            return (
+              <Link key={link.to} to={link.to} onClick={onClose}>
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="sidebar-footer">

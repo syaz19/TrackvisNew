@@ -33,73 +33,87 @@ function buildAuthState(user, userData, status = "ready") {
 }
 
 function getRedirectPath(userData) {
-  // Pinipili ang tamang landing page base sa role ng user.
-  if (userData?.role === "security") {
-    return "/security";
-  }
+  // Piliin ang tamang home page base sa role ng user.
+  if (userData !== null && userData !== undefined) {
+    if (userData.role === "security") {
+      return "/security";
+    }
 
-  if (userData?.role === "authorized") {
-    return "/authorized";
+    if (userData.role === "authorized") {
+      return "/authorized";
+    }
   }
 
   return "/";
 }
 
 export default function App() {
-  // Ini-store ang current authentication state sa component.
+  // I-store ang current auth state sa component.
   const [authState, setAuthState] = useState(initialAuthState);
 
-  useEffect(() => {
-    // Pinapansin ang Firebase auth state para malaman kung naka-login o hindi.
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setAuthState(buildAuthState(null, null));
+  useEffect(function () {
+    // Step 1: pakinggan ang Firebase auth state.
+    // Step 2: kung may user, kunin ang user data sa Firestore.
+    // Step 3: i-update ang auth state sa app.
+    async function handleAuthStateChange(loggedInUser) {
+      if (!loggedInUser) {
+        const emptyState = buildAuthState(null, null);
+        setAuthState(emptyState);
         return;
       }
 
       try {
-        // Kinukuha ang data ng user sa Firestore base sa email.
-        const userDoc = await getDoc(doc(db, "users", user.email));
-        const userData = userDoc.exists() ? userDoc.data() : null;
+        const userDoc = await getDoc(doc(db, "users", loggedInUser.email));
+        let userData = null;
 
-        setAuthState(buildAuthState(user, userData));
+        if (userDoc.exists()) {
+          userData = userDoc.data();
+        }
+
+        const nextState = buildAuthState(loggedInUser, userData);
+        setAuthState(nextState);
       } catch {
-        setAuthState(buildAuthState(user, null));
+        const fallbackState = buildAuthState(loggedInUser, null);
+        setAuthState(fallbackState);
       }
-    });
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, handleAuthStateChange);
 
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
+  useEffect(function () {
     // I-register ang setter para magamit ng ibang module.
     registerAuthSetter(setAuthState);
     return unregisterAuthSetter;
   }, []);
 
-  useEffect(() => {
-    // Kapag may logout event, reset ang auth state.
+  useEffect(function () {
+    // Kapag may logout event, i-reset ang auth state.
     function handleLogout() {
       setAuthState(buildAuthState(null, null));
     }
 
     window.addEventListener("trackvis-logout", handleLogout);
-    return () => window.removeEventListener("trackvis-logout", handleLogout);
+    return function () {
+      window.removeEventListener("trackvis-logout", handleLogout);
+    };
   }, []);
 
-  useEffect(() => {
-    // Ginagamit ang local/session storage para maiwasan ang stuck session sa reload.
+  useEffect(function () {
+    // Ginagamit ang local at session storage para maiwasan ang stuck session sa reload.
     const unloadKey = "trackvis-pending-unload";
     const sessionKey = "trackvis-session-active";
     const pendingUnload = localStorage.getItem(unloadKey);
     const isReload = sessionStorage.getItem(sessionKey) === "1";
 
     if (pendingUnload && !isReload) {
-      queueMicrotask(() => {
+      queueMicrotask(function () {
         setAuthState(buildAuthState(null, null));
       });
 
-      signOut(auth).catch(() => {
+      signOut(auth).catch(function () {
         // Hindi mahalaga kung may error sa unang sign out.
       });
     }
@@ -114,7 +128,7 @@ export default function App() {
     window.addEventListener("beforeunload", handleUnload);
     window.addEventListener("pagehide", handleUnload);
 
-    return () => {
+    return function () {
       window.removeEventListener("beforeunload", handleUnload);
       window.removeEventListener("pagehide", handleUnload);
     };
@@ -128,8 +142,8 @@ export default function App() {
     );
   }
 
-  const redirectPath = getRedirectPath(authState.userData);
-  const protectedRoutes = [
+  const homePath = getRedirectPath(authState.userData);
+  const routesThatNeedProtection = [
     { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout },
     { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout },
     { path: "/security/history", element: <History />, layout: SecurityLayout },
@@ -139,12 +153,20 @@ export default function App() {
     { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout }
   ];
 
+  let loginRouteElement = <Login />;
+  let signupRouteElement = <Signup />;
+
+  if (authState.user) {
+    loginRouteElement = <Navigate to={homePath} replace />;
+    signupRouteElement = <Navigate to={homePath} replace />;
+  }
+
   return (
     <Routes>
-      <Route path="/" element={authState.user ? <Navigate to={redirectPath} replace /> : <Login />} />
-      <Route path="/signup" element={authState.user ? <Navigate to={redirectPath} replace /> : <Signup />} />
+      <Route path="/" element={loginRouteElement} />
+      <Route path="/signup" element={signupRouteElement} />
 
-      {protectedRoutes.map((route) => {
+      {routesThatNeedProtection.map(function (route) {
         const Layout = route.layout;
 
         return (

@@ -4,26 +4,48 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
+const pageBackground = "radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 20%), linear-gradient(180deg, #07101f 0%, #0f172a 100%)";
+const cardBackground = "#111827";
+const inputBackground = "#0f172a";
+const borderColor = "rgba(148, 163, 184, 0.18)";
+const accentColor = "#2563eb";
+
 export default function Login() {
-  // Ini-store ang input ng user sa form.
+  // I-store ang input ng user sa form.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
+  function handleEmailChange(event) {
+    setEmail(event.target.value);
+  }
+
+  function handlePasswordChange(event) {
+    setPassword(event.target.value);
+  }
+
   async function handleLogin(event) {
-    // Pinipigilan ang default form submit behavior at sinusubukan ang login.
+    // Step 1: pigilan ang pag-submit ng form.
+    // Step 2: subukan ang login sa Firebase.
+    // Step 3: basahin ang role ng user at dalhin sa tamang page.
     event.preventDefault();
 
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, "users", result.user.email));
-      const userData = userDoc.exists() ? userDoc.data() : null;
+      const loginResult = await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await getDoc(doc(db, "users", loginResult.user.email));
+      let userData = null;
 
-      if (userData?.role === "security") {
-        navigate("/security", { replace: true });
-      } else {
-        navigate("/authorized", { replace: true });
+      if (userDoc.exists()) {
+        userData = userDoc.data();
       }
+
+      let nextRoute = "/authorized";
+
+      if (userData !== null && userData !== undefined && userData.role === "security") {
+        nextRoute = "/security";
+      }
+
+      navigate(nextRoute, { replace: true });
     } catch (error) {
       alert(error.message);
     }
@@ -45,7 +67,7 @@ export default function Login() {
             id="email"
             type="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={handleEmailChange}
             placeholder="you@example.com"
             style={styles.input}
           />
@@ -57,7 +79,7 @@ export default function Login() {
             id="password"
             type="password"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={handlePasswordChange}
             placeholder="********"
             style={styles.input}
           />
@@ -85,14 +107,14 @@ const styles = {
     justifyContent: "center",
     alignItems: "center",
     padding: "24px",
-    background: "radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 20%), linear-gradient(180deg, #07101f 0%, #0f172a 100%)"
+    background: pageBackground
   },
   card: {
     width: "100%",
     maxWidth: "520px",
     padding: "42px",
     borderRadius: "28px",
-    background: "#111827",
+    background: cardBackground,
     border: "1px solid rgba(96, 165, 250, 0.35)",
     boxShadow: "0 35px 90px rgba(15, 23, 42, 0.55)",
     overflow: "hidden"
@@ -123,8 +145,8 @@ const styles = {
     width: "100%",
     padding: "14px 16px",
     borderRadius: "16px",
-    border: "1px solid rgba(148, 163, 184, 0.18)",
-    background: "#0f172a",
+    border: `1px solid ${borderColor}`,
+    background: inputBackground,
     color: "#f8fafc",
     fontSize: "1rem",
     outline: "none"
@@ -134,7 +156,7 @@ const styles = {
     padding: "14px 16px",
     borderRadius: "16px",
     border: "none",
-    background: "#2563eb",
+    background: accentColor,
     color: "white",
     fontSize: "1rem",
     cursor: "pointer"

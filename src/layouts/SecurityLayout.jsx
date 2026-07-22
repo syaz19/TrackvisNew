@@ -16,10 +16,16 @@ export default function SecurityLayout({ children }) {
     setMenuOpen(false);
   }
 
+  function handleMainClick() {
+    if (menuOpen) {
+      closeMenu();
+    }
+  }
+
   return (
     <div className="container">
       <Sidebar role="security" isOpen={menuOpen} onClose={closeMenu} />
-      <div className="main" onClick={() => menuOpen && closeMenu()}>
+      <div className="main" onClick={handleMainClick}>
         <Topbar
           role="security"
           title="Security Operations"
