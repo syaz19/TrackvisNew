@@ -3,54 +3,58 @@
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-admin.initializeApp();
-// exports is provided by the Node.js module system; no extra binding needed
 
-// -----------------------------
-// 1. REGISTER VISITOR (Entrance Auto)
-// -----------------------------
+admin.initializeApp();
+
+const db = admin.firestore();
+
+// ==============================
+// 1. REGISTER VISITOR
+// ==============================
 exports.registerVisitor = functions.https.onRequest(async (req, res) => {
   try {
     const { epc, visitorInfo } = req.body || {};
-    if (!epc) return res.status(400).send("Missing EPC");
 
-    // update tag info (merge)
-    await admin.firestore().collection("rfid_tags").doc(epc).set({
-      ...visitorInfo,
-      Status: "In Use",
-      currentLocation: "Entrance",
-      assignedAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    if (!epc) {
+      return res.status(400).send("Missing EPC");
+    }
 
-   
+    await db.collection("rfid_tags").doc(epc).set(
+      {
+        ...visitorInfo,
+        Status: "In Use",
+        currentLocation: "Entrance",
+        assignedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-    // log entrance
-    await admin.firestore().collection("rfid_logs").add({
+    await db.collection("rfid_logs").add({
       epc,
       location: "Entrance",
-      time: admin.firestore.FieldValue.serverTimestamp()
+      time: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    res.send("Visitor Registered at Entrance");
+    res.send("Visitor Registered");
   } catch (err) {
     console.error(err);
-    res.status(500).send(err.message || String(err));
+    res.status(500).send(err.message);
   }
 });
 
-// -----------------------------
-// 2. RFID SCAN UPDATE (Library etc.)
-// -----------------------------
+// ==============================
+// 2. UPDATE RFID LOCATION
+// ==============================
 exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
   try {
     const { epc, location } = req.body || {};
+
     if (!epc || !location) {
       return res.status(400).send("Missing data");
     }
 
-    // Hanapin ang visitor gamit ang UID (EPC)
-    const visitorQuery = await admin.firestore()
+    const visitorQuery = await db
       .collection("visitors")
       .where("uid", "==", epc)
       .limit(1)
@@ -60,98 +64,194 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
       return res.status(404).send("Visitor not found");
     }
 
-    const visitorDoc = visitorQuery.docs[0];
-    const visitorRef = visitorDoc.ref;
+    const visitorRef = visitorQuery.docs[0].ref;
 
-    // update visitor current location and last seen
-    await visitorRef.update({
-      currentLocation: location,
-      lastSeen: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Update visitor location
     await visitorRef.update({
       currentLocation: location,
       location: location,
-      lastSeen: Date.now()
+      lastSeen: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    // update tag
-    await admin.firestore().collection("rfid_tags").doc(epc).update({
-      currentLocation: location,
-      lastScan: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    await db.collection("rfid_tags").doc(epc).set(
+      {
+        currentLocation: location,
+        lastScan: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-    // log movement
-    await admin.firestore().collection("rfid_logs").add({
+    await db.collection("rfid_logs").add({
       epc,
       location,
-      time: admin.firestore.FieldValue.serverTimestamp()
+      time: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     res.send("Location Updated");
   } catch (err) {
     console.error(err);
-    res.status(500).send(err.message || String(err));
+    res.status(500).send(err.message);
   }
 });
 
-// -----------------------------
-// 3. CLEANUP: Release RFID tag when a visitor document is deleted
-// -----------------------------
-exports.onVisitorDelete = functions.firestore.document('visitors/{id}').onDelete(async (snap, context) => {
+// ==============================
+// 3. SCAN RFID (Replacement for Render)
+// ==============================
+exports.scanRFID = functions.https.onRequest(async (req, res) => {
   try {
-    const data = snap.data() || {};
-    let epc = data.uid || data.epc;
-    if (epc == null) return null;
-    epc = String(epc);
-    const visitorId = context && context.params && context.params.id ? String(context.params.id) : null;
-    console.log(`onVisitorDelete: visitorId=${visitorId}, epc=${epc}`);
+    const { epc, location } = req.body || {};
 
-    // set tag to available so it can be reused
-    await admin.firestore().collection('rfid_tags').doc(epc).update({
-      Status: 'Available',
-      UsedBy: '',
-      assignedAt: null,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    if (!epc || !location) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing EPC or Location",
+      });
+    }
+
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    await db.collection("reader_scans").doc(epc).set(
+      {
+        epc,
+        lastLocation: location,
+        lastScan: now,
+      },
+      { merge: true }
+    );
+
+    await db
+      .collection("reader_scans")
+      .doc(epc)
+      .collection("history")
+      .add({
+        location,
+        timestamp: now,
+      });
+
+    const visitorSnapshot = await db
+      .collection("visitors")
+      .where("uid", "==", epc)
+      .where("status", "==", "active")
+      .limit(1)
+      .get();
+
+    if (!visitorSnapshot.empty) {
+      const visitorDoc = visitorSnapshot.docs[0];
+
+      await visitorDoc.ref.update({
+        currentLocation: location,
+        location,
+        lastSeen: now,
+      });
+
+      await db.collection("visitor_history").doc(visitorDoc.id).set(
+        {
+          uid: epc,
+          visitorId: visitorDoc.id,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+
+      await db
+        .collection("visitor_history")
+        .doc(visitorDoc.id)
+        .collection("history")
+        .add({
+          location,
+          timestamp: now,
+        });
+
+      await db.collection("rfid_tags").doc(epc).set(
+        {
+          currentLocation: location,
+          lastScan: now,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
+
+      await db.collection("rfid_logs").add({
+        epc,
+        location,
+        time: now,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "RFID Scan Processed",
     });
-    return null;
-  } catch (err) {
-    console.error('onVisitorDelete error:', err);
-    return null;
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 });
 
-// -----------------------------
-// 4. CLEANUP: Release RFID tags when an Auth user is deleted
-// If tags have `UsedBy` set to the user's email or displayName, clear them.
-// -----------------------------
+// ==============================
+// 4. RELEASE RFID WHEN VISITOR IS DELETED
+// ==============================
+exports.onVisitorDelete = functions.firestore
+  .document("visitors/{id}")
+  .onDelete(async (snap) => {
+    try {
+      const data = snap.data() || {};
+
+      const epc = data.uid || data.epc;
+
+      if (!epc) return null;
+
+      await db.collection("rfid_tags").doc(String(epc)).set(
+        {
+          Status: "Available",
+          UsedBy: "",
+          assignedAt: null,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      return null;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
+  });
+
+// ==============================
+// 5. RELEASE RFID WHEN AUTH USER IS DELETED
+// ==============================
 exports.onAuthUserDelete = functions.auth.user().onDelete(async (user) => {
   try {
-    const candidates = [];
-    if (user.email) candidates.push(user.email);
-    if (user.displayName) candidates.push(user.displayName);
+    const values = [];
 
-    const tagsRef = admin.firestore().collection('rfid_tags');
-    for (const val of candidates) {
-      const q = await tagsRef.where('UsedBy', '==', val).get();
-      for (const d of q.docs) {
-        try {
-          await d.ref.update({
-            Status: 'Available',
-            UsedBy: '',
-            assignedAt: null,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-          });
-        } catch (e) {
-          console.warn('Failed to clear tag for deleted user:', d.id, e);
-        }
+    if (user.email) values.push(user.email);
+
+    if (user.displayName) values.push(user.displayName);
+
+    for (const value of values) {
+      const snapshot = await db
+        .collection("rfid_tags")
+        .where("UsedBy", "==", value)
+        .get();
+
+      for (const doc of snapshot.docs) {
+        await doc.ref.update({
+          Status: "Available",
+          UsedBy: "",
+          assignedAt: null,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
       }
     }
+
     return null;
   } catch (err) {
-    console.error('onAuthUserDelete error:', err);
+    console.error(err);
     return null;
   }
 });
