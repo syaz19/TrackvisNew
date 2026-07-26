@@ -155,8 +155,8 @@ export default function Growth() {
   };
 
   return (
-    <div className="page-card">
-      <div className="card">
+    <div className="page-card growth-page-card">
+      <div className="card growth-card large-panel">
         <div className="page-heading">
           <h1>Growth Analytics</h1>
           <p className="section-note">Visitor trends and daily statistics.</p>

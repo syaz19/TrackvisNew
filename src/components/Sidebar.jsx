@@ -1,9 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
+import { useState, useEffect, useRef } from "react";
 import { auth } from "../firebase";
 import { clearAuthState } from "../authManager";
 
-export default function Sidebar({ role, isOpen, onClose }) {
+export default function Sidebar({ role, isOpen, onClose, currentUser, userData }) {
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -46,6 +49,37 @@ export default function Sidebar({ role, isOpen, onClose }) {
     sidebarClassName = "sidebar open";
   }
 
+  const email = currentUser?.email || userData?.email || "guest@example.com";
+  const displayName = userData?.name || userData?.fullName || email.split("@")[0] || "Guest";
+  const roleLabel = role === "security" ? "Security" : role === "authorized" ? "Authorized Personnel" : userData?.role || "User";
+  const profileInitial = displayName.charAt(0).toUpperCase() || "G";
+
+  function handleProfileToggle() {
+    setProfileOpen(function (current) {
+      return !current;
+    });
+  }
+
+  useEffect(
+    function () {
+      if (!profileOpen) {
+        return undefined;
+      }
+
+      function handleClickOutside(event) {
+        if (profileRef.current && !profileRef.current.contains(event.target)) {
+          setProfileOpen(false);
+        }
+      }
+
+      window.addEventListener("mousedown", handleClickOutside);
+      return function () {
+        window.removeEventListener("mousedown", handleClickOutside);
+      };
+    },
+    [profileOpen]
+  );
+
   return (
     <>
       <div className={overlayClassName} onClick={onClose} />
@@ -74,6 +108,34 @@ export default function Sidebar({ role, isOpen, onClose }) {
         </nav>
 
         <div className="sidebar-footer">
+          <div className="sidebar-profile-group" ref={profileRef}>
+            <button type="button" className="sidebar-profile-card" onClick={handleProfileToggle} aria-expanded={profileOpen}>
+              <div className="sidebar-profile-avatar">{profileInitial}</div>
+              <div className="sidebar-profile-details">
+                <p className="sidebar-profile-name">{displayName}</p>
+                <p className="sidebar-profile-role">{roleLabel}</p>
+              </div>
+            </button>
+
+            {profileOpen && (
+              <div className="sidebar-profile-popup">
+                <p className="sidebar-profile-popup-title">Account Info</p>
+                <div className="sidebar-profile-popup-row">
+                  <span>Name</span>
+                  <strong>{displayName}</strong>
+                </div>
+                <div className="sidebar-profile-popup-row">
+                  <span>Email</span>
+                  <strong>{email}</strong>
+                </div>
+                <div className="sidebar-profile-popup-row">
+                  <span>Role</span>
+                  <strong>{roleLabel}</strong>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button className="logout-button" onClick={handleLogout} type="button">
             Logout
           </button>

@@ -118,6 +118,14 @@ export default function App() {
       });
     }
 
+    // If a new browser session has started and there is an authenticated user,
+    // force log out immediately so the app does not preserve stale login.
+    if (!isReload && auth.currentUser) {
+      signOut(auth).catch(function () {
+        // ignore sign out errors
+      });
+    }
+
     sessionStorage.setItem(sessionKey, "1");
     localStorage.removeItem(unloadKey);
 
@@ -144,13 +152,13 @@ export default function App() {
 
   const homePath = getRedirectPath(authState.userData);
   const routesThatNeedProtection = [
-    { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout },
-    { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout },
-    { path: "/security/history", element: <History />, layout: SecurityLayout },
-    { path: "/security/growth", element: <Growth />, layout: SecurityLayout },
-    { path: "/authorized", element: <AuthorizedDashboard />, layout: AuthorizedLayout },
-    { path: "/security/map", element: <MapView />, layout: SecurityLayout },
-    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout }
+    { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout, layoutProps: {} },
+    { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout, layoutProps: {} },
+    { path: "/security/history", element: <History />, layout: SecurityLayout, layoutProps: {} },
+    { path: "/security/growth", element: <Growth />, layout: SecurityLayout, layoutProps: {} },
+    { path: "/authorized", element: <AuthorizedDashboard />, layout: AuthorizedLayout, layoutProps: {} },
+    { path: "/security/map", element: <MapView />, layout: SecurityLayout, layoutProps: { hideTitle: true, hideSubtitle: true } },
+    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: true, hideSubtitle: true } }
   ];
 
   let loginRouteElement = <Login />;
@@ -175,7 +183,9 @@ export default function App() {
             path={route.path}
             element={
               <PrivateRoute user={authState.user}>
-                <Layout>{route.element}</Layout>
+                <Layout currentUser={authState.user} userData={authState.userData} {...(route.layoutProps || {})}>
+                  {route.element}
+                </Layout>
               </PrivateRoute>
             }
           />

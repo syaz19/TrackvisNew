@@ -3,7 +3,7 @@ import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
 export default function Dashboard() {
-  // I-store ang listahan ng visitors at ang current time.
+  // I-store ang listahan ng visitors, current user, at ang current time.
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
@@ -232,7 +232,7 @@ export default function Dashboard() {
         <p className="metric">{todayVisitorsCount}</p>
       </section>
 
-      <section className="card summary-card">
+      <section className="card summary-card large-panel">
         <div className="section-header">
           <div>
             <p className="section-kicker">Active list</p>
@@ -244,7 +244,7 @@ export default function Dashboard() {
         {activeVisitorsList.length === 0 ? (
           <div className="empty-state">No active visitors right now.</div>
         ) : (
-          <div className="visitor-list">
+          <div className="visitor-list visitor-list-scroll">
             {activeVisitorsList.map(function (visitor) {
               let cardClassName = "visitor-card visitor-card--active";
               let statusLabel = "Active";

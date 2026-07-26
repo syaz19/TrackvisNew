@@ -1,7 +1,7 @@
-export default function Topbar({ title, subtitle, onMenuToggle, menuOpen }) {
+export default function Topbar({ title, subtitle, onMenuToggle, menuOpen, hideTitle, hideSubtitle }) {
   let subtitleBlock = null;
 
-  if (subtitle) {
+  if (subtitle && !hideSubtitle) {
     subtitleBlock = <p className="topbar-subtitle">{subtitle}</p>;
   }
 
@@ -21,7 +21,7 @@ export default function Topbar({ title, subtitle, onMenuToggle, menuOpen }) {
         </button>
         <div>
           <p className="topbar-label">TrackVis Professional</p>
-          <h2>{title}</h2>
+          {!hideTitle && <h2>{title}</h2>}
           {subtitleBlock}
         </div>
       </div>

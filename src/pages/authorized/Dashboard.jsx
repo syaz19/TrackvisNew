@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
-import { db, auth } from "../../firebase";
+import { auth, db } from "../../firebase";
 
 export default function Dashboard() {
-  // I-store ang listahan ng visitors, loading state, at user data.
+  // I-store ang listahan ng visitors, loading state, user data, at user email.
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState(null);

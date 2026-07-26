@@ -1,10 +1,70 @@
-import { Suspense, Component, useEffect, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, Component, useEffect, useState, useMemo, useRef } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment, Html } from "@react-three/drei";
+import * as THREE from "three";
 import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
 
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
+const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
+const DEFAULT_CAMERA_STATE = {
+  position: [0, 40, -115],
+  target: [0, 0, 0],
+  zoomDistance: 130
+};
+
+function getCameraStorageKey() {
+  if (typeof window === "undefined") {
+    return CAMERA_STORAGE_BASE_KEY;
+  }
+
+  const user = auth.currentUser;
+  if (user && user.uid) {
+    return `${CAMERA_STORAGE_BASE_KEY}-${user.uid}`;
+  }
+
+  return CAMERA_STORAGE_BASE_KEY;
+}
+
+function loadSavedCameraState() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const key = getCameraStorageKey();
+    const stored = window.sessionStorage.getItem(key);
+    if (!stored) {
+      return null;
+    }
+
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed.position) || !Array.isArray(parsed.target)) {
+      return null;
+    }
+
+    return {
+      position: parsed.position,
+      target: parsed.target,
+      zoomDistance: parsed.zoomDistance || DEFAULT_CAMERA_STATE.zoomDistance
+    };
+  } catch {
+    return null;
+  }
+}
+
+function saveCameraState(state) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const key = getCameraStorageKey();
+    window.sessionStorage.setItem(key, JSON.stringify(state));
+  } catch {
+    // ignore write failures
+  }
+}
 
 function VisitorMarker({ visitor, index }) {
   // Gumagawa ng marker para sa bawat active visitor sa 3D scene.
@@ -39,19 +99,153 @@ function VisitorMarker({ visitor, index }) {
   );
 }
 
-function SchoolModel() {
+function SchoolModel({ sceneRef }) {
   // Naglo-load ng 3D model sa public/models folder.
   const modelUrl = `${import.meta.env.BASE_URL}models/schools.glb`;
+  useGLTF.preload(modelUrl);
   const { scene } = useGLTF(modelUrl);
 
-  scene.traverse(function (child) {
-    if (child.isMesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
+  useEffect(() => {
+    scene.traverse(function (child) {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+  }, [scene]);
 
-  return <primitive object={scene} dispose={null} scale={0.18} position={[0, -1.1, 0]} />;
+  return <primitive ref={sceneRef} object={scene} dispose={null} scale={0.18} position={[0, -1.1, 0]} />;
+}
+
+function DoubleClickZoom({ sceneRef, controlsRef }) {
+  const { camera, gl } = useThree();
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const pointer = useMemo(() => new THREE.Vector2(), []);
+
+  useEffect(() => {
+    let animationFrame = null;
+
+    const animateCamera = (startCamera, startTarget, endCamera, endTarget, onComplete) => {
+      const duration = 450;
+      const startTime = performance.now();
+
+      const tick = (timestamp) => {
+        const t = Math.min(1, (timestamp - startTime) / duration);
+        const ease = t * (2 - t);
+
+        camera.position.lerpVectors(startCamera, endCamera, ease);
+        controlsRef.current.target.lerpVectors(startTarget, endTarget, ease);
+        controlsRef.current.update();
+
+        if (t < 1) {
+          animationFrame = requestAnimationFrame(tick);
+        } else if (typeof onComplete === "function") {
+          onComplete();
+        }
+      };
+
+      animationFrame = requestAnimationFrame(tick);
+    };
+
+    const handleDoubleClick = (event) => {
+      if (!sceneRef.current || !controlsRef.current) {
+        return;
+      }
+
+      const rect = gl.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      const intersects = raycaster.intersectObject(sceneRef.current, true);
+      if (intersects.length === 0) {
+        return;
+      }
+
+      const hitPoint = intersects[0].point.clone();
+      const viewDirection = camera.getWorldDirection(new THREE.Vector3()).normalize();
+      const distance = Math.max(4, camera.position.distanceTo(hitPoint) * 0.5);
+      const endPosition = hitPoint.clone().add(viewDirection.multiplyScalar(-distance));
+      const startPosition = camera.position.clone();
+      const startTarget = controlsRef.current.target.clone();
+
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      animateCamera(startPosition, startTarget, endPosition, hitPoint, () => {
+        saveCameraState({
+          position: [endPosition.x, endPosition.y, endPosition.z],
+          target: [hitPoint.x, hitPoint.y, hitPoint.z],
+          zoomDistance: distance
+        });
+      });
+    };
+
+    gl.domElement.addEventListener("dblclick", handleDoubleClick);
+    return () => {
+      gl.domElement.removeEventListener("dblclick", handleDoubleClick);
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [camera, controlsRef, gl.domElement, pointer, raycaster, sceneRef]);
+
+  return null;
+}
+
+function CameraControls({ controlsRef, initialState }) {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    camera.position.set(...initialState.position);
+    if (controlsRef.current) {
+      controlsRef.current.target.set(...initialState.target);
+      controlsRef.current.update();
+    }
+  }, [camera, controlsRef, initialState]);
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) {
+      return;
+    }
+
+    const saveCurrentCamera = () => {
+      const position = controls.object.position;
+      const target = controls.target;
+      const zoomDistance = position.distanceTo(target);
+      saveCameraState({
+        position: [position.x, position.y, position.z],
+        target: [target.x, target.y, target.z],
+        zoomDistance
+      });
+    };
+
+    controls.addEventListener("change", saveCurrentCamera);
+    controls.addEventListener("end", saveCurrentCamera);
+    return () => {
+      controls.removeEventListener("change", saveCurrentCamera);
+      controls.removeEventListener("end", saveCurrentCamera);
+    };
+  }, [controlsRef]);
+
+  return (
+    <OrbitControls
+      ref={controlsRef}
+      enablePan
+      enableZoom
+      enableRotate
+      enableDamping
+      dampingFactor={0.12}
+      rotateSpeed={0.7}
+      zoomSpeed={1}
+      panSpeed={0.8}
+      screenSpacePanning={false}
+      minDistance={2}
+      maxDistance={500}
+    />
+  );
 }
 
 class ModelErrorBoundary extends Component {
@@ -103,7 +297,6 @@ class ModelErrorBoundary extends Component {
 }
 
 function isActiveVisitorWithLocation(visitor) {
-  // Tsek lang kung ang visitor ay active at may location signal.
   const status = (visitor.status || "").toString().toLowerCase();
   const hasScanSignal = Boolean(visitor.lastSeen || visitor.currentLocation || visitor.location);
 
@@ -111,42 +304,67 @@ function isActiveVisitorWithLocation(visitor) {
 }
 
 export default function MapView() {
-  // Ini-store ang active visitors na ipapakita sa map at ang environment state.
   const [visitorMarkers, setVisitorMarkers] = useState([]);
-  const [showEnvironment, setShowEnvironment] = useState(false);
+  const [cameraState, setCameraState] = useState(DEFAULT_CAMERA_STATE);
+  const sceneRef = useRef();
+  const controlsRef = useRef();
 
-  useEffect(function () {
-    // Tinutunghayan ang visitor records at pinipili ang active ones na may location signal.
-    const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
-      const visitorList = snapshot.docs.map(function (item) {
-        return { id: item.id, ...item.data() };
-      });
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged(() => {
+      const savedState = loadSavedCameraState();
+      setCameraState(savedState || DEFAULT_CAMERA_STATE);
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
+      const visitorList = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
       const activeVisitors = visitorList.filter(isActiveVisitorWithLocation);
-
       setVisitorMarkers(activeVisitors);
     });
 
-    return function () {
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
-  useEffect(function () {
-    // Pinapahintay nang konti bago i-enable ang environment para sa smoother render.
-    const timer = window.setTimeout(function () {
-      setShowEnvironment(true);
-    }, 180);
+  const handleResetClick = () => {
+    const resetState = { ...DEFAULT_CAMERA_STATE };
+    setCameraState(resetState);
+    saveCameraState(resetState);
 
-    return function () {
-      window.clearTimeout(timer);
-    };
-  }, []);
+    if (controlsRef.current) {
+      controlsRef.current.object.position.set(...resetState.position);
+      controlsRef.current.target.set(...resetState.target);
+      controlsRef.current.update();
+    }
+  };
 
   return (
     <div>
-      <h1>Campus 3D Map / Model</h1>
-      <div style={{ width: "100%", height: "640px", borderRadius: 16, overflow: "hidden", background: "#0b1220" }}>
-        <Canvas shadows camera={{ position: [0, 2.2, 12], fov: 35 }}>
+      <div style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#0b1220" }}>
+        <button
+          type="button"
+          onClick={handleResetClick}
+          style={{
+            position: "absolute",
+            top: 18,
+            right: 18,
+            zIndex: 3,
+            background: "rgba(37, 99, 235, 0.95)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "10px 14px",
+            cursor: "pointer",
+            fontWeight: 600,
+            boxShadow: "0 10px 18px rgba(37, 99, 235, 0.2)",
+            minWidth: 150
+          }}
+        >
+          Back to Normal Position
+        </button>
+        <Canvas style={{ width: "100%", height: "100%" }} shadows camera={{ position: cameraState.position, fov: 35, near: 0.1, far: 1000 }}>
           <ambientLight intensity={0.7} />
           <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
           <ModelErrorBoundary>
@@ -158,14 +376,15 @@ export default function MapView() {
                 </mesh>
               }
             >
-              <SchoolModel />
-              {visitorMarkers.map(function (visitor, index) {
-                return <VisitorMarker key={visitor.id || `${visitor.uid}-${index}`} visitor={visitor} index={index} />;
-              })}
-              {showEnvironment && <Environment preset="city" />}
+              <SchoolModel sceneRef={sceneRef} />
+              {visitorMarkers.map((visitor, index) => (
+                <VisitorMarker key={visitor.id || `${visitor.uid}-${index}`} visitor={visitor} index={index} />
+              ))}
+              <Environment preset="city" />
             </Suspense>
           </ModelErrorBoundary>
-          <OrbitControls enablePan enableZoom enableRotate />
+          <CameraControls controlsRef={controlsRef} initialState={cameraState} />
+          <DoubleClickZoom sceneRef={sceneRef} controlsRef={controlsRef} />
         </Canvas>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 
-export default function SecurityLayout({ children }) {
+export default function SecurityLayout({ children, currentUser, userData, hideTitle, hideSubtitle }) {
   // Ini-store ang estado ng mobile sidebar.
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -24,7 +24,7 @@ export default function SecurityLayout({ children }) {
 
   return (
     <div className="container">
-      <Sidebar role="security" isOpen={menuOpen} onClose={closeMenu} />
+      <Sidebar role="security" isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />
       <div className="main" onClick={handleMainClick}>
         <Topbar
           role="security"
@@ -32,6 +32,10 @@ export default function SecurityLayout({ children }) {
           subtitle="Monitor active visitors, violations, and daily progress."
           onMenuToggle={toggleMenu}
           menuOpen={menuOpen}
+          currentUser={currentUser}
+          userData={userData}
+          hideTitle={hideTitle}
+          hideSubtitle={hideSubtitle}
         />
         <div className="content-body">{children}</div>
       </div>

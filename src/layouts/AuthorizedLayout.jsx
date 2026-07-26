@@ -2,7 +2,7 @@ import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 
-export default function AuthorizedLayout({ children }) {
+export default function AuthorizedLayout({ children, currentUser, userData, hideTitle, hideSubtitle }) {
   // Ini-store ang kalagayan ng menu para sa mobile view.
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -24,7 +24,7 @@ export default function AuthorizedLayout({ children }) {
 
   return (
     <div className="container">
-      <Sidebar role="authorized" isOpen={menuOpen} onClose={closeMenu} />
+      <Sidebar role="authorized" isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />
       <div className="main" onClick={handleMainClick}>
         <Topbar
           role="authorized"
@@ -32,6 +32,10 @@ export default function AuthorizedLayout({ children }) {
           subtitle="Review visitor assignments, confirmations, and notes."
           onMenuToggle={toggleMenu}
           menuOpen={menuOpen}
+          currentUser={currentUser}
+          userData={userData}
+          hideTitle={hideTitle}
+          hideSubtitle={hideSubtitle}
         />
         <div className="content-body">{children}</div>
       </div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { browserSessionPersistence, setPersistence, signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
@@ -31,6 +31,7 @@ export default function Login() {
     event.preventDefault();
 
     try {
+      await setPersistence(auth, browserSessionPersistence);
       const loginResult = await signInWithEmailAndPassword(auth, email, password);
       const userDoc = await getDoc(doc(db, "users", loginResult.user.email));
       let userData = null;

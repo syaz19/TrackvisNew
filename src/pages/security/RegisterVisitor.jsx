@@ -34,20 +34,43 @@ export default function RegisterVisitor() {
     setForm(initialFormState);
   }
 
+  function getTagIdentifier(tag) {
+    return tag.epc || tag.uid || tag.id || "Unknown";
+  }
+
+  function getTagStatus(tag) {
+    return (tag.Status || tag.status || "").toString() || "Unknown";
+  }
+
+  function getTagUsedBy(tag) {
+    return tag.UsedBy || tag.usedBy || "";
+  }
+
+  function getTagAssignedAt(tag) {
+    return tag.assignedAt || tag.timeIn || tag.timeInStamp || "";
+  }
+
+  function isTagAvailable(tag) {
+    return getTagStatus(tag).toLowerCase() === "available";
+  }
+
   function formatTagLabel(tag) {
-    // Lumikha ng mas madaling basahin na label para sa RFID tag.
-    const status = (tag.Status || tag.status || "").toString() || "Unknown";
-    const usedBy = tag.UsedBy || tag.usedBy || "";
-    const assignedAt = tag.assignedAt || tag.timeIn || tag.timeInStamp || "";
+    // Build a safe label using UID/EPC plus minimal deactivated tag fields.
+    const tagId = getTagIdentifier(tag);
+    const status = getTagStatus(tag);
+    const usedBy = getTagUsedBy(tag);
+    const assignedAt = getTagAssignedAt(tag);
 
-    let label = `${tag.id} — ${status}`;
+    let label = `${tagId} — ${status}`;
 
-    if (usedBy) {
-      label += ` • ${usedBy}`;
-    }
+    if (!isTagAvailable(tag)) {
+      if (usedBy) {
+        label += ` • ${usedBy}`;
+      }
 
-    if (assignedAt) {
-      label += ` • ${new Date(assignedAt).toLocaleString()}`;
+      if (assignedAt) {
+        label += ` • ${new Date(assignedAt).toLocaleString()}`;
+      }
     }
 
     return label;
@@ -59,7 +82,7 @@ export default function RegisterVisitor() {
       collection(db, "rfid_tags"),
       function (snapshot) {
         const tagList = snapshot.docs.map(function (item) {
-          return { id: item.id, ...item.data() };
+          return { id: item.id, epc: item.id, ...item.data() };
         });
         setTags(tagList);
         setTagsLoading(false);
@@ -107,7 +130,7 @@ export default function RegisterVisitor() {
       }
 
       const selectedTag = tags.find(function (tag) {
-        return tag.id === selectedUid;
+        return getTagIdentifier(tag) === selectedUid;
       });
 
       if (!selectedTag) {
@@ -116,7 +139,7 @@ export default function RegisterVisitor() {
         return;
       }
 
-      const tagStatus = (selectedTag.Status || selectedTag.status || "").toString().toLowerCase();
+      const tagStatus = getTagStatus(selectedTag).toLowerCase();
       const isTagAvailable = tagStatus === "available";
 
       if (!isTagAvailable) {
@@ -265,8 +288,13 @@ export default function RegisterVisitor() {
               </option>
               {tags.map(function (tag) {
                 const status = (tag.Status || tag.status || "").toString();
+                const tagIdentifier = getTagIdentifier(tag);
                 return (
-                  <option key={tag.id} value={tag.id} disabled={status.toLowerCase() !== "available"}>
+                  <option
+                    key={tagIdentifier}
+                    value={tagIdentifier}
+                    disabled={status.toLowerCase() !== "available"}
+                  >
                     {formatTagLabel(tag)}
                   </option>
                 );
@@ -276,7 +304,9 @@ export default function RegisterVisitor() {
               Available tags are selectable. In-use tags are shown but disabled.
             </p>
             {form.uid && (
-              <p style={{ marginTop: "0.5rem", color: "#94a3b8", fontSize: "0.95rem" }}>Selected tag: {form.uid}</p>
+              <p style={{ marginTop: "0.5rem", color: "#94a3b8", fontSize: "0.95rem" }}>
+                Selected tag: {form.uid}
+              </p>
             )}
           </>
         )}

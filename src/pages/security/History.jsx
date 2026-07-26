@@ -111,7 +111,6 @@ export default function History() {
           </div>
           <span className="status-pill status-pill--done">{filteredVisitors.length} records</span>
         </div>
-        <p className="section-note">Completed and expired visitor records.</p>
 
         <div className="search-row">
           <input
@@ -139,7 +138,7 @@ export default function History() {
             </div>
           </div>
         ) : (
-          <div className="history-grid">
+          <div className="history-grid history-scroll">
             {filteredVisitors.map(function (visitor) {
               let confirmationLabel = "Not Confirmed";
 
@@ -174,7 +173,7 @@ export default function History() {
                     <span>📍 {visitor.location || "Entrance"}</span>
                     <span>🎯 {visitor.destination}</span>
                     <span>✓ Confirmation: {confirmationLabel}</span>
-                    <span>🪪 UID/EPC: {visitor.uid || "N/A"}</span>
+                    <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                     <span>⏱ Duration: {visitor.duration} {visitor.durationUnit || "minutes"}</span>
                     <span>🕒 Time In: {timeInLabel}</span>
                     <span>⏳ Time Out: {timeOutLabel}</span>
