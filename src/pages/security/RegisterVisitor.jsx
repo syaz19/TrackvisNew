@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { addDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
+import { addDoc, setDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
 const initialFormState = {
@@ -169,7 +169,7 @@ export default function RegisterVisitor() {
       };
       const endTime = startTime + durationValue * durationMultipliers[form.durationUnit];
 
-      await addDoc(collection(db, "visitors"), {
+      await setDoc(doc(db, "visitors", selectedUid), {
         name: form.name,
         purpose: form.purpose,
         destination: form.destination,

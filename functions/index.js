@@ -30,11 +30,11 @@ exports.registerVisitor = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
-    await db.collection("rfid_logs").add({
+    await db.collection("rfid_logs").doc(epc).set({
       epc,
       location: "Entrance",
       time: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
 
     res.send("Visitor Registered");
   } catch (err) {
@@ -81,11 +81,11 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
-    await db.collection("rfid_logs").add({
+    await db.collection("rfid_logs").doc(epc).set({
       epc,
       location,
       time: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
 
     res.send("Location Updated");
   } catch (err) {
@@ -144,7 +144,7 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
         lastSeen: now,
       });
 
-      await db.collection("visitor_history").doc(visitorDoc.id).set(
+      await db.collection("visitor_history").doc(epc).set(
         {
           uid: epc,
           visitorId: visitorDoc.id,
@@ -155,7 +155,7 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
 
       await db
         .collection("visitor_history")
-        .doc(visitorDoc.id)
+        .doc(epc)
         .collection("history")
         .add({
           location,
@@ -171,11 +171,11 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
         { merge: true }
       );
 
-      await db.collection("rfid_logs").add({
+      await db.collection("rfid_logs").doc(epc).set({
         epc,
         location,
         time: now,
-      });
+      }, { merge: true });
     }
 
     res.json({
