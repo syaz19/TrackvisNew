@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { collection, deleteField, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
 export default function Dashboard() {
@@ -72,7 +72,10 @@ export default function Dashboard() {
             await updateDoc(doc(db, "rfid_tags", visitor.uid), {
               Status: "Available",
               UsedBy: "",
-              assignedAt: null
+              assignedAt: null,
+              currentLocation: deleteField(),
+              lastScan: deleteField(),
+              updatedAt: deleteField()
             });
           } catch (error) {
             console.warn("Failed to release RFID tag on expire:", error);
@@ -177,7 +180,10 @@ export default function Dashboard() {
           await updateDoc(doc(db, "rfid_tags", visitor.uid), {
             Status: "Available",
             UsedBy: "",
-            assignedAt: null
+            assignedAt: null,
+            currentLocation: deleteField(),
+            lastScan: deleteField(),
+            updatedAt: deleteField()
           });
         } catch (error) {
           console.warn("Failed to release RFID tag on deactivate:", error);

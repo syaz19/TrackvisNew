@@ -210,7 +210,9 @@ exports.onVisitorDelete = functions.firestore
           Status: "Available",
           UsedBy: "",
           assignedAt: null,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          currentLocation: admin.firestore.FieldValue.delete(),
+          lastScan: admin.firestore.FieldValue.delete(),
+          updatedAt: admin.firestore.FieldValue.delete(),
         },
         { merge: true }
       );
@@ -244,7 +246,9 @@ exports.onAuthUserDelete = functions.auth.user().onDelete(async (user) => {
           Status: "Available",
           UsedBy: "",
           assignedAt: null,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          currentLocation: admin.firestore.FieldValue.delete(),
+          lastScan: admin.firestore.FieldValue.delete(),
+          updatedAt: admin.firestore.FieldValue.delete(),
         });
       }
     }
