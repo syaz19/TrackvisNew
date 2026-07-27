@@ -285,6 +285,7 @@ export default function Dashboard() {
                   </div>
 
                   <div className="visitor-meta">
+                    <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                     <span>📍 {visitor.location || "Entrance"}</span>
                     <span>🎯 {visitor.destination}</span>
                     <span>✓ Confirm: {confirmLabel}</span>

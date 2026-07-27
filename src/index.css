@@ -328,6 +328,12 @@ a {
   line-height: 1.05;
 }
 
+.topbar-title-small {
+  font-size: 0.95rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .topbar-subtitle {
   margin: 8px 0 0;
   color: #9ca3af;

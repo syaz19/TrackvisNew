@@ -1,9 +1,11 @@
-export default function Topbar({ title, subtitle, onMenuToggle, menuOpen, hideTitle, hideSubtitle }) {
+export default function Topbar({ title, subtitle, onMenuToggle, menuOpen, hideTitle, hideSubtitle, isSmallTitle }) {
   let subtitleBlock = null;
 
   if (subtitle && !hideSubtitle) {
     subtitleBlock = <p className="topbar-subtitle">{subtitle}</p>;
   }
+
+  const titleClass = isSmallTitle ? "topbar-title-small" : "";
 
   return (
     <header className="topbar">
@@ -21,7 +23,7 @@ export default function Topbar({ title, subtitle, onMenuToggle, menuOpen, hideTi
         </button>
         <div>
           <p className="topbar-label">TrackVis Professional</p>
-          {!hideTitle && <h2>{title}</h2>}
+          {!hideTitle && <h2 className={titleClass}>{title}</h2>}
           {subtitleBlock}
         </div>
       </div>

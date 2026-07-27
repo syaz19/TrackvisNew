@@ -152,13 +152,13 @@ export default function App() {
 
   const homePath = getRedirectPath(authState.userData);
   const routesThatNeedProtection = [
-    { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout, layoutProps: {} },
-    { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout, layoutProps: {} },
-    { path: "/security/history", element: <History />, layout: SecurityLayout, layoutProps: {} },
-    { path: "/security/growth", element: <Growth />, layout: SecurityLayout, layoutProps: {} },
-    { path: "/authorized", element: <AuthorizedDashboard />, layout: AuthorizedLayout, layoutProps: {} },
-    { path: "/security/map", element: <MapView />, layout: SecurityLayout, layoutProps: { hideTitle: true, hideSubtitle: true } },
-    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: true, hideSubtitle: true } }
+    { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
+    { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
+    { path: "/security/history", element: <History />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
+    { path: "/security/growth", element: <Growth />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
+    { path: "/authorized", element: <AuthorizedDashboard />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
+    { path: "/security/map", element: <MapView />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SAN CARLOS COLLEGE 3D MODEL CAMPUS" } },
+    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SAN CARLOS COLLEGE 3D MODEL CAMPUS" } }
   ];
 
   let loginRouteElement = <Login />;
