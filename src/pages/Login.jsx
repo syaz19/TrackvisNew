@@ -47,8 +47,10 @@ export default function Login() {
       }
 
       navigate(nextRoute, { replace: true });
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      alert(error.message);
+      setPassword("");
+      alert("Login failed. Password cleared. Please try again.");
     }
   }
 
@@ -57,7 +59,7 @@ export default function Login() {
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>Login</h1>
-          <p style={styles.subtitle}>Access your TrackVis account.</p>
+          <p style={styles.subtitle}>Secure access to TrackVis Professional.</p>
         </div>
 
         <form onSubmit={handleLogin} style={styles.form}>
@@ -113,11 +115,11 @@ const styles = {
   card: {
     width: "100%",
     maxWidth: "520px",
-    padding: "42px",
-    borderRadius: "28px",
+    padding: "44px",
+    borderRadius: "32px",
     background: cardBackground,
-    border: "1px solid rgba(96, 165, 250, 0.35)",
-    boxShadow: "0 35px 90px rgba(15, 23, 42, 0.55)",
+    border: "1px solid rgba(96, 165, 250, 0.28)",
+    boxShadow: "0 40px 120px rgba(15, 23, 42, 0.45)",
     overflow: "hidden"
   },
   header: {
@@ -144,23 +146,26 @@ const styles = {
   },
   input: {
     width: "100%",
-    padding: "14px 16px",
-    borderRadius: "16px",
+    padding: "16px 18px",
+    borderRadius: "18px",
     border: `1px solid ${borderColor}`,
     background: inputBackground,
     color: "#f8fafc",
     fontSize: "1rem",
-    outline: "none"
+    outline: "none",
+    transition: "border-color 150ms ease, box-shadow 150ms ease"
   },
   button: {
     width: "100%",
-    padding: "14px 16px",
-    borderRadius: "16px",
+    padding: "15px 18px",
+    borderRadius: "18px",
     border: "none",
     background: accentColor,
     color: "white",
     fontSize: "1rem",
-    cursor: "pointer"
+    fontWeight: 700,
+    cursor: "pointer",
+    boxShadow: "0 18px 36px rgba(37, 99, 235, 0.2)"
   },
   footer: {
     marginTop: "24px",
@@ -173,6 +178,6 @@ const styles = {
   link: {
     color: "#60a5fa",
     textDecoration: "none",
-    fontWeight: 600
+    fontWeight: 700
   }
 };

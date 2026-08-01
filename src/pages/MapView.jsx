@@ -6,9 +6,20 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
+const MODEL_URL = `${import.meta.env.BASE_URL}models/schools.glb`;
+
+useGLTF.preload(MODEL_URL);
+const locationMarkers = {
+  library: {
+    position: [-11, 1.2, -1.2]
+  },
+  office: {
+    position: [-30, 1.2, -30]
+  }
+};
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [0, 40, -115],
+  position: [0, 50, -115],
   target: [0, 0, 0],
   zoomDistance: 130
 };
@@ -66,30 +77,77 @@ function saveCameraState(state) {
   }
 }
 
-function VisitorMarker({ visitor, index }) {
-  // Gumagawa ng marker para sa bawat active visitor sa 3D scene.
-  const basePosition = [-6.8, 1.5, 0];
-  const offset = index * 0.7;
-  const depthOffset = index * 0.35;
-  const position = [basePosition[0] + offset, basePosition[1], basePosition[2] + depthOffset];
-  const color = markerColors[index % markerColors.length];
+function getVisitorLocationKey(visitor) {
+  const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
+  if (locationName.includes("office")) {
+    return "office";
+  }
+  if (locationName.includes("library")) {
+    return "library";
+  }
+  return "library";
+}
+
+function getLocationAnchor(locationKey) {
+  return locationMarkers[locationKey] || locationMarkers.library;
+}
+
+function PartLabel({ locationKey, label }) {
+  const anchor = getLocationAnchor(locationKey);
+  const textPosition = [anchor.position[0], anchor.position[1] + 8.8, anchor.position[2]];
+
+  return (
+    <Html position={textPosition} center style={{ pointerEvents: "none" }} distanceFactor={24}>
+      <div
+        style={{
+          padding: "14px 22px",
+          borderRadius: "999px",
+          background: "rgba(15, 23, 42, 0.98)",
+          color: "#f8fafc",
+          border: "1px solid rgba(96, 165, 250, 0.35)",
+          fontSize: "18px",
+          fontWeight: 700,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          whiteSpace: "nowrap",
+          lineHeight: 1.1,
+          boxShadow: "0 16px 36px rgba(0,0,0,0.28)"
+        }}
+      >
+        {label}
+      </div>
+    </Html>
+  );
+}
+
+function VisitorMarker({ visitor, locationKey, groupIndex }) {
+  const anchor = getLocationAnchor(locationKey);
+  const radius = groupIndex === 0 ? 0 : 1.05;
+  const angle = groupIndex * Math.PI * 0.75;
+  const position = [
+    anchor.position[0] + (groupIndex === 0 ? 0 : Math.cos(angle) * radius),
+    anchor.position[1],
+    anchor.position[2] + (groupIndex === 0 ? 0 : Math.sin(angle) * radius)
+  ];
+  const color = markerColors[groupIndex % markerColors.length];
 
   return (
     <group>
       <mesh position={position}>
-        <sphereGeometry args={[0.28, 24, 24]} />
+        <sphereGeometry args={[0.6, 28, 28]} />
         <meshStandardMaterial color={color} />
       </mesh>
-      <Html position={[position[0], position[1] + 0.5, position[2]]} center>
+      <Html position={[position[0], position[1] + 0.95, position[2]]} center>
         <div
           style={{
-            background: "rgba(15, 23, 42, 0.9)",
+            background: "rgba(15, 23, 42, 0.96)",
             color: "#fff",
-            padding: "4px 8px",
+            padding: "6px 10px",
             borderRadius: "999px",
-            fontSize: "11px",
+            fontSize: "12px",
             whiteSpace: "nowrap",
-            border: "1px solid rgba(255, 255, 255, 0.15)"
+            border: "1px solid rgba(255, 255, 255, 0.18)",
+            boxShadow: "0 12px 28px rgba(0, 0, 0, 0.18)"
           }}
         >
           {visitor.name || visitor.id}
@@ -100,16 +158,13 @@ function VisitorMarker({ visitor, index }) {
 }
 
 function SchoolModel({ sceneRef }) {
-  // Naglo-load ng 3D model sa public/models folder.
-  const modelUrl = `${import.meta.env.BASE_URL}models/schools.glb`;
-  useGLTF.preload(modelUrl);
-  const { scene } = useGLTF(modelUrl);
+  const { scene } = useGLTF(MODEL_URL);
 
   useEffect(() => {
     scene.traverse(function (child) {
       if (child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
+        child.castShadow = false;
+        child.receiveShadow = false;
       }
     });
   }, [scene]);
@@ -340,6 +395,16 @@ export default function MapView() {
     }
   };
 
+  const markersByLocation = {
+    office: [],
+    library: []
+  };
+
+  visitorMarkers.forEach((visitor) => {
+    const key = getVisitorLocationKey(visitor);
+    markersByLocation[key].push(visitor);
+  });
+
   return (
     <div>
       <div style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#0b1220" }}>
@@ -364,9 +429,15 @@ export default function MapView() {
         >
           Back to Normal Position
         </button>
-        <Canvas style={{ width: "100%", height: "100%" }} shadows camera={{ position: cameraState.position, fov: 35, near: 0.1, far: 1000 }}>
+        <Canvas
+          style={{ width: "100%", height: "100%" }}
+          dpr={[1, 1.2]}
+          gl={{ antialias: false, powerPreference: "high-performance" }}
+          performance={{ min: 0.4, max: 0.85, debounce: 50 }}
+          camera={{ position: cameraState.position, fov: 35, near: 0.1, far: 1000 }}
+        >
           <ambientLight intensity={0.7} />
-          <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+          <directionalLight position={[10, 10, 5]} intensity={0.85} />
           <ModelErrorBoundary>
             <Suspense
               fallback={
@@ -377,10 +448,14 @@ export default function MapView() {
               }
             >
               <SchoolModel sceneRef={sceneRef} />
-              {visitorMarkers.map((visitor, index) => (
-                <VisitorMarker key={visitor.id || `${visitor.uid}-${index}`} visitor={visitor} index={index} />
+              <PartLabel locationKey="library" label="LIBRARY PART" />
+              <PartLabel locationKey="office" label="OFFICE PART" />
+              {markersByLocation.library.map((visitor, index) => (
+                <VisitorMarker key={visitor.id || `${visitor.uid}-library-${index}`} visitor={visitor} locationKey="library" groupIndex={index} />
               ))}
-              <Environment preset="city" />
+              {markersByLocation.office.map((visitor, index) => (
+                <VisitorMarker key={visitor.id || `${visitor.uid}-office-${index}`} visitor={visitor} locationKey="office" groupIndex={index} />
+              ))}
             </Suspense>
           </ModelErrorBoundary>
           <CameraControls controlsRef={controlsRef} initialState={cameraState} />

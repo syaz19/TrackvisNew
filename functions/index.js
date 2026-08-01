@@ -3,10 +3,11 @@
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
 admin.initializeApp();
 
-const db = admin.firestore();
+const db = getFirestore();
 
 // ==============================
 // 1. REGISTER VISITOR
@@ -24,8 +25,8 @@ exports.registerVisitor = functions.https.onRequest(async (req, res) => {
         ...visitorInfo,
         Status: "In Use",
         currentLocation: "Entrance",
-        assignedAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        assignedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
@@ -33,7 +34,7 @@ exports.registerVisitor = functions.https.onRequest(async (req, res) => {
     await db.collection("rfid_logs").doc(epc).set({
       epc,
       location: "Entrance",
-      time: admin.firestore.FieldValue.serverTimestamp(),
+      time: FieldValue.serverTimestamp(),
     }, { merge: true });
 
     res.send("Visitor Registered");
@@ -69,14 +70,14 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
     await visitorRef.update({
       currentLocation: location,
       location: location,
-      lastSeen: admin.firestore.FieldValue.serverTimestamp(),
+      lastSeen: FieldValue.serverTimestamp(),
     });
 
     await db.collection("rfid_tags").doc(epc).set(
       {
         currentLocation: location,
-        lastScan: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastScan: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
@@ -84,7 +85,7 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
     await db.collection("rfid_logs").doc(epc).set({
       epc,
       location,
-      time: admin.firestore.FieldValue.serverTimestamp(),
+      time: FieldValue.serverTimestamp(),
     }, { merge: true });
 
     res.send("Location Updated");
@@ -108,7 +109,29 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       });
     }
 
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
+
+    const visitorSnapshot = await db
+      .collection("visitors")
+      .where("uid", "==", epc)
+      .where("status", "==", "active")
+      .limit(1)
+      .get();
+
+    if (visitorSnapshot.empty) {
+      return res.json({
+        success: false,
+        message: "RFID tag not assigned to an active visitor",
+      });
+    }
+
+    const visitorDoc = visitorSnapshot.docs[0];
+
+    await visitorDoc.ref.update({
+      currentLocation: location,
+      location,
+      lastSeen: now,
+    });
 
     await db.collection("reader_scans").doc(epc).set(
       {
@@ -128,55 +151,38 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
         timestamp: now,
       });
 
-    const visitorSnapshot = await db
-      .collection("visitors")
-      .where("uid", "==", epc)
-      .where("status", "==", "active")
-      .limit(1)
-      .get();
+    await db.collection("visitor_history").doc(epc).set(
+      {
+        uid: epc,
+        visitorId: visitorDoc.id,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
 
-    if (!visitorSnapshot.empty) {
-      const visitorDoc = visitorSnapshot.docs[0];
-
-      await visitorDoc.ref.update({
-        currentLocation: location,
+    await db
+      .collection("visitor_history")
+      .doc(epc)
+      .collection("history")
+      .add({
         location,
-        lastSeen: now,
+        timestamp: now,
       });
 
-      await db.collection("visitor_history").doc(epc).set(
-        {
-          uid: epc,
-          visitorId: visitorDoc.id,
-          updatedAt: now,
-        },
-        { merge: true }
-      );
+    await db.collection("rfid_tags").doc(epc).set(
+      {
+        currentLocation: location,
+        lastScan: now,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
 
-      await db
-        .collection("visitor_history")
-        .doc(epc)
-        .collection("history")
-        .add({
-          location,
-          timestamp: now,
-        });
-
-      await db.collection("rfid_tags").doc(epc).set(
-        {
-          currentLocation: location,
-          lastScan: now,
-          updatedAt: now,
-        },
-        { merge: true }
-      );
-
-      await db.collection("rfid_logs").doc(epc).set({
-        epc,
-        location,
-        time: now,
-      }, { merge: true });
-    }
+    await db.collection("rfid_logs").doc(epc).set({
+      epc,
+      location,
+      time: now,
+    }, { merge: true });
 
     res.json({
       success: true,
@@ -210,9 +216,9 @@ exports.onVisitorDelete = functions.firestore
           Status: "Available",
           UsedBy: "",
           assignedAt: null,
-          currentLocation: admin.firestore.FieldValue.delete(),
-          lastScan: admin.firestore.FieldValue.delete(),
-          updatedAt: admin.firestore.FieldValue.delete(),
+          currentLocation: FieldValue.delete(),
+          lastScan: FieldValue.delete(),
+          updatedAt: FieldValue.delete(),
         },
         { merge: true }
       );
@@ -246,9 +252,9 @@ exports.onAuthUserDelete = functions.auth.user().onDelete(async (user) => {
           Status: "Available",
           UsedBy: "",
           assignedAt: null,
-          currentLocation: admin.firestore.FieldValue.delete(),
-          lastScan: admin.firestore.FieldValue.delete(),
-          updatedAt: admin.firestore.FieldValue.delete(),
+          currentLocation: FieldValue.delete(),
+          lastScan: FieldValue.delete(),
+          updatedAt: FieldValue.delete(),
         });
       }
     }

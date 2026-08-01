@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { addDoc, setDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
+import { setDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 
 const initialFormState = {
