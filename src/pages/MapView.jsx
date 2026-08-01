@@ -1,6 +1,6 @@
 import { Suspense, Component, useEffect, useState, useMemo, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, useGLTF, Environment, Html } from "@react-three/drei";
+import { OrbitControls, useGLTF, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { collection, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
