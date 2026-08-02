@@ -503,10 +503,13 @@ a {
 
 .summary-card {
   grid-column: span 3;
-  min-height: 460px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+}
+
+.security-active-card {
+  min-height: 900px;
 }
 
 .metric {
@@ -573,21 +576,21 @@ a {
 }
 
 .visitor-list-scroll {
-  max-height: 320px;
-  min-height: 220px;
+  max-height: 420px;
+  min-height: 320px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .history-scroll {
-  max-height: 560px;
-  min-height: 420px;
+  max-height: 700px;
+  min-height: 520px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .large-panel {
-  min-height: 460px;
+  min-height: 620px;
 }
 
 .growth-page-card,
@@ -596,7 +599,7 @@ a {
 }
 
 .growth-card {
-  min-height: 460px;
+  min-height: 620px;
 }
 
 .content-body {
@@ -783,8 +786,8 @@ select:focus {
 }
 
 .history-scroll {
-  max-height: 560px;
-  min-height: 420px;
+  max-height: 800px;
+  min-height: 800px;
   overflow-y: auto;
   padding-right: 4px;
 }

@@ -238,7 +238,7 @@ export default function Dashboard() {
         <p className="metric">{todayVisitorsCount}</p>
       </section>
 
-      <section className="card summary-card large-panel">
+      <section className="card summary-card large-panel security-active-card">
         <div className="section-header">
           <div>
             <p className="section-kicker">Active list</p>

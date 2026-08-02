@@ -19,7 +19,7 @@ const locationMarkers = {
 };
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [0, 50, -115],
+  position: [-75, 30, -70],
   target: [0, 0, 0],
   zoomDistance: 130
 };
@@ -134,7 +134,7 @@ function VisitorMarker({ visitor, locationKey, groupIndex }) {
   return (
     <group>
       <mesh position={position}>
-        <sphereGeometry args={[0.6, 28, 28]} />
+        <sphereGeometry args={[0.5, 28, 28]} />
         <meshStandardMaterial color={color} />
       </mesh>
       <Html position={[position[0], position[1] + 0.95, position[2]]} center>
@@ -436,8 +436,12 @@ export default function MapView() {
           performance={{ min: 0.4, max: 0.85, debounce: 50 }}
           camera={{ position: cameraState.position, fov: 35, near: 0.1, far: 1000 }}
         >
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[10, 10, 5]} intensity={0.85} />
+          <ambientLight intensity={1} color="#ffffff" />
+          <hemisphereLight intensity={0.6} skyColor="#ffffff" groundColor="#666666" />
+          <directionalLight position={[10, 15, 10]} intensity={1.1} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+          <directionalLight position={[-16, 9, -12]} intensity={0.65} color="#ffe8c8" />
+          <pointLight position={[8, 12, -10]} intensity={0.45} color="#ffffff" />
+          <pointLight position={[-10, 12, 8]} intensity={0.35} color="#ffffff" />
           <ModelErrorBoundary>
             <Suspense
               fallback={

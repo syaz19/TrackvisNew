@@ -107,7 +107,6 @@ export default function History() {
         <div className="section-header">
           <div>
             <p className="section-kicker">History</p>
-            <h1>Visitor History</h1>
           </div>
           <span className="status-pill status-pill--done">{filteredVisitors.length} records</span>
         </div>
