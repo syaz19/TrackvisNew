@@ -6,7 +6,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
-const MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb`;
+const MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb?t=${Date.now()}`;
 
 useGLTF.preload(MODEL_URL);
 const locationMarkers = {
@@ -436,12 +436,13 @@ export default function MapView() {
           performance={{ min: 0.4, max: 0.85, debounce: 50 }}
           camera={{ position: cameraState.position, fov: 35, near: 0.1, far: 1000 }}
         >
-          <ambientLight intensity={1} color="#ffffff" />
-          <hemisphereLight intensity={0.6} skyColor="#ffffff" groundColor="#666666" />
-          <directionalLight position={[10, 15, 10]} intensity={1.1} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
-          <directionalLight position={[-16, 9, -12]} intensity={0.65} color="#ffe8c8" />
-          <pointLight position={[8, 12, -10]} intensity={0.45} color="#ffffff" />
-          <pointLight position={[-10, 12, 8]} intensity={0.35} color="#ffffff" />
+          <ambientLight intensity={1.3} color="#ffffff" />
+          <hemisphereLight intensity={1.1} skyColor="#ffffff" groundColor="#666666" />
+          <directionalLight position={[10, 18, 10]} intensity={1.6} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+          <directionalLight position={[-16, 12, -12]} intensity={0.95} color="#ffe8c8" />
+          <pointLight position={[8, 12, -10]} intensity={0.8} color="#ffffff" />
+          <pointLight position={[-10, 12, 8]} intensity={0.7} color="#ffffff" />
+          <pointLight position={[0, 10, 0]} intensity={0.55} color="#dbeafe" />
           <ModelErrorBoundary>
             <Suspense
               fallback={
