@@ -28,16 +28,16 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
 
   if (role === "security") {
     menuLinks = [
-      { to: "/security", label: "Dashboard" },
+      { to: "/security/map", label: "SCC 3D" },
       { to: "/security/register", label: "Register Visitor" },
       { to: "/security/history", label: "History" },
       { to: "/security/growth", label: "Growth" },
-      { to: "/security/map", label: "View Map" }
+      { to: "/security", label: "Dashboard" }
     ];
   } else if (role === "authorized") {
     menuLinks = [
-      { to: "/authorized", label: "Dashboard" },
-      { to: "/authorized/map", label: "View Map" }
+      { to: "/authorized/map", label: "SCC 3D" },
+      { to: "/authorized", label: "Dashboard" }
     ];
   }
 

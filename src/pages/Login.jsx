@@ -40,10 +40,10 @@ export default function Login() {
         userData = userDoc.data();
       }
 
-      let nextRoute = "/authorized";
+      let nextRoute = "/authorized/map";
 
       if (userData !== null && userData !== undefined && userData.role === "security") {
-        nextRoute = "/security";
+        nextRoute = "/security/map";
       }
 
       navigate(nextRoute, { replace: true });

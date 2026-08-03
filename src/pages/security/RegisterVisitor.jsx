@@ -173,6 +173,7 @@ export default function RegisterVisitor() {
         name: form.name,
         purpose: form.purpose,
         destination: form.destination,
+        location: form.location || "Entrance",
         duration: durationValue,
         durationUnit: form.durationUnit,
         uid: selectedUid || "",

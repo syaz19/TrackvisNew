@@ -18,11 +18,14 @@ const locationMarkers = {
   },
   office: {
     position: [-30, 1.2, -30]
+  },
+  entrance: {
+    position: [50, 1.2, -43]
   }
 };
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-75, 30, -70],
+  position: [-85, 20, -60],
   target: [0, 0, 0],
   zoomDistance: 130
 };
@@ -88,7 +91,7 @@ function getVisitorLocationKey(visitor) {
   if (locationName.includes("library")) {
     return "library";
   }
-  return "library";
+  return "entrance";
 }
 
 function getLocationAnchor(locationKey) {
@@ -401,7 +404,8 @@ export default function MapView() {
 
   const markersByLocation = {
     office: [],
-    library: []
+    library: [],
+    entrance: []
   };
 
   visitorMarkers.forEach((visitor) => {
@@ -459,6 +463,10 @@ export default function MapView() {
               <SchoolModel sceneRef={sceneRef} modelUrl={modelUrl} />
               <PartLabel locationKey="library" label="LIBRARY PART" />
               <PartLabel locationKey="office" label="OFFICE PART" />
+              <PartLabel locationKey="entrance" label="ENTRANCE PART" />
+              {markersByLocation.entrance.map((visitor, index) => (
+                <VisitorMarker key={visitor.id || `${visitor.uid}-entrance-${index}`} visitor={visitor} locationKey="entrance" groupIndex={index} />
+              ))}
               {markersByLocation.library.map((visitor, index) => (
                 <VisitorMarker key={visitor.id || `${visitor.uid}-library-${index}`} visitor={visitor} locationKey="library" groupIndex={index} />
               ))}

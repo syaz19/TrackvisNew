@@ -36,11 +36,11 @@ function getRedirectPath(userData) {
   // Piliin ang tamang home page base sa role ng user.
   if (userData !== null && userData !== undefined) {
     if (userData.role === "security") {
-      return "/security";
+      return "/security/map";
     }
 
     if (userData.role === "authorized") {
-      return "/authorized";
+      return "/authorized/map";
     }
   }
 
@@ -118,14 +118,6 @@ export default function App() {
       });
     }
 
-    // If a new browser session has started and there is an authenticated user,
-    // force log out immediately so the app does not preserve stale login.
-    if (!isReload && auth.currentUser) {
-      signOut(auth).catch(function () {
-        // ignore sign out errors
-      });
-    }
-
     sessionStorage.setItem(sessionKey, "1");
     localStorage.removeItem(unloadKey);
 
@@ -157,8 +149,8 @@ export default function App() {
     { path: "/security/history", element: <History />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/growth", element: <Growth />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/authorized", element: <AuthorizedDashboard />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
-    { path: "/security/map", element: <MapView />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SAN CARLOS COLLEGE 3D MODEL CAMPUS" } },
-    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SAN CARLOS COLLEGE 3D MODEL CAMPUS" } }
+    { path: "/security/map", element: <MapView />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } },
+    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } }
   ];
 
   let loginRouteElement = <Login />;
