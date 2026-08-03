@@ -6,9 +6,12 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
-const MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb?t=${Date.now()}`;
+const BASE_MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb`;
 
-useGLTF.preload(MODEL_URL);
+function getModelUrl() {
+  return `${BASE_MODEL_URL}?v=${Date.now()}`;
+}
+
 const locationMarkers = {
   library: {
     position: [-11, 1.2, -1.2]
@@ -157,8 +160,8 @@ function VisitorMarker({ visitor, locationKey, groupIndex }) {
   );
 }
 
-function SchoolModel({ sceneRef }) {
-  const { scene } = useGLTF(MODEL_URL);
+function SchoolModel({ sceneRef, modelUrl }) {
+  const { scene } = useGLTF(modelUrl);
 
   useEffect(() => {
     scene.traverse(function (child) {
@@ -361,6 +364,7 @@ function isActiveVisitorWithLocation(visitor) {
 export default function MapView() {
   const [visitorMarkers, setVisitorMarkers] = useState([]);
   const [cameraState, setCameraState] = useState(DEFAULT_CAMERA_STATE);
+  const [modelUrl] = useState(getModelUrl);
   const sceneRef = useRef();
   const controlsRef = useRef();
 
@@ -452,7 +456,7 @@ export default function MapView() {
                 </mesh>
               }
             >
-              <SchoolModel sceneRef={sceneRef} />
+              <SchoolModel sceneRef={sceneRef} modelUrl={modelUrl} />
               <PartLabel locationKey="library" label="LIBRARY PART" />
               <PartLabel locationKey="office" label="OFFICE PART" />
               {markersByLocation.library.map((visitor, index) => (
