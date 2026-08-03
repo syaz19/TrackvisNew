@@ -6,7 +6,7 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
-const MODEL_URL = `${import.meta.env.BASE_URL}models/schools.glb`;
+const MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb`;
 
 useGLTF.preload(MODEL_URL);
 const locationMarkers = {
@@ -339,7 +339,7 @@ class ModelErrorBoundary extends Component {
             >
               <strong>Model load failed.</strong>
               <div style={{ marginTop: "8px", fontSize: "0.95rem" }}>
-                Check the browser console for the GLTF error and confirm <code>/models/schools.glb</code> is valid.
+                Check the browser console for the GLTF error and confirm <code>/models/newschools.glb</code> is valid.
               </div>
             </div>
           </Html>
