@@ -786,8 +786,8 @@ select:focus {
 }
 
 .history-scroll {
-  max-height: 800px;
-  min-height: 800px;
+  max-height: 790px;
+  min-height: 790px;
   overflow-y: auto;
   padding-right: 4px;
 }
