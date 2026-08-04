@@ -16,7 +16,9 @@ import AuthorizedDashboard from "./pages/authorized/Dashboard";
 import MapView from "./pages/MapView";
 
 // Ginagamit ang initial state habang naglo-load ang app.
-const initialAuthState = { status: "loading", user: null, userData: null };
+// Default ready state ensures the login screen renders immediately
+// even before Firebase auth is resolved on fresh deploy.
+const initialAuthState = { status: "ready", user: null, userData: null };
 
 function PrivateRoute({ children, user }) {
   // Kung may logged-in user, ipakita ang page; kung wala, ibalik sa login.

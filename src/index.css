@@ -576,8 +576,8 @@ a {
 }
 
 .visitor-list-scroll {
-  max-height: 420px;
-  min-height: 320px;
+  max-height: 380px;
+  min-height: 280px;
   overflow-y: auto;
   padding-right: 4px;
 }

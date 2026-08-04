@@ -14,14 +14,17 @@ export default function Login() {
   // I-store ang input ng user sa form.
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
   function handleEmailChange(event) {
     setEmail(event.target.value);
+    setErrorMessage("");
   }
 
   function handlePasswordChange(event) {
     setPassword(event.target.value);
+    setErrorMessage("");
   }
 
   async function handleLogin(event) {
@@ -47,10 +50,33 @@ export default function Login() {
       }
 
       navigate(nextRoute, { replace: true });
-    // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      setPassword("");
-      alert("Login failed. Password cleared. Please try again.");
+      const errorCode = error?.code || "";
+      let message = "Login failed. Please try again.";
+      let clearEmail = false;
+      let clearPassword = false;
+
+      if (errorCode === "auth/user-not-found") {
+        message = "Account does not exist. Check your email or sign up.";
+        clearEmail = true;
+      } else if (errorCode === "auth/wrong-password") {
+        message = "Wrong password. Please try again.";
+        clearPassword = true;
+      } else if (errorCode === "auth/invalid-email") {
+        message = "Please enter a valid email address.";
+        clearEmail = true;
+      }
+
+      if (clearEmail) {
+        setEmail("");
+      }
+      if (clearPassword) {
+        setPassword("");
+      }
+      if (!clearEmail && !clearPassword) {
+        setPassword("");
+      }
+      setErrorMessage(message);
     }
   }
 
@@ -90,6 +116,7 @@ export default function Login() {
           <button type="submit" style={styles.button}>
             Login
           </button>
+          {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
         </form>
 
         <div style={styles.footer}>
@@ -179,5 +206,15 @@ const styles = {
     color: "#60a5fa",
     textDecoration: "none",
     fontWeight: 700
+  },
+  errorText: {
+    marginTop: "12px",
+    color: "#f8d7da",
+    background: "rgba(220, 38, 38, 0.08)",
+    padding: "12px 14px",
+    borderRadius: "14px",
+    border: "1px solid rgba(248, 113, 113, 0.28)",
+    fontSize: "0.95rem",
+    lineHeight: 1.4
   }
 };

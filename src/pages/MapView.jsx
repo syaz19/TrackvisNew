@@ -1,16 +1,15 @@
-import { Suspense, Component, useEffect, useState, useMemo, useRef } from "react";
+import { Suspense, Component, memo, useEffect, useState, useMemo, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
 import * as THREE from "three";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import SecurityDashboard from "./security/Dashboard";
+import AuthorizedDashboard from "./authorized/Dashboard";
 
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
 const BASE_MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb`;
-
-function getModelUrl() {
-  return `${BASE_MODEL_URL}?v=${Date.now()}`;
-}
+useGLTF.preload(BASE_MODEL_URL);
 
 const locationMarkers = {
   library: {
@@ -25,7 +24,7 @@ const locationMarkers = {
 };
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-85, 20, -60],
+  position: [-85, 20, -65],
   target: [0, 0, 0],
   zoomDistance: 130
 };
@@ -83,6 +82,30 @@ function saveCameraState(state) {
   }
 }
 
+function clearCameraState(userUid = null) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    const keysToClear = [CAMERA_STORAGE_BASE_KEY];
+    if (typeof userUid === "string" && userUid.trim() !== "") {
+      keysToClear.push(`${CAMERA_STORAGE_BASE_KEY}-${userUid}`);
+    } else {
+      const currentUser = auth.currentUser;
+      if (currentUser?.uid) {
+        keysToClear.push(`${CAMERA_STORAGE_BASE_KEY}-${currentUser.uid}`);
+      }
+    }
+
+    keysToClear.forEach((key) => {
+      window.sessionStorage.removeItem(key);
+    });
+  } catch {
+    // ignore remove failures
+  }
+}
+
 function getVisitorLocationKey(visitor) {
   const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
   if (locationName.includes("office")) {
@@ -98,12 +121,12 @@ function getLocationAnchor(locationKey) {
   return locationMarkers[locationKey] || locationMarkers.library;
 }
 
-function PartLabel({ locationKey, label }) {
+function PartLabel({ portal, locationKey, label }) {
   const anchor = getLocationAnchor(locationKey);
   const textPosition = [anchor.position[0], anchor.position[1] + 8.8, anchor.position[2]];
 
   return (
-    <Html position={textPosition} center style={{ pointerEvents: "none" }} distanceFactor={24}>
+    <Html portal={portal} position={textPosition} center style={{ pointerEvents: "none", zIndex: 0 }} distanceFactor={24}>
       <div
         style={{
           padding: "14px 22px",
@@ -117,7 +140,8 @@ function PartLabel({ locationKey, label }) {
           textTransform: "uppercase",
           whiteSpace: "nowrap",
           lineHeight: 1.1,
-          boxShadow: "0 16px 36px rgba(0,0,0,0.28)"
+          boxShadow: "0 16px 36px rgba(0,0,0,0.28)",
+          zIndex: 0
         }}
       >
         {label}
@@ -126,7 +150,7 @@ function PartLabel({ locationKey, label }) {
   );
 }
 
-function VisitorMarker({ visitor, locationKey, groupIndex }) {
+function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
   const anchor = getLocationAnchor(locationKey);
   const radius = groupIndex === 0 ? 0 : 1.05;
   const angle = groupIndex * Math.PI * 0.75;
@@ -143,7 +167,7 @@ function VisitorMarker({ visitor, locationKey, groupIndex }) {
         <sphereGeometry args={[0.5, 28, 28]} />
         <meshStandardMaterial color={color} />
       </mesh>
-      <Html position={[position[0], position[1] + 0.95, position[2]]} center>
+      <Html portal={portal} position={[position[0], position[1] + 0.95, position[2]]} center style={{ pointerEvents: "none", zIndex: 0 }}>
         <div
           style={{
             background: "rgba(15, 23, 42, 0.96)",
@@ -153,7 +177,8 @@ function VisitorMarker({ visitor, locationKey, groupIndex }) {
             fontSize: "12px",
             whiteSpace: "nowrap",
             border: "1px solid rgba(255, 255, 255, 0.18)",
-            boxShadow: "0 12px 28px rgba(0, 0, 0, 0.18)"
+            boxShadow: "0 12px 28px rgba(0, 0, 0, 0.18)",
+            zIndex: 0
           }}
         >
           {visitor.name || visitor.id}
@@ -177,6 +202,49 @@ function SchoolModel({ sceneRef, modelUrl }) {
 
   return <primitive ref={sceneRef} object={scene} dispose={null} scale={0.18} position={[0, -1.1, 0]} />;
 }
+
+const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markersByLocation, sceneRef, controlsRef, showLabels, showMarkers, portal }) {
+  return (
+    <Canvas
+      style={{ width: "100%", height: "100%" }}
+      dpr={[1, 1.2]}
+      gl={{ antialias: false, powerPreference: "high-performance" }}
+      performance={{ min: 0.4, max: 0.85, debounce: 50 }}
+      camera={{ position: cameraState.position, fov: 35, near: 0.1, far: 1000 }}
+    >
+      <ambientLight intensity={1.3} color="#ffffff" />
+      <hemisphereLight intensity={1.1} skyColor="#ffffff" groundColor="#666666" />
+      <directionalLight position={[10, 18, 10]} intensity={1.6} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+      <directionalLight position={[-16, 12, -12]} intensity={0.95} color="#ffe8c8" />
+      <pointLight position={[8, 12, -10]} intensity={0.8} color="#ffffff" />
+      <pointLight position={[-10, 12, 8]} intensity={0.7} color="#ffffff" />
+      <pointLight position={[0, 10, 0]} intensity={0.55} color="#dbeafe" />
+      <ModelErrorBoundary>
+        <Suspense fallback={null}>
+          <SchoolModel sceneRef={sceneRef} modelUrl={modelUrl} />
+          {showLabels && (
+            <>
+              <PartLabel portal={portal} locationKey="library" label="LIBRARY PART" />
+              <PartLabel portal={portal} locationKey="office" label="OFFICE PART" />
+              <PartLabel portal={portal} locationKey="entrance" label="ENTRANCE PART" />
+            </>
+          )}
+          {showMarkers && markersByLocation.entrance.map((visitor, index) => (
+            <VisitorMarker key={visitor.id || `${visitor.uid}-entrance-${index}`} portal={portal} visitor={visitor} locationKey="entrance" groupIndex={index} />
+          ))}
+          {showMarkers && markersByLocation.library.map((visitor, index) => (
+            <VisitorMarker key={visitor.id || `${visitor.uid}-library-${index}`} portal={portal} visitor={visitor} locationKey="library" groupIndex={index} />
+          ))}
+          {showMarkers && markersByLocation.office.map((visitor, index) => (
+            <VisitorMarker key={visitor.id || `${visitor.uid}-office-${index}`} portal={portal} visitor={visitor} locationKey="office" groupIndex={index} />
+          ))}
+        </Suspense>
+      </ModelErrorBoundary>
+      <CameraControls controlsRef={controlsRef} initialState={cameraState} />
+      <DoubleClickZoom sceneRef={sceneRef} controlsRef={controlsRef} />
+    </Canvas>
+  );
+});
 
 function DoubleClickZoom({ sceneRef, controlsRef }) {
   const { camera, gl } = useThree();
@@ -367,17 +435,70 @@ function isActiveVisitorWithLocation(visitor) {
 export default function MapView() {
   const [visitorMarkers, setVisitorMarkers] = useState([]);
   const [cameraState, setCameraState] = useState(DEFAULT_CAMERA_STATE);
-  const [modelUrl] = useState(getModelUrl);
+  const [showDashboard, setShowDashboard] = useState(true);
+  const [userRole, setUserRole] = useState(null);
+  const [userSubRole, setUserSubRole] = useState(null);
+  const modelUrl = BASE_MODEL_URL;
+  const [portalElement, setPortalElement] = useState(null);
   const sceneRef = useRef();
   const controlsRef = useRef();
+  const canvasWrapperRef = useRef();
+
+  const isSecurityUser = userRole === "security";
+  const isAuthorizedUser = userRole === "authorized";
+  const showLabels = isAuthorizedUser || (isSecurityUser && !showDashboard);
+  const showMarkers = isAuthorizedUser || (isSecurityUser && !showDashboard);
 
   useEffect(() => {
-    const unsubscribeAuth = auth.onAuthStateChanged(() => {
+    if (canvasWrapperRef.current) {
+      setPortalElement(canvasWrapperRef.current);
+    }
+
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       const savedState = loadSavedCameraState();
       setCameraState(savedState || DEFAULT_CAMERA_STATE);
+
+      if (user?.email) {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.email));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUserRole(userData.role || null);
+            setUserSubRole(userData.subRole || null);
+          } else {
+            setUserRole(null);
+            setUserSubRole(null);
+          }
+        } catch {
+          setUserRole(null);
+          setUserSubRole(null);
+        }
+      } else {
+        setUserRole(null);
+        setUserSubRole(null);
+        setCameraState(DEFAULT_CAMERA_STATE);
+        clearCameraState();
+      }
     });
 
-    return () => unsubscribeAuth();
+    function handleLogout(event) {
+      const logoutUid = event?.detail?.uid || auth.currentUser?.uid || null;
+      setCameraState(DEFAULT_CAMERA_STATE);
+      clearCameraState(logoutUid);
+
+      if (controlsRef.current) {
+        controlsRef.current.object.position.set(...DEFAULT_CAMERA_STATE.position);
+        controlsRef.current.target.set(...DEFAULT_CAMERA_STATE.target);
+        controlsRef.current.update();
+      }
+    }
+
+    window.addEventListener("trackvis-logout", handleLogout);
+
+    return () => {
+      unsubscribeAuth();
+      window.removeEventListener("trackvis-logout", handleLogout);
+    };
   }, []);
 
   useEffect(() => {
@@ -402,82 +523,143 @@ export default function MapView() {
     }
   };
 
-  const markersByLocation = {
-    office: [],
-    library: [],
-    entrance: []
+  const handleDashboardToggle = () => {
+    setShowDashboard((current) => !current);
   };
 
-  visitorMarkers.forEach((visitor) => {
-    const key = getVisitorLocationKey(visitor);
-    markersByLocation[key].push(visitor);
-  });
+  const visibleVisitors = useMemo(() => {
+    if (isAuthorizedUser) {
+      if (!userSubRole) {
+        return [];
+      }
+
+      return visitorMarkers.filter((visitor) => {
+        return (visitor.destination || "").toString().toLowerCase() === userSubRole.toString().toLowerCase();
+      });
+    }
+
+    return visitorMarkers;
+  }, [visitorMarkers, isAuthorizedUser, userSubRole]);
+
+  const markersByLocation = useMemo(() => {
+    const grouped = {
+      office: [],
+      library: [],
+      entrance: []
+    };
+
+    visibleVisitors.forEach((visitor) => {
+      const key = getVisitorLocationKey(visitor);
+      grouped[key].push(visitor);
+    });
+
+    return grouped;
+  }, [visibleVisitors]);
 
   return (
     <div>
-      <div style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#0b1220" }}>
-        <button
-          type="button"
-          onClick={handleResetClick}
-          style={{
-            position: "absolute",
-            top: 18,
-            right: 18,
-            zIndex: 3,
-            background: "rgba(37, 99, 235, 0.95)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 14px",
-            cursor: "pointer",
-            fontWeight: 600,
-            boxShadow: "0 10px 18px rgba(37, 99, 235, 0.2)",
-            minWidth: 150
-          }}
-        >
-          Back to Normal Position
-        </button>
-        <Canvas
-          style={{ width: "100%", height: "100%" }}
-          dpr={[1, 1.2]}
-          gl={{ antialias: false, powerPreference: "high-performance" }}
-          performance={{ min: 0.4, max: 0.85, debounce: 50 }}
-          camera={{ position: cameraState.position, fov: 35, near: 0.1, far: 1000 }}
-        >
-          <ambientLight intensity={1.3} color="#ffffff" />
-          <hemisphereLight intensity={1.1} skyColor="#ffffff" groundColor="#666666" />
-          <directionalLight position={[10, 18, 10]} intensity={1.6} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
-          <directionalLight position={[-16, 12, -12]} intensity={0.95} color="#ffe8c8" />
-          <pointLight position={[8, 12, -10]} intensity={0.8} color="#ffffff" />
-          <pointLight position={[-10, 12, 8]} intensity={0.7} color="#ffffff" />
-          <pointLight position={[0, 10, 0]} intensity={0.55} color="#dbeafe" />
-          <ModelErrorBoundary>
-            <Suspense
-              fallback={
-                <mesh>
-                  <boxGeometry args={[1, 1, 1]} />
-                  <meshStandardMaterial color="#334155" />
-                </mesh>
-              }
+      <div ref={canvasWrapperRef} style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#0b1220" }}>
+        {(isSecurityUser || isAuthorizedUser) && (
+          <div style={{ position: "absolute", bottom: 18, right: 18, zIndex: 100001, display: "flex", flexDirection: "column", gap: 14, pointerEvents: "auto" }}>
+            {isSecurityUser && (
+              <button
+                type="button"
+                onClick={handleDashboardToggle}
+                style={{
+                  background: showDashboard ? "rgba(37, 99, 235, 0.95)" : "rgba(102, 126, 234, 0.95)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "10px 14px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  boxShadow: "0 10px 18px rgba(15, 23, 42, 0.22)",
+                  minWidth: 160,
+                  width: 160,
+                  textAlign: "center"
+                }}
+              >
+                {showDashboard ? "Hide Dashboard" : "Dashboard"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleResetClick}
+              style={{
+                background: "rgba(37, 99, 235, 0.95)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 10,
+                padding: "10px 14px",
+                cursor: "pointer",
+                fontWeight: 600,
+                boxShadow: "0 10px 18px rgba(37, 99, 235, 0.2)",
+                minWidth: 160,
+                width: 160,
+                textAlign: "center"
+              }}
             >
-              <SchoolModel sceneRef={sceneRef} modelUrl={modelUrl} />
-              <PartLabel locationKey="library" label="LIBRARY PART" />
-              <PartLabel locationKey="office" label="OFFICE PART" />
-              <PartLabel locationKey="entrance" label="ENTRANCE PART" />
-              {markersByLocation.entrance.map((visitor, index) => (
-                <VisitorMarker key={visitor.id || `${visitor.uid}-entrance-${index}`} visitor={visitor} locationKey="entrance" groupIndex={index} />
-              ))}
-              {markersByLocation.library.map((visitor, index) => (
-                <VisitorMarker key={visitor.id || `${visitor.uid}-library-${index}`} visitor={visitor} locationKey="library" groupIndex={index} />
-              ))}
-              {markersByLocation.office.map((visitor, index) => (
-                <VisitorMarker key={visitor.id || `${visitor.uid}-office-${index}`} visitor={visitor} locationKey="office" groupIndex={index} />
-              ))}
-            </Suspense>
-          </ModelErrorBoundary>
-          <CameraControls controlsRef={controlsRef} initialState={cameraState} />
-          <DoubleClickZoom sceneRef={sceneRef} controlsRef={controlsRef} />
-        </Canvas>
+              Default Position
+            </button>
+          </div>
+        )}
+        <MemoizedMapScene
+          cameraState={cameraState}
+          modelUrl={modelUrl}
+          markersByLocation={markersByLocation}
+          sceneRef={sceneRef}
+          controlsRef={controlsRef}
+          showLabels={showLabels}
+          showMarkers={showMarkers}
+          portal={portalElement}
+        />
+        {showDashboard && isSecurityUser && (
+          <div
+            className="overlay-dashboard"
+            style={{
+              position: "absolute",
+              inset: 18,
+              margin: "0 auto",
+              width: "calc(100% - 36px)",
+              height: "calc(100% - 36px)",
+              borderRadius: 28,
+              pointerEvents: "none",
+              zIndex: 99999,
+              display: "grid",
+              placeItems: "center"
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                background: "rgba(8, 13, 24, 0.94)",
+                border: "1px solid rgba(148, 163, 184, 0.18)",
+                borderRadius: 28,
+                boxShadow: "0 28px 80px rgba(0,0,0,0.5)",
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                pointerEvents: "auto",
+                backdropFilter: "blur(10px)"
+              }}
+            >
+              <div style={{ padding: "18px 24px", borderBottom: "1px solid rgba(148, 163, 184, 0.12)", display: "flex", alignItems: "center", gap: 12 }}>
+                <div>
+                  <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.18em" }}>
+                    Dashboard
+                  </p>
+                  <h2 style={{ margin: "6px 0 0", color: "#f8fafc", fontSize: "1.6rem" }}>
+                    SCC 3D Dashboard
+                  </h2>
+                </div>
+              </div>
+              <div style={{ flex: 1, overflowY: "auto", padding: "22px 22px 24px" }}>
+                {userRole === "authorized" ? <AuthorizedDashboard /> : <SecurityDashboard />}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -14,9 +14,10 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
     // Step 2: i-clear ang local auth state.
     // Step 3: dalhin ulit ang user sa login page.
     try {
+      const currentUserUid = auth.currentUser?.uid || null;
       await signOut(auth);
       clearAuthState();
-      window.dispatchEvent(new Event("trackvis-logout"));
+      window.dispatchEvent(new CustomEvent("trackvis-logout", { detail: { uid: currentUserUid } }));
       navigate("/", { replace: true });
     } catch (error) {
       alert(error.message);
@@ -31,8 +32,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
       { to: "/security/map", label: "SCC 3D" },
       { to: "/security/register", label: "Register Visitor" },
       { to: "/security/history", label: "History" },
-      { to: "/security/growth", label: "Growth" },
-      { to: "/security", label: "Dashboard" }
+      { to: "/security/growth", label: "Growth" }
     ];
   } else if (role === "authorized") {
     menuLinks = [
