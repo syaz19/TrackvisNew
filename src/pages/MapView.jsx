@@ -1,43 +1,36 @@
-/**
- * MapView.jsx
- *
- * Layunin: Ito ang pangunahing pahina para sa 3D view ng campus (SCC 3D).
- * - Naglo-load at nag-di-display ng GLTF/GLB 3D model (`newschools.glb`) gamit ang `@react-three/fiber` at `@react-three/drei`.
- * - Naghahandle ng camera controls (OrbitControls), double-click zoom, at saved camera state per user.
- * - Nagpapakita ng mga visitor markers (based sa Firestore `visitors` collection) sa mga predefined anchor points (library, office, entrance).
- * - May loading overlay habang naglo-load ang 3D model at error boundary para sa GLTF load failures.
- * - Nag-iintegrate sa Firebase (Firestore) para kumuha ng visitor data at realtime updates.
- *
- * Bahagi ng app:
- * - UI: SCC 3D main view; ginagamit ng `SecurityLayout` at `AuthorizedLayout`.
- * - Model: tumutukoy sa `public/models/newschools.glb` (cache-busted URL para makuha ang pinakabagong asset).
- * - Related files: `src/components/Sidebar.jsx` (navigation), `src/pages/authorized/*` (authorized dashboards), `functions/` (server-side RFID handling).
- *
- * Paano gumagana (buod):
- * 1. Preload ng model URL para sa faster fetch.
- * 2. Canvas render: ilalagay ang lights, camera, at `SchoolModel` primitive.
- * 3. `SchoolModel` gumagamit ng `useGLTF` upang i-load ang scene; pagkatapos nito, tatawagin ang `setModelLoaded(true)` upang alisin ang loading overlay.
- * 4. Firestore snapshot listener (collection `visitors`) ang nag-uupdate ng visitor marker state, at dito rin nade-detect ang office scans para magpakita ng alert popup.
- *
- * Tandaan:
- * - Huwag baguhin ang mga pangalan ng collection na ginagamit sa Firestore nang hindi sinisigurado ang backend (functions) at front-end queries.
- * - Ang mga style at positioning ng overlay ay inline sa file; maaari ring ilipat sa CSS kung kailangan.
- */
+// MapView.jsx
+// Layunin: Pinapakita ang SCC 3D campus model at visitor marker UI.
+// - Naglo-load ng /models/newschools.glb sa canvas.
+// - Nagpapakita ng visitor markers mula sa Firestore.
+// - May loading overlay at office scan alert.
+
+// import ng React hooks at utilities.
 import { Suspense, Component, memo, useEffect, useState, useMemo, useRef } from "react";
+// import ng Canvas at useThree para sa 3D scene.
 import { Canvas, useThree } from "@react-three/fiber";
+// import ng Drei utilities para sa controls, model loading, at HTML overlay.
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
+// import ng THREE.js core library para sa raycaster at vector math.
 import * as THREE from "three";
+// import ng Firestore methods para sa live listener at dokumento.
 import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
+// import ng Firebase instances para sa auth at db.
 import { auth, db } from "../firebase";
+// import ng dashboard components para ipakita kapag naka-security/authorized.
 import SecurityDashboard from "./security/Dashboard";
 import AuthorizedDashboard from "./authorized/Dashboard";
 
+// mga kulay na ginagamit para sa visitor markers.
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
+// base URL ng 3D model asset.
 const BASE_MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb`;
+// cache-busted URL para iwas cache stale model.
 const BASE_MODEL_URL_WITH_CACHE_BUST = `${BASE_MODEL_URL}?v=${Date.now()}`;
+// preload ng GLTF model bago mag-render para mas mabilis.
 useGLTF.preload(BASE_MODEL_URL_WITH_CACHE_BUST);
 
 function LoadingOverlay() {
+  // Overlay na nakalagay sa ibabaw ng canvas habang naglo-load ang 3D model.
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 100000 }}>
       <div style={{ pointerEvents: "auto", background: "rgba(8,12,20,0.92)", color: "#fff", padding: "20px 28px", borderRadius: 12, boxShadow: "0 12px 36px rgba(0,0,0,0.6)", textAlign: "center", fontWeight: 700, letterSpacing: "0.08em" }}>
@@ -48,6 +41,7 @@ function LoadingOverlay() {
 }
 
 function ScanAlert({ alert, onDismiss }) {
+  // Simple alert popup na lumalabas kapag may bagong office scan event.
   if (!alert) return null;
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100002, pointerEvents: "none" }}>
@@ -62,6 +56,7 @@ function ScanAlert({ alert, onDismiss }) {
   );
 }
 
+// Mga anchor positions para sa bawat location marker sa 3D campus model.
 const locationMarkers = {
   library: {
     position: [-11, 1.2, -1.2]
@@ -73,6 +68,8 @@ const locationMarkers = {
     position: [50, 1.2, -43]
   }
 };
+
+// Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
   position: [-85, 20, -75],
@@ -81,6 +78,7 @@ const DEFAULT_CAMERA_STATE = {
 };
 
 function getCameraStorageKey() {
+  // Kung walang browser window, fallback sa global key.
   if (typeof window === "undefined") {
     return CAMERA_STORAGE_BASE_KEY;
   }
@@ -94,6 +92,7 @@ function getCameraStorageKey() {
 }
 
 function loadSavedCameraState() {
+  // Kunin ang na-save na camera state mula sessionStorage.
   if (typeof window === "undefined") {
     return null;
   }
@@ -121,6 +120,7 @@ function loadSavedCameraState() {
 }
 
 function saveCameraState(state) {
+  // I-save ang kasalukuyang camera state sa browser sessionStorage.
   if (typeof window === "undefined") {
     return;
   }
@@ -134,6 +134,7 @@ function saveCameraState(state) {
 }
 
 function clearCameraState(userUid = null) {
+  // Tanggalin ang session storage entries kapag nag-logout o nag-reset ng user.
   if (typeof window === "undefined") {
     return;
   }
@@ -158,6 +159,8 @@ function clearCameraState(userUid = null) {
 }
 
 function getVisitorLocationKey(visitor) {
+  // I-map ang visitor record sa isang predefined na location key.
+  // Kung wala sa office/library ang pangalan, ituturing itong entrance.
   const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
   if (locationName.includes("office")) {
     return "office";
@@ -169,10 +172,12 @@ function getVisitorLocationKey(visitor) {
 }
 
 function getLocationAnchor(locationKey) {
+  // Kumuha ng 3D anchor position batay sa location key.
   return locationMarkers[locationKey] || locationMarkers.library;
 }
 
 function PartLabel({ portal, locationKey, label }) {
+  // HTML label na naka-overlay sa 3D position ng location anchor.
   const anchor = getLocationAnchor(locationKey);
   const textPosition = [anchor.position[0], anchor.position[1] + 8.8, anchor.position[2]];
 
@@ -202,6 +207,7 @@ function PartLabel({ portal, locationKey, label }) {
 }
 
 function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
+  // maliit na sphere marker at label para sa bawat visitor sa 3D model.
   const anchor = getLocationAnchor(locationKey);
   const radius = groupIndex === 0 ? 0 : 1.05;
   const angle = groupIndex * Math.PI * 0.75;
@@ -240,6 +246,7 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
 }
 
 function SchoolModel({ sceneRef, modelUrl, setModelLoaded }) {
+  // Naglo-load ng GLTF model at inaayos ang mesh shadow properties.
   const { scene } = useGLTF(modelUrl);
 
   useEffect(() => {
@@ -270,6 +277,7 @@ function SchoolModel({ sceneRef, modelUrl, setModelLoaded }) {
 }
 
 const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markersByLocation, sceneRef, controlsRef, showLabels, showMarkers, portal, setModelLoaded }) {
+  // Mataas na level ng 3D scene; memoized para maiwasan ang unnecessary rerender.
   return (
     <Canvas
       style={{ width: "100%", height: "100%" }}
@@ -313,6 +321,7 @@ const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markers
 });
 
 function DoubleClickZoom({ sceneRef, controlsRef }) {
+  // Nagdadagdag ng double-click zoom target sa 3D scene.
   const { camera, gl } = useThree();
   const raycaster = useMemo(() => new THREE.Raycaster(), []);
   const pointer = useMemo(() => new THREE.Vector2(), []);
@@ -390,6 +399,7 @@ function DoubleClickZoom({ sceneRef, controlsRef }) {
 }
 
 function CameraControls({ controlsRef, initialState }) {
+  // OrbitControls setup at initial camera position.
   const { camera } = useThree();
 
   useEffect(() => {
@@ -499,9 +509,9 @@ function isActiveVisitorWithLocation(visitor) {
 }
 
 export default function MapView() {
+  // Pangunahing component para sa 3D view page.
   const [visitorMarkers, setVisitorMarkers] = useState([]);
   const [cameraState, setCameraState] = useState(DEFAULT_CAMERA_STATE);
-  // start with dashboard hidden; will show when user clicks the Dashboard button
   const [showDashboard, setShowDashboard] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [userSubRole, setUserSubRole] = useState(null);
@@ -583,7 +593,6 @@ export default function MapView() {
           const prev = previousVisitorsRef.current[v.id];
           const lastSeenChanged = !prev || prev.lastSeen !== v.lastSeen;
           if (key === "office" && lastSeenChanged) {
-            // set a simple alert for security to acknowledge
             setScanAlert({ id: v.id, name: v.name || v.id });
           }
           previousVisitorsRef.current[v.id] = v;
@@ -592,7 +601,6 @@ export default function MapView() {
         }
       });
 
-      // cleanup previousVisitorsRef entries that are no longer present
       Object.keys(previousVisitorsRef.current).forEach((id) => {
         if (!visitorList.find((x) => x.id === id)) {
           delete previousVisitorsRef.current[id];
@@ -605,9 +613,7 @@ export default function MapView() {
     return () => unsubscribe();
   }, []);
 
-  // reset model loaded state when URL changes
   useEffect(() => {
-    // defer state update to avoid synchronous setState inside effect
     const t = setTimeout(() => setIsModelLoaded(false), 0);
     return () => clearTimeout(t);
   }, [modelUrl]);

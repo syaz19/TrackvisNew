@@ -1,25 +1,31 @@
 /// <reference types="node" />
 /* global require, exports */
 
+// import ng Firebase Functions at admin SDK para sa server-side logic.
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
+// initialize ang Firebase admin sa Cloud Functions runtime.
 admin.initializeApp();
 
+// kunin ang Firestore instance para gumawa ng reads/writes.
 const db = getFirestore();
 
 // ==============================
 // 1. REGISTER VISITOR
 // ==============================
+// Function para i-register ang bagong visitor o i-update ang RFID tag record.
 exports.registerVisitor = functions.https.onRequest(async (req, res) => {
   try {
     const { epc, visitorInfo } = req.body || {};
 
+    // kailangan ng EPC para malaman kung aling RFID tag ang i-a-assign.
     if (!epc) {
       return res.status(400).send("Missing EPC");
     }
 
+    // i-save o i-merge ang visitor info sa rfid_tags collection.
     await db.collection("rfid_tags").doc(epc).set(
       {
         ...visitorInfo,
@@ -31,7 +37,7 @@ exports.registerVisitor = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
-
+    // response sa caller na successful ang registration.
     res.send("Visitor Registered");
   } catch (err) {
     console.error(err);
@@ -42,14 +48,17 @@ exports.registerVisitor = functions.https.onRequest(async (req, res) => {
 // ==============================
 // 2. UPDATE RFID LOCATION
 // ==============================
+// Function para mag-update ng visitor location kapag nade-detect ang RFID sa isang reader.
 exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
   try {
     const { epc, location } = req.body || {};
 
+    // kailangan ang EPC at location para malaman kung saan ilalagay ang visitor.
     if (!epc || !location) {
       return res.status(400).send("Missing data");
     }
 
+    // hanapin ang visitor record base sa UID na katumbas ng EPC.
     const visitorQuery = await db
       .collection("visitors")
       .where("uid", "==", epc)
@@ -62,12 +71,14 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
 
     const visitorRef = visitorQuery.docs[0].ref;
 
+    // i-update ang visitor document sa bagong lokasyon.
     await visitorRef.update({
       currentLocation: location,
       location: location,
       lastSeen: FieldValue.serverTimestamp(),
     });
 
+    // i-update rin ang RFID tag record sa rfid_tags collection.
     await db.collection("rfid_tags").doc(epc).set(
       {
         currentLocation: location,
@@ -76,7 +87,6 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
       },
       { merge: true }
     );
-
 
     res.send("Location Updated");
   } catch (err) {
@@ -88,10 +98,12 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
 // ==============================
 // 3. SCAN RFID (Replacement for Render)
 // ==============================
+// Function para iproseso ang RFID scan event at i-log ang history ng reader scan.
 exports.scanRFID = functions.https.onRequest(async (req, res) => {
   try {
     const { epc, location } = req.body || {};
 
+    // siguraduhin na may sapat na data bago magpatuloy.
     if (!epc || !location) {
       return res.status(400).json({
         success: false,
@@ -101,6 +113,7 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
 
     const now = FieldValue.serverTimestamp();
 
+    // hanapin ang active visitor na may katugmang UID/EPC.
     const visitorSnapshot = await db
       .collection("visitors")
       .where("uid", "==", epc)
@@ -117,12 +130,14 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
 
     const visitorDoc = visitorSnapshot.docs[0];
 
+    // i-update ang visitor record sa aktwal na lokasyon.
     await visitorDoc.ref.update({
       currentLocation: location,
       location,
       lastSeen: now,
     });
 
+    // i-log ang pinaka-huling reader scan sa reader_scans collection.
     await db.collection("reader_scans").doc(epc).set(
       {
         epc,
@@ -132,6 +147,7 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
+    // magdagdag rin ng history entry sa subcollection ng reader_scans.
     await db
       .collection("reader_scans")
       .doc(epc)
@@ -152,7 +168,6 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
-
     res.json({
       success: true,
       message: "RFID Scan Processed",
@@ -170,6 +185,7 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
 // ==============================
 // 4. RELEASE RFID WHEN VISITOR IS DELETED
 // ==============================
+// Firestore trigger kapag nabura ang visitor document.
 exports.onVisitorDelete = functions.firestore
   .document("visitors/{id}")
   .onDelete(async (snap) => {
@@ -180,6 +196,7 @@ exports.onVisitorDelete = functions.firestore
 
       if (!epc) return null;
 
+      // i-reset ang RFID tag status kapag na-unassign ang visitor.
       await db.collection("rfid_tags").doc(String(epc)).set(
         {
           Status: "Available",
@@ -202,6 +219,7 @@ exports.onVisitorDelete = functions.firestore
 // ==============================
 // 5. RELEASE RFID WHEN AUTH USER IS DELETED
 // ==============================
+// Firebase Auth trigger kapag na-delete ang user account.
 exports.onAuthUserDelete = functions.auth.user().onDelete(async (user) => {
   try {
     const values = [];
@@ -210,6 +228,7 @@ exports.onAuthUserDelete = functions.auth.user().onDelete(async (user) => {
 
     if (user.displayName) values.push(user.displayName);
 
+    // hanapin lahat ng RFID tags na naka-assign sa user email o display name.
     for (const value of values) {
       const snapshot = await db
         .collection("rfid_tags")
