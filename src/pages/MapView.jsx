@@ -1,3 +1,28 @@
+/**
+ * MapView.jsx
+ *
+ * Layunin: Ito ang pangunahing pahina para sa 3D view ng campus (SCC 3D).
+ * - Naglo-load at nag-di-display ng GLTF/GLB 3D model (`newschools.glb`) gamit ang `@react-three/fiber` at `@react-three/drei`.
+ * - Naghahandle ng camera controls (OrbitControls), double-click zoom, at saved camera state per user.
+ * - Nagpapakita ng mga visitor markers (based sa Firestore `visitors` collection) sa mga predefined anchor points (library, office, entrance).
+ * - May loading overlay habang naglo-load ang 3D model at error boundary para sa GLTF load failures.
+ * - Nag-iintegrate sa Firebase (Firestore) para kumuha ng visitor data at realtime updates.
+ *
+ * Bahagi ng app:
+ * - UI: SCC 3D main view; ginagamit ng `SecurityLayout` at `AuthorizedLayout`.
+ * - Model: tumutukoy sa `public/models/newschools.glb` (cache-busted URL para makuha ang pinakabagong asset).
+ * - Related files: `src/components/Sidebar.jsx` (navigation), `src/pages/authorized/*` (authorized dashboards), `functions/` (server-side RFID handling).
+ *
+ * Paano gumagana (buod):
+ * 1. Preload ng model URL para sa faster fetch.
+ * 2. Canvas render: ilalagay ang lights, camera, at `SchoolModel` primitive.
+ * 3. `SchoolModel` gumagamit ng `useGLTF` upang i-load ang scene; pagkatapos nito, tatawagin ang `setModelLoaded(true)` upang alisin ang loading overlay.
+ * 4. Firestore snapshot listener (collection `visitors`) ang nag-uupdate ng visitor marker state, at dito rin nade-detect ang office scans para magpakita ng alert popup.
+ *
+ * Tandaan:
+ * - Huwag baguhin ang mga pangalan ng collection na ginagamit sa Firestore nang hindi sinisigurado ang backend (functions) at front-end queries.
+ * - Ang mga style at positioning ng overlay ay inline sa file; maaari ring ilipat sa CSS kung kailangan.
+ */
 import { Suspense, Component, memo, useEffect, useState, useMemo, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
@@ -9,7 +34,33 @@ import AuthorizedDashboard from "./authorized/Dashboard";
 
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
 const BASE_MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb`;
-useGLTF.preload(BASE_MODEL_URL);
+const BASE_MODEL_URL_WITH_CACHE_BUST = `${BASE_MODEL_URL}?v=${Date.now()}`;
+useGLTF.preload(BASE_MODEL_URL_WITH_CACHE_BUST);
+
+function LoadingOverlay() {
+  return (
+    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 100000 }}>
+      <div style={{ pointerEvents: "auto", background: "rgba(8,12,20,0.92)", color: "#fff", padding: "20px 28px", borderRadius: 12, boxShadow: "0 12px 36px rgba(0,0,0,0.6)", textAlign: "center", fontWeight: 700, letterSpacing: "0.08em" }}>
+        <div style={{ fontSize: 20 }}>LOADING SAN CARLOS COLLEGE 3D MODEL</div>
+      </div>
+    </div>
+  );
+}
+
+function ScanAlert({ alert, onDismiss }) {
+  if (!alert) return null;
+  return (
+    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100002, pointerEvents: "none" }}>
+      <div style={{ pointerEvents: "auto", background: "rgba(2,6,23,0.95)", color: "#fff", padding: "18px 20px", borderRadius: 12, boxShadow: "0 12px 36px rgba(0,0,0,0.6)", width: 380 }}>
+        <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>Our visitor {alert.name}</p>
+        <p style={{ margin: "8px 0 14px", color: "#d1d5db" }}>Scan by the office reader — keep watching.</p>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+          <button onClick={onDismiss} style={{ background: "#2563eb", border: "none", color: "#fff", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontWeight: 700 }}>OK</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const locationMarkers = {
   library: {
@@ -24,7 +75,7 @@ const locationMarkers = {
 };
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-85, 20, -65],
+  position: [-85, 20, -75],
   target: [0, 0, 0],
   zoomDistance: 130
 };
@@ -188,22 +239,37 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
   );
 }
 
-function SchoolModel({ sceneRef, modelUrl }) {
+function SchoolModel({ sceneRef, modelUrl, setModelLoaded }) {
   const { scene } = useGLTF(modelUrl);
 
   useEffect(() => {
-    scene.traverse(function (child) {
-      if (child.isMesh) {
-        child.castShadow = false;
-        child.receiveShadow = false;
+    // mark loaded after scene is available
+    try {
+      scene.traverse(function (child) {
+        if (child.isMesh) {
+          child.castShadow = false;
+          child.receiveShadow = false;
+        }
+      });
+    } catch {
+      // ignore
+    }
+
+    if (typeof setModelLoaded === "function") {
+      setModelLoaded(true);
+    }
+
+    return () => {
+      if (typeof setModelLoaded === "function") {
+        setModelLoaded(false);
       }
-    });
-  }, [scene]);
+    };
+  }, [scene, setModelLoaded]);
 
   return <primitive ref={sceneRef} object={scene} dispose={null} scale={0.18} position={[0, -1.1, 0]} />;
 }
 
-const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markersByLocation, sceneRef, controlsRef, showLabels, showMarkers, portal }) {
+const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markersByLocation, sceneRef, controlsRef, showLabels, showMarkers, portal, setModelLoaded }) {
   return (
     <Canvas
       style={{ width: "100%", height: "100%" }}
@@ -221,7 +287,7 @@ const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markers
       <pointLight position={[0, 10, 0]} intensity={0.55} color="#dbeafe" />
       <ModelErrorBoundary>
         <Suspense fallback={null}>
-          <SchoolModel sceneRef={sceneRef} modelUrl={modelUrl} />
+          <SchoolModel sceneRef={sceneRef} modelUrl={modelUrl} setModelLoaded={setModelLoaded} />
           {showLabels && (
             <>
               <PartLabel portal={portal} locationKey="library" label="LIBRARY PART" />
@@ -435,14 +501,18 @@ function isActiveVisitorWithLocation(visitor) {
 export default function MapView() {
   const [visitorMarkers, setVisitorMarkers] = useState([]);
   const [cameraState, setCameraState] = useState(DEFAULT_CAMERA_STATE);
-  const [showDashboard, setShowDashboard] = useState(true);
+  // start with dashboard hidden; will show when user clicks the Dashboard button
+  const [showDashboard, setShowDashboard] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [userSubRole, setUserSubRole] = useState(null);
-  const modelUrl = BASE_MODEL_URL;
+  const modelUrl = BASE_MODEL_URL_WITH_CACHE_BUST;
   const [portalElement, setPortalElement] = useState(null);
   const sceneRef = useRef();
   const controlsRef = useRef();
   const canvasWrapperRef = useRef();
+  const [isModelLoaded, setIsModelLoaded] = useState(false);
+  const [scanAlert, setScanAlert] = useState(null);
+  const previousVisitorsRef = useRef({});
 
   const isSecurityUser = userRole === "security";
   const isAuthorizedUser = userRole === "authorized";
@@ -505,11 +575,42 @@ export default function MapView() {
     const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
       const visitorList = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
       const activeVisitors = visitorList.filter(isActiveVisitorWithLocation);
+
+      // detect new/updated office scans
+      activeVisitors.forEach((v) => {
+        try {
+          const key = getVisitorLocationKey(v);
+          const prev = previousVisitorsRef.current[v.id];
+          const lastSeenChanged = !prev || prev.lastSeen !== v.lastSeen;
+          if (key === "office" && lastSeenChanged) {
+            // set a simple alert for security to acknowledge
+            setScanAlert({ id: v.id, name: v.name || v.id });
+          }
+          previousVisitorsRef.current[v.id] = v;
+        } catch {
+          // ignore
+        }
+      });
+
+      // cleanup previousVisitorsRef entries that are no longer present
+      Object.keys(previousVisitorsRef.current).forEach((id) => {
+        if (!visitorList.find((x) => x.id === id)) {
+          delete previousVisitorsRef.current[id];
+        }
+      });
+
       setVisitorMarkers(activeVisitors);
     });
 
     return () => unsubscribe();
   }, []);
+
+  // reset model loaded state when URL changes
+  useEffect(() => {
+    // defer state update to avoid synchronous setState inside effect
+    const t = setTimeout(() => setIsModelLoaded(false), 0);
+    return () => clearTimeout(t);
+  }, [modelUrl]);
 
   const handleResetClick = () => {
     const resetState = { ...DEFAULT_CAMERA_STATE };
@@ -612,7 +713,10 @@ export default function MapView() {
           showLabels={showLabels}
           showMarkers={showMarkers}
           portal={portalElement}
+          setModelLoaded={setIsModelLoaded}
         />
+        {!isModelLoaded && <LoadingOverlay />}
+        <ScanAlert alert={scanAlert} onDismiss={() => setScanAlert(null)} />
         {showDashboard && isSecurityUser && (
           <div
             className="overlay-dashboard"

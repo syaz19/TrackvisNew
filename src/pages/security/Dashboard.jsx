@@ -1,3 +1,16 @@
+/**
+ * pages/security/Dashboard.jsx
+ *
+ * Layunin: Dashboard para sa `security` role.
+ * - Naka-list ang mga active visitors, may countdown para sa bawat visitor end time, at nagmamarka ng `expired` kapag lumampas ang oras.
+ * - Nagre-release ng RFID tag kapag nag-expire ang visitor (update sa `rfid_tags`).
+ * - Bahagi ng app: security operations at realtime monitoring ng `visitors` collection.
+ *
+ * Paano gumagana:
+ * 1. Nag-subscribe sa Firestore `visitors` collection at ina-update ang lokal na list.
+ * 2. May timer na nagche-check kada segundo para markahan ang expired visitors at i-update ang Firestore.
+ * 3. Nagbibigay ng UI para i-manage at suriin ang visitor list.
+ */
 import { useState, useEffect } from "react";
 import { collection, deleteField, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";

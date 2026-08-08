@@ -1,3 +1,11 @@
+/**
+ * pages/security/RegisterVisitor.jsx
+ *
+ * Layunin: Form para mag-register ng bagong visitor at mag-assign ng RFID tag.
+ * - Gumagawa ng `visitors/{uid}` document at ina-update ang `rfid_tags/{uid}` status.
+ * - May validation para maiwasan ang pag-assign ng in-use na RFID tag o duplicate active assignment.
+ * - Bahagi ng app: security staff registration workflow.
+ */
 import { useState, useEffect } from "react";
 import { setDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase";

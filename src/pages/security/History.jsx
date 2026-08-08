@@ -1,3 +1,11 @@
+/**
+ * pages/security/History.jsx
+ *
+ * Layunin: Ipakita ang history ng completed at expired visitors para sa security view.
+ * - Nag-subscribe sa `visitors` collection at ifi-filter ang mga `deactivated` at `expired` records.
+ * - Nagbibigay ng search at pinned status pills para madaling ma-scan ang history.
+ * - Bahagi ng app: historical records at auditing para sa security team.
+ */
 import { useState, useEffect } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase";

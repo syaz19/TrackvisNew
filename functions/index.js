@@ -31,11 +31,6 @@ exports.registerVisitor = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
-    await db.collection("rfid_logs").doc(epc).set({
-      epc,
-      location: "Entrance",
-      time: FieldValue.serverTimestamp(),
-    }, { merge: true });
 
     res.send("Visitor Registered");
   } catch (err) {
@@ -82,11 +77,6 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
-    await db.collection("rfid_logs").doc(epc).set({
-      epc,
-      location,
-      time: FieldValue.serverTimestamp(),
-    }, { merge: true });
 
     res.send("Location Updated");
   } catch (err) {
@@ -151,23 +141,7 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
         timestamp: now,
       });
 
-    await db.collection("visitor_history").doc(epc).set(
-      {
-        uid: epc,
-        visitorId: visitorDoc.id,
-        updatedAt: now,
-      },
-      { merge: true }
-    );
-
-    await db
-      .collection("visitor_history")
-      .doc(epc)
-      .collection("history")
-      .add({
-        location,
-        timestamp: now,
-      });
+    // visitor_history collection removed to avoid duplication; history kept under reader_scans and visitors
 
     await db.collection("rfid_tags").doc(epc).set(
       {
@@ -178,11 +152,6 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       { merge: true }
     );
 
-    await db.collection("rfid_logs").doc(epc).set({
-      epc,
-      location,
-      time: now,
-    }, { merge: true });
 
     res.json({
       success: true,

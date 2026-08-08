@@ -13,6 +13,7 @@ import RegisterVisitor from "./pages/security/RegisterVisitor";
 import History from "./pages/security/History";
 import Growth from "./pages/security/Growth";
 import AuthorizedDashboard from "./pages/authorized/Dashboard";
+import AuthorizedHistory from "./pages/authorized/History";
 import MapView from "./pages/MapView";
 
 // Ginagamit ang initial state habang naglo-load ang app.
@@ -151,6 +152,7 @@ export default function App() {
     { path: "/security/history", element: <History />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/growth", element: <Growth />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/authorized", element: <AuthorizedDashboard />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
+    { path: "/authorized/history", element: <AuthorizedHistory />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/map", element: <MapView />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } },
     { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } }
   ];

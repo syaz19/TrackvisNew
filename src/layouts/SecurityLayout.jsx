@@ -1,27 +1,31 @@
+// SecurityLayout: layout wrapper para sa security staff pages
+// Nagpo-provide ng Sidebar (role=security) at Topbar na naka-configure para sa security
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 
 export default function SecurityLayout({ children, currentUser, userData, hideTitle, hideSubtitle, isSmallTitle, title }) {
-  // Ini-store ang estado ng mobile sidebar.
+  // state para sa mobile sidebar open/close
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Toggle handler para sa topbar mobile menu button
   function toggleMenu() {
-    // Pinapalit ang estado kapag pinindot ang menu button.
     setMenuOpen(!menuOpen);
   }
 
+  // Isara ang menu (ginagamit bilang callback ng Sidebar at overlay)
   function closeMenu() {
-    // Isinara ang sidebar kapag nag-click sa overlay o link.
     setMenuOpen(false);
   }
 
+  // Kapag nag-click sa main content area at bukas ang menu, isara ito
   function handleMainClick() {
     if (menuOpen) {
       closeMenu();
     }
   }
 
+  // Render: Sidebar (security) + Topbar + content
   return (
     <div className="container">
       <Sidebar role="security" isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />

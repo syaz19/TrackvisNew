@@ -1,7 +1,18 @@
+/**
+ * Signup.jsx
+ *
+ * Line-by-line comments added: page for creating new user accounts and writing
+ * role/subRole info to Firestore. Uses Firebase Auth + Firestore.
+ */
+// React hook for local component state
 import { useState } from "react";
+// Firebase Auth functions used to create account and sign out
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+// Firebase instances (auth and firestore database)
 import { auth, db } from "../firebase";
+// Firestore helpers to write a document
 import { doc, setDoc } from "firebase/firestore";
+// Router helpers for navigation and links
 import { Link, useNavigate } from "react-router-dom";
 
 const pageBackground = "radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 20%), linear-gradient(180deg, #07101f 0%, #0f172a 100%)";
@@ -11,12 +22,16 @@ const borderColor = "rgba(148, 163, 184, 0.18)";
 const accentColor = "#2563eb";
 
 export default function Signup() {
+  // Router navigate function para mag-redirect pagkatapos ng signup
   const navigate = useNavigate();
 
-  // I-store ang input at role para sa pag-create ng account.
+  // State: email input field
   const [email, setEmail] = useState("");
+  // State: password input field
   const [password, setPassword] = useState("");
+  // State: role selector, default sa `security`
   const [role, setRole] = useState("security");
+  // State: subRole para sa authorized personnel
   const [subRole, setSubRole] = useState("Admin");
 
   function handleEmailChange(event) {
@@ -43,20 +58,27 @@ export default function Signup() {
     event.preventDefault();
 
     try {
+      // Gumawa ng Firebase user account gamit ang email at password
       const signupResult = await createUserWithEmailAndPassword(auth, email, password);
+      // Tukuyin kung ang napiling role ay `authorized`
       const isAuthorizedRole = role === "authorized";
+      // I-build ang user document na ise-save sa `users/{email}`
       const userData = {
         email,
         role,
         subRole: null
       };
 
+      // Kung authorized, isama ang napiling subRole
       if (isAuthorizedRole) {
         userData.subRole = subRole;
       }
 
+      // Isulat ang user document (keyed by email) sa Firestore
       await setDoc(doc(db, "users", signupResult.user.email), userData);
+      // Sign out ang bagong user para i-require ang login flow pagkatapos
       await signOut(auth);
+      // I-redirect pabalik sa login page
       navigate("/", { replace: true });
     } catch (error) {
       alert(error.message);

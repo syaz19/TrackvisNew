@@ -2,17 +2,21 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 
+// Authorized Dashboard: ipinapakita ang mga pending visitor requests para sa authorized user's subRole
 export default function Dashboard() {
-  // I-store ang listahan ng visitors, loading state, user data, at user email.
+  // visitors: mga visitor records filtered para sa user's subRole
   const [visitors, setVisitors] = useState([]);
+  // loading flag habang kinukuha ang user at visitor data
   const [loading, setLoading] = useState(true);
+  // userData: ang Firestore `users` document ng kasalukuyang user
   const [userData, setUserData] = useState(null);
 
+  // Effect: kunin ang kasalukuyang auth user at load user document mula sa Firestore
   useEffect(function () {
-    // Kunin ang active user at ang role data sa Firestore.
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
+      // walang naka-login: markahan bilang hindi naglo-load at ibalik
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
@@ -35,8 +39,8 @@ export default function Dashboard() {
     loadUserData();
   }, []);
 
+  // Effect: kapag may userData at may subRole, mag-subscribe sa `visitors` collection
   useEffect(function () {
-    // I-filter ang visitors para sa authorized role ng logged-in user.
     if (!userData || !userData.subRole) {
       return;
     }
@@ -49,6 +53,7 @@ export default function Dashboard() {
             ...item.data()
           };
         })
+        // filter lang para sa visitors na naka-target sa subRole ng authorized user
         .filter(function (visitor) {
           return visitor.destination === userData.subRole;
         });
@@ -62,21 +67,10 @@ export default function Dashboard() {
     };
   }, [userData]);
 
-  function isHistoricalVisitor(visitor) {
-    // Tukuyin kung ang visitor ay historical record na.
-    const status = (visitor.status || "").toLowerCase();
-    const knownStatuses = ["deactivated", "expired", "completed", "done", "inactive", "cancelled"];
+  // historical records are rendered in a separate History page/component
 
-    if (knownStatuses.includes(status)) {
-      return true;
-    }
-
-    return Boolean(visitor.endTime || visitor.timeOut);
-  }
-
+  // Handler para i-confirm ang arrival ng isang visitor
   async function handleConfirmVisitor(visitorId) {
-    // Step 1: i-update ang confirmation status sa Firestore.
-    // Step 2: palitan din ang local state para agad makita ang pagbabago.
     try {
       const currentUser = auth.currentUser;
       let confirmedByValue = null;
@@ -85,12 +79,14 @@ export default function Dashboard() {
         confirmedByValue = currentUser.email;
       }
 
+      // Update sa Firestore: markahan ang confirmStatus at timestamp
       await updateDoc(doc(db, "visitors", visitorId), {
         confirmStatus: "Done",
         confirmedAt: serverTimestamp(),
         confirmedBy: confirmedByValue
       });
 
+      // Update local state para mabilis makita ang pagbabago sa UI
       setVisitors(function (oldVisitors) {
         return oldVisitors.map(function (visitor) {
           if (visitor.id === visitorId) {
@@ -110,23 +106,15 @@ export default function Dashboard() {
     }
   }
 
+  // Simple wrapper para tawagin ang confirm handler
   function handleConfirmButtonClick(visitorId) {
     handleConfirmVisitor(visitorId);
   }
 
+  // Filter para sa mga pending visitors na active at hindi pa na-confirm
   const pendingVisitors = visitors.filter(function (visitor) {
     return visitor.status === "active" && (visitor.confirmStatus || "") !== "Done";
   });
-
-  const confirmedHistory = visitors
-    .filter(function (visitor) {
-      return visitor.confirmStatus === "Done" || isHistoricalVisitor(visitor);
-    })
-    .sort(function (first, second) {
-      const firstTime = first.confirmedAt || first.endTime || first.startTime || 0;
-      const secondTime = second.confirmedAt || second.endTime || second.startTime || 0;
-      return secondTime - firstTime;
-    });
 
   if (loading) {
     return (
@@ -138,6 +126,7 @@ export default function Dashboard() {
     );
   }
 
+  // JSX: ipakita ang listahan ng pending visitors at actions
   return (
     <div className="page-card">
       <div className="card">
@@ -197,65 +186,6 @@ export default function Dashboard() {
                         </button>
                       </div>
                     )}
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
-        <section className="card summary-card dashboard-section">
-          <div className="section-header">
-            <div>
-              <p className="section-kicker">History</p>
-              <h3>Your Confirmed Visitors</h3>
-            </div>
-            <span className="status-pill status-pill--done">{confirmedHistory.length} records</span>
-          </div>
-
-          {confirmedHistory.length === 0 ? (
-            <div className="empty-state">No confirmed visitor history yet.</div>
-          ) : (
-            <div className="history-grid">
-              {confirmedHistory.map(function (visitor) {
-                let statusLabel = "Processed";
-                let statusClassName = "status-pill status-pill--expired";
-
-                if (visitor.status === "deactivated") {
-                  statusLabel = "Completed";
-                  statusClassName = "status-pill status-pill--done";
-                } else if (visitor.confirmStatus === "Done") {
-                  statusLabel = "Confirmed";
-                }
-
-                let timeInLabel = "N/A";
-                let timeOutLabel = "N/A";
-
-                if (visitor.timeIn) {
-                  timeInLabel = new Date(visitor.timeIn).toLocaleString();
-                }
-
-                if (visitor.timeOut) {
-                  timeOutLabel = new Date(visitor.timeOut).toLocaleString();
-                }
-
-                return (
-                  <article key={visitor.id} className="visitor-card visitor-card--history">
-                    <div className="visitor-card__top">
-                      <div>
-                        <h4 className="visitor-card__title">{visitor.name}</h4>
-                        <p className="visitor-card__subtitle">{visitor.purpose}</p>
-                      </div>
-                      <span className={statusClassName}>{statusLabel}</span>
-                    </div>
-
-                    <div className="visitor-meta">
-                      <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
-                      <span>📍 {visitor.location || "Entrance"}</span>
-                      <span>🎯 {visitor.destination}</span>
-                      <span>🕒 Time In: {timeInLabel}</span>
-                      <span>⏱ Time Out: {timeOutLabel}</span>
-                    </div>
                   </article>
                 );
               })}

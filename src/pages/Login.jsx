@@ -1,3 +1,18 @@
+/**
+ * Login.jsx
+ *
+ * Layunin: I-render ang login form at i-authenticate ang user gamit ang Firebase Auth.
+ * - Nagbibigay ng form para sa email at password.
+ * - Kapag successful ang login, nire-redirect ang user papunta sa kani-kanilang landing page (security o authorized) via `App` routing.
+ * - Bahagi ng app: authentication flow. Kung walang valid credentials, magpapakita ng error message.
+ *
+ * Paano gumagana:
+ * 1. User magsu-submit ng email/password.
+ * 2. Tatawagin ang `signInWithEmailAndPassword(auth, email, password)`.
+ * 3. On success, Firebase auth state sa `App` mag-uupdate at ire-redirect ang user.
+ *
+ * Kaugnay na files: `src/App.jsx`, `src/authManager.js`, `src/components/Sidebar.jsx`.
+ */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { browserSessionPersistence, setPersistence, signInWithEmailAndPassword } from "firebase/auth";
