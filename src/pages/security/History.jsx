@@ -177,7 +177,7 @@ export default function History() {
                   </div>
 
                   <div className="visitor-meta">
-                    <span>📍 {visitor.location || "Entrance"}</span>
+                    <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
                     <span>🎯 {visitor.destination}</span>
                     <span>✓ Confirmation: {confirmationLabel}</span>
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>

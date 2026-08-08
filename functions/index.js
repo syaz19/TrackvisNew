@@ -114,21 +114,30 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
     const now = FieldValue.serverTimestamp();
 
     // hanapin ang active visitor na may katugmang UID/EPC.
-    const visitorSnapshot = await db
+    let visitorDoc = null;
+
+    const visitorQuery = await db
       .collection("visitors")
       .where("uid", "==", epc)
       .where("status", "==", "active")
       .limit(1)
       .get();
 
-    if (visitorSnapshot.empty) {
+    if (!visitorQuery.empty) {
+      visitorDoc = visitorQuery.docs[0];
+    } else {
+      const directDoc = await db.collection("visitors").doc(epc).get();
+      if (directDoc.exists && directDoc.data()?.status === "active") {
+        visitorDoc = directDoc;
+      }
+    }
+
+    if (!visitorDoc) {
       return res.json({
         success: false,
         message: "RFID tag not assigned to an active visitor",
       });
     }
-
-    const visitorDoc = visitorSnapshot.docs[0];
 
     // i-update ang visitor record sa aktwal na lokasyon.
     await visitorDoc.ref.update({
@@ -183,7 +192,54 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
 });
 
 // ==============================
-// 4. RELEASE RFID WHEN VISITOR IS DELETED
+// 4. SYNC RFID TAG UPDATES TO VISITOR
+// ==============================
+exports.onRFIDTagUpdate = functions.firestore
+  .document("rfid_tags/{tagId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data() || {};
+    const after = change.after.data() || {};
+    const tagId = context.params.tagId;
+
+    const locationChanged = before.currentLocation !== after.currentLocation;
+    const lastScanChanged = before.lastScan !== after.lastScan;
+
+    if (!locationChanged && !lastScanChanged) {
+      return null;
+    }
+
+    const updates = {};
+
+    if (after.currentLocation) {
+      updates.currentLocation = after.currentLocation;
+      updates.location = after.currentLocation;
+    }
+
+    if (after.lastScan) {
+      updates.lastSeen = after.lastScan;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return null;
+    }
+
+    const visitorQuery = await db
+      .collection("visitors")
+      .where("uid", "==", tagId)
+      .where("status", "==", "active")
+      .limit(1)
+      .get();
+
+    if (visitorQuery.empty) {
+      return null;
+    }
+
+    const visitorRef = visitorQuery.docs[0].ref;
+    return visitorRef.update(updates);
+  });
+
+// ==============================
+// 5. RELEASE RFID WHEN VISITOR IS DELETED
 // ==============================
 // Firestore trigger kapag nabura ang visitor document.
 exports.onVisitorDelete = functions.firestore

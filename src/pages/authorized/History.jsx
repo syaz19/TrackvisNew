@@ -117,7 +117,7 @@ export default function History() {
 
                   <div className="visitor-meta">
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
-                    <span>📍 {visitor.location || "Entrance"}</span>
+                    <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
                     <span>🎯 {visitor.destination}</span>
                     <span>🕒 Time In: {timeInLabel}</span>
                     <span>⏱ Time Out: {timeOutLabel}</span>
