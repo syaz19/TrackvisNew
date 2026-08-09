@@ -67,12 +67,14 @@ export default function App() {
 
       try {
         const userDoc = await getDoc(doc(db, "users", loggedInUser.email));
-        let userData = null;
 
-        if (userDoc.exists()) {
-          userData = userDoc.data();
+        if (!userDoc.exists()) {
+          await signOut(auth);
+          setAuthState(buildAuthState(null, null));
+          return;
         }
 
+        const userData = userDoc.data();
         const nextState = buildAuthState(loggedInUser, userData);
         setAuthState(nextState);
       } catch {
@@ -145,7 +147,8 @@ export default function App() {
     );
   }
 
-  const homePath = getRedirectPath(authState.userData);
+  const isAuthenticated = Boolean(authState.user && authState.userData);
+  const homePath = isAuthenticated ? getRedirectPath(authState.userData) : "/";
   const routesThatNeedProtection = [
     { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
@@ -160,7 +163,7 @@ export default function App() {
   let loginRouteElement = <Login />;
   let signupRouteElement = <Signup />;
 
-  if (authState.user) {
+  if (isAuthenticated) {
     loginRouteElement = <Navigate to={homePath} replace />;
     signupRouteElement = <Navigate to={homePath} replace />;
   }

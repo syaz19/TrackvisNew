@@ -6,10 +6,14 @@
  * - May validation para maiwasan ang pag-assign ng in-use na RFID tag o duplicate active assignment.
  * - Bahagi ng app: security staff registration workflow.
  */
+// I-import ang hooks para sa state at effect.
 import { useState, useEffect } from "react";
-import { setDoc, doc, collection, getDocs, onSnapshot, query, where, updateDoc } from "firebase/firestore";
+// I-import ang Firestore helpers para sa create, read, query, at update operations.
+import { doc, collection, getDocs, onSnapshot, query, setDoc, where, updateDoc } from "firebase/firestore";
+// I-import ang Firestore instance para makapag-access sa database.
 import { db } from "../../firebase";
 
+// I-set ang default values ng form kapag magbubukas ang registration page.
 const initialFormState = {
   name: "",
   purpose: "",
@@ -20,6 +24,7 @@ const initialFormState = {
   uid: ""
 };
 
+// I-export ang component para sa register visitor page.
 export default function RegisterVisitor() {
   // I-store ang form values at listahan ng RFID tags.
   const [form, setForm] = useState(initialFormState);
@@ -27,71 +32,62 @@ export default function RegisterVisitor() {
   const [tagsLoading, setTagsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
 
+  // I-update ang form kapag may input ang user.
   function handleChange(event) {
-    // I-update ang form base sa input na pinindot.
+    // Kinukuha ang field name at value mula sa input.
     const { name, value } = event.target;
+    // I-copy ang current form at ina-update ang selected field.
     const nextForm = {
       ...form,
       [name]: value
     };
 
+    // Ini-update ang state ng form.
     setForm(nextForm);
   }
 
+  // I-reset ang form pabalik sa default values.
   function resetForm() {
     setForm(initialFormState);
   }
 
+  // I-extract ang tag identifier sa paraang gumagana sa iba't ibang field name.
   function getTagIdentifier(tag) {
     return tag.epc || tag.uid || tag.id || "Unknown";
   }
 
+  // I-extract ang status ng RFID tag sa kahit anong naming convention.
   function getTagStatus(tag) {
     return (tag.Status || tag.status || "").toString() || "Unknown";
   }
 
-  function getTagUsedBy(tag) {
-    return tag.UsedBy || tag.usedBy || "";
-  }
+  // I-extract ang nagmamay-ari ng tag kapag in-use.
+  
 
-  function getTagAssignedAt(tag) {
-    return tag.assignedAt || tag.timeIn || tag.timeInStamp || "";
-  }
+  // I-extract ang time ng assignment ng tag.
+  
 
+  // Tinitingnan kung available ang tag para pwede itong piliin.
   function isTagAvailable(tag) {
     return getTagStatus(tag).toLowerCase() === "available";
   }
 
+  // I-build ang label na ipinapakita sa dropdown para sa bawat tag.
   function formatTagLabel(tag) {
-    // Build a safe label using UID/EPC plus minimal deactivated tag fields.
-    const tagId = getTagIdentifier(tag);
-    const status = getTagStatus(tag);
-    const usedBy = getTagUsedBy(tag);
-    const assignedAt = getTagAssignedAt(tag);
-
-    let label = `${tagId} — ${status}`;
-
-    if (!isTagAvailable(tag)) {
-      if (usedBy) {
-        label += ` • ${usedBy}`;
-      }
-
-      if (assignedAt) {
-        label += ` • ${new Date(assignedAt).toLocaleString()}`;
-      }
-    }
-
-    return label;
+    return getTagIdentifier(tag);
   }
 
+  // I-listen sa RFID tags sa Firestore para sa live dropdown data.
   useEffect(function () {
-    // Pakinggan ang RFID tags sa Firestore.
+    // Pinapakinggan ang RFID tags sa Firestore.
     const unsubscribe = onSnapshot(
       collection(db, "rfid_tags"),
       function (snapshot) {
+        // Ginagawa ang tag list mula sa snapshot.
         const tagList = snapshot.docs.map(function (item) {
           return { id: item.id, epc: item.id, ...item.data() };
         });
+        // Ini-update ang state para sa tag dropdown.
         setTags(tagList);
         setTagsLoading(false);
       },
@@ -101,11 +97,13 @@ export default function RegisterVisitor() {
       }
     );
 
+    // I-clean up ang listener kapag hindi na ginagamit ang component.
     return function () {
       unsubscribe();
     };
   }, []);
 
+  // I-handle ang pag-submit ng form para mag-register ng visitor.
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -114,48 +112,59 @@ export default function RegisterVisitor() {
     // Step 3: i-save ang visitor at i-update ang tag status.
     const isFormComplete = form.name && form.purpose && form.destination && form.location && form.duration;
 
+    // Kung may kulang na field, ipinapakita ang alert.
     if (!isFormComplete) {
       alert("Please complete all required fields.");
       return;
     }
 
+    // I-convert ang duration sa number para i-validate.
     const durationValue = Number(form.duration);
 
+    // Tinitingnan kung valid ang duration value.
     if (!durationValue || durationValue <= 0) {
       alert("Please enter a valid duration greater than 0.");
       return;
     }
 
+    // I-set ang loading state habang sine-save ang data.
     setLoading(true);
 
     try {
+      // Kinukuha ang selected RFID tag ID mula sa form.
       const selectedUid = form.uid.trim();
 
+      // Kung walang napiling tag, ipinapakita ang alert.
       if (!selectedUid) {
         alert("Please select an RFID tag to use.");
         setLoading(false);
         return;
       }
 
+      // Hanapin ang napiling tag sa listahan ng tags.
       const selectedTag = tags.find(function (tag) {
         return getTagIdentifier(tag) === selectedUid;
       });
 
+      // Kung walang match, ipinapakita ang alert.
       if (!selectedTag) {
         alert("Selected RFID tag was not found. Please choose a valid tag.");
         setLoading(false);
         return;
       }
 
+      // Tinitingnan ang status ng tag para siguruhin na available ito.
       const tagStatus = getTagStatus(selectedTag).toLowerCase();
       const isTagAvailable = tagStatus === "available";
 
+      // Kung hindi available ang tag, ipinapakita ang alert.
       if (!isTagAvailable) {
         alert("Selected RFID tag is currently in use. Please choose another one.");
         setLoading(false);
         return;
       }
 
+      // I-check kung may active visitor na gumagamit ng parehong RFID tag.
       const sameUidQuery = query(
         collection(db, "visitors"),
         where("uid", "==", selectedUid),
@@ -163,12 +172,14 @@ export default function RegisterVisitor() {
       );
       const sameUidSnapshot = await getDocs(sameUidQuery);
 
+      // Kung may active visitor na may parehong tag, ipinapakita ang alert.
       if (!sameUidSnapshot.empty) {
         alert("This RFID tag is already assigned to an active visitor.");
         setLoading(false);
         return;
       }
 
+      // Kinukuha ang current start time at i-compute ang end time base sa duration.
       const startTime = Date.now();
       const durationMultipliers = {
         seconds: 1000,
@@ -177,7 +188,11 @@ export default function RegisterVisitor() {
       };
       const endTime = startTime + durationValue * durationMultipliers[form.durationUnit];
 
-      await setDoc(doc(db, "visitors", selectedUid), {
+      // I-save ang visitor data sa Firestore gamit ang document ID na may literal na RFID tag
+      // bilang prefix, kaya makikita agad ang EP/CUID sa Firestore kahit magamit muli ang tag.
+      const visitorDocId = `${selectedUid}_${startTime}`;
+      const visitorRef = doc(db, "visitors", visitorDocId);
+      await setDoc(visitorRef, {
         name: form.name,
         purpose: form.purpose,
         destination: form.destination,
@@ -196,24 +211,29 @@ export default function RegisterVisitor() {
       });
 
       try {
+        // Ina-update ang RFID tag status para ipakita na in use na.
         await updateDoc(doc(db, "rfid_tags", selectedUid), {
           Status: "In Use",
           UsedBy: form.name || "",
+          currentVisitorId: visitorRef.id,
           assignedAt: startTime
         });
       } catch (error) {
         console.warn("Failed to update RFID tag status:", error);
       }
 
+      // Ipapakita ang success message kapag natapos ang proseso.
       alert("Visitor Registered Successfully!");
       resetForm();
     } catch (error) {
       alert(error.message);
     }
 
+    // I-reset ang loading state sa dulo ng process.
     setLoading(false);
   }
 
+  // I-render ang form para sa pag-register ng visitor.
   return (
     <div>
       <h1>Register Visitor</h1>
@@ -296,13 +316,12 @@ export default function RegisterVisitor() {
                 -- Select RFID Tag / EPC --
               </option>
               {tags.map(function (tag) {
-                const status = (tag.Status || tag.status || "").toString();
                 const tagIdentifier = getTagIdentifier(tag);
                 return (
                   <option
                     key={tagIdentifier}
                     value={tagIdentifier}
-                    disabled={status.toLowerCase() !== "available"}
+                    disabled={!isTagAvailable(tag)}
                   >
                     {formatTagLabel(tag)}
                   </option>

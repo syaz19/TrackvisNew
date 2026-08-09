@@ -33,24 +33,8 @@ function LoadingOverlay() {
   // Overlay na nakalagay sa ibabaw ng canvas habang naglo-load ang 3D model.
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 100000 }}>
-      <div style={{ pointerEvents: "auto", background: "rgba(8,12,20,0.92)", color: "#fff", padding: "20px 28px", borderRadius: 12, boxShadow: "0 12px 36px rgba(0,0,0,0.6)", textAlign: "center", fontWeight: 700, letterSpacing: "0.08em" }}>
-        <div style={{ fontSize: 20 }}>LOADING SAN CARLOS COLLEGE 3D MODEL</div>
-      </div>
-    </div>
-  );
-}
-
-function ScanAlert({ alert, onDismiss }) {
-  // Simple alert popup na lumalabas kapag may bagong office scan event.
-  if (!alert) return null;
-  return (
-    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100002, pointerEvents: "none" }}>
-      <div style={{ pointerEvents: "auto", background: "rgba(2,6,23,0.95)", color: "#fff", padding: "18px 20px", borderRadius: 12, boxShadow: "0 12px 36px rgba(0,0,0,0.6)", width: 380 }}>
-        <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>Our visitor {alert.name}</p>
-        <p style={{ margin: "8px 0 14px", color: "#d1d5db" }}>Scan by the office reader — keep watching.</p>
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-          <button onClick={onDismiss} style={{ background: "#2563eb", border: "none", color: "#fff", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontWeight: 700 }}>OK</button>
-        </div>
+      <div style={{ pointerEvents: "auto", background: "rgba(35, 35, 36, 0.92)", color: "#fff", padding: "20px 28px", borderRadius: 12, boxShadow: "0 12px 36px rgba(0,0,0,0.6)", textAlign: "center", fontWeight: 500, letterSpacing: "0.08em" }}>
+        <div style={{ fontSize: 10 }}>LOADING SAN CARLOS COLLEGE 3D MODEL</div>
       </div>
     </div>
   );
@@ -72,9 +56,9 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-85, 20, -75],
+  position: [-100, 25, -50],
   target: [0, 0, 0],
-  zoomDistance: 130
+  zoomDistance: 140
 };
 
 function getCameraStorageKey() {
@@ -320,84 +304,6 @@ const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markers
   );
 });
 
-function DoubleClickZoom({ sceneRef, controlsRef }) {
-  // Nagdadagdag ng double-click zoom target sa 3D scene.
-  const { camera, gl } = useThree();
-  const raycaster = useMemo(() => new THREE.Raycaster(), []);
-  const pointer = useMemo(() => new THREE.Vector2(), []);
-
-  useEffect(() => {
-    let animationFrame = null;
-
-    const animateCamera = (startCamera, startTarget, endCamera, endTarget, onComplete) => {
-      const duration = 450;
-      const startTime = performance.now();
-
-      const tick = (timestamp) => {
-        const t = Math.min(1, (timestamp - startTime) / duration);
-        const ease = t * (2 - t);
-
-        camera.position.lerpVectors(startCamera, endCamera, ease);
-        controlsRef.current.target.lerpVectors(startTarget, endTarget, ease);
-        controlsRef.current.update();
-
-        if (t < 1) {
-          animationFrame = requestAnimationFrame(tick);
-        } else if (typeof onComplete === "function") {
-          onComplete();
-        }
-      };
-
-      animationFrame = requestAnimationFrame(tick);
-    };
-
-    const handleDoubleClick = (event) => {
-      if (!sceneRef.current || !controlsRef.current) {
-        return;
-      }
-
-      const rect = gl.domElement.getBoundingClientRect();
-      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-
-      const intersects = raycaster.intersectObject(sceneRef.current, true);
-      if (intersects.length === 0) {
-        return;
-      }
-
-      const hitPoint = intersects[0].point.clone();
-      const viewDirection = camera.getWorldDirection(new THREE.Vector3()).normalize();
-      const distance = Math.max(4, camera.position.distanceTo(hitPoint) * 0.5);
-      const endPosition = hitPoint.clone().add(viewDirection.multiplyScalar(-distance));
-      const startPosition = camera.position.clone();
-      const startTarget = controlsRef.current.target.clone();
-
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
-      }
-
-      animateCamera(startPosition, startTarget, endPosition, hitPoint, () => {
-        saveCameraState({
-          position: [endPosition.x, endPosition.y, endPosition.z],
-          target: [hitPoint.x, hitPoint.y, hitPoint.z],
-          zoomDistance: distance
-        });
-      });
-    };
-
-    gl.domElement.addEventListener("dblclick", handleDoubleClick);
-    return () => {
-      gl.domElement.removeEventListener("dblclick", handleDoubleClick);
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
-      }
-    };
-  }, [camera, controlsRef, gl.domElement, pointer, raycaster, sceneRef]);
-
-  return null;
-}
-
 function CameraControls({ controlsRef, initialState }) {
   // OrbitControls setup at initial camera position.
   const { camera } = useThree();
@@ -451,6 +357,89 @@ function CameraControls({ controlsRef, initialState }) {
       maxDistance={500}
     />
   );
+}
+
+function DoubleClickZoom({ sceneRef, controlsRef }) {
+  const { camera, gl } = useThree();
+  const raycaster = useMemo(() => new THREE.Raycaster(), []);
+  const pointer = useMemo(() => new THREE.Vector2(), []);
+
+  useEffect(() => {
+    if (!gl?.domElement) {
+      return undefined;
+    }
+
+    let animationFrame = null;
+
+    const animateCamera = (startCamera, startTarget, endCamera, endTarget, onComplete) => {
+      const duration = 450;
+      const startTime = performance.now();
+
+      const tick = (timestamp) => {
+        const t = Math.min(1, (timestamp - startTime) / duration);
+        const ease = t * (2 - t);
+
+        camera.position.lerpVectors(startCamera, endCamera, ease);
+        controlsRef.current.target.lerpVectors(startTarget, endTarget, ease);
+        controlsRef.current.update();
+
+        if (t < 1) {
+          animationFrame = requestAnimationFrame(tick);
+        } else if (typeof onComplete === "function") {
+          onComplete();
+        }
+      };
+
+      animationFrame = requestAnimationFrame(tick);
+    };
+
+    const handleDoubleClick = (event) => {
+      if (!sceneRef.current || !controlsRef.current) {
+        return;
+      }
+
+      const rect = gl.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      const intersects = raycaster.intersectObject(sceneRef.current, true);
+      if (intersects.length === 0) {
+        return;
+      }
+
+      const hitPoint = intersects[0].point.clone();
+      const viewDirection = camera.getWorldDirection(new THREE.Vector3()).normalize();
+      const currentDistance = camera.position.distanceTo(hitPoint);
+      const zoomDistance = Math.max(16, currentDistance * 0.6);
+      const endPosition = hitPoint.clone().add(viewDirection.multiplyScalar(-zoomDistance));
+      const startPosition = camera.position.clone();
+      const startTarget = controlsRef.current.target.clone();
+
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+
+      animateCamera(startPosition, startTarget, endPosition, hitPoint, () => {
+        saveCameraState({
+          position: [endPosition.x, endPosition.y, endPosition.z],
+          target: [hitPoint.x, hitPoint.y, hitPoint.z],
+          zoomDistance
+        });
+      });
+    };
+
+    gl.domElement.addEventListener("dblclick", handleDoubleClick);
+
+    return () => {
+      gl.domElement.removeEventListener("dblclick", handleDoubleClick);
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [camera, controlsRef, gl.domElement, pointer, raycaster, sceneRef]);
+
+  return null;
 }
 
 class ModelErrorBoundary extends Component {
@@ -521,7 +510,6 @@ export default function MapView() {
   const controlsRef = useRef();
   const canvasWrapperRef = useRef();
   const [isModelLoaded, setIsModelLoaded] = useState(false);
-  const [scanAlert, setScanAlert] = useState(null);
   const previousVisitorsRef = useRef({});
 
   const isSecurityUser = userRole === "security";
@@ -586,25 +574,14 @@ export default function MapView() {
       const visitorList = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
       const activeVisitors = visitorList.filter(isActiveVisitorWithLocation);
 
-      // detect new/updated office scans
-      activeVisitors.forEach((v) => {
-        try {
-          const key = getVisitorLocationKey(v);
-          const prev = previousVisitorsRef.current[v.id];
-          const lastSeenChanged = !prev || prev.lastSeen !== v.lastSeen;
-          if (key === "office" && lastSeenChanged) {
-            setScanAlert({ id: v.id, name: v.name || v.id });
-          }
-          previousVisitorsRef.current[v.id] = v;
-        } catch {
-          // ignore
-        }
-      });
-
       Object.keys(previousVisitorsRef.current).forEach((id) => {
         if (!visitorList.find((x) => x.id === id)) {
           delete previousVisitorsRef.current[id];
         }
+      });
+
+      visitorList.forEach((v) => {
+        previousVisitorsRef.current[v.id] = v;
       });
 
       setVisitorMarkers(activeVisitors);
@@ -667,7 +644,7 @@ export default function MapView() {
     <div>
       <div ref={canvasWrapperRef} style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#0b1220" }}>
         {(isSecurityUser || isAuthorizedUser) && (
-          <div style={{ position: "absolute", bottom: 18, right: 18, zIndex: 100001, display: "flex", flexDirection: "column", gap: 14, pointerEvents: "auto" }}>
+          <div style={{ position: "absolute", bottom: 18, right: 18, zIndex: 100020, display: "flex", flexDirection: "column", gap: 14, pointerEvents: "auto" }}>
             {isSecurityUser && (
               <button
                 type="button"
@@ -721,20 +698,18 @@ export default function MapView() {
           portal={portalElement}
           setModelLoaded={setIsModelLoaded}
         />
+        {/* Loading overlay renders while model isn't ready */}
         {!isModelLoaded && <LoadingOverlay />}
-        <ScanAlert alert={scanAlert} onDismiss={() => setScanAlert(null)} />
+
         {showDashboard && isSecurityUser && (
           <div
             className="overlay-dashboard"
             style={{
               position: "absolute",
-              inset: 18,
-              margin: "0 auto",
-              width: "calc(100% - 36px)",
-              height: "calc(100% - 36px)",
+              inset: 0,
               borderRadius: 28,
               pointerEvents: "none",
-              zIndex: 99999,
+              zIndex: 100005,
               display: "grid",
               placeItems: "center"
             }}

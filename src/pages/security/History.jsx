@@ -6,57 +6,72 @@
  * - Nagbibigay ng search at pinned status pills para madaling ma-scan ang history.
  * - Bahagi ng app: historical records at auditing para sa security team.
  */
+// I-import ang hooks para sa state at effect sa component.
 import { useState, useEffect } from "react";
+// I-import ang Firestore helper para makinig sa visitors collection.
 import { collection, onSnapshot } from "firebase/firestore";
+// I-import ang Firestore instance para makapag-read ng data.
 import { db } from "../../firebase";
 
+// I-translate ang visitor status sa label na ilalabas sa history card.
 function getViolationLabel(visitor) {
-  // I-translate ang visitor status sa label na ipinapakita sa history card.
+  // Kung may violation type na Both, ipinapakita ang ganitong label.
   if (visitor.violationType === "Both") {
     return "Both";
   }
 
+  // Kung may violation type na No Confirmation, ipinapakita ang ganitong label.
   if (visitor.violationType === "No Confirmation") {
     return "No Confirmation";
   }
 
+  // Kung may violation type na Exceed Time, ipinapakita ang ganitong label.
   if (visitor.violationType === "Exceed Time") {
     return "Exceed Time";
   }
 
+  // Kung status ay expired, ipinapakita angExpired label.
   if (visitor.status === "expired") {
     return "Expired";
   }
 
+  // Kung status ay deactivated, ipinapakita ang Completed label.
   if (visitor.status === "deactivated") {
     return "Completed";
   }
 
+  // Kung walang match, ibinabalik ang default status o Unknown.
   return visitor.status || "Unknown";
 }
 
+// I-pili ang class name para sa pill color base sa status.
 function getPillClass(visitor) {
-  // Piliin ang kulay base sa status ng visitor.
-  if (visitor.status === "deactivated") {
+  // Kung completed na ang visitor, gagamitin ang done style.
+  if (visitor.status === "deactivated" && !visitor.violationType) {
     return "status-pill--done";
   }
 
+  // Kung may violation o expired, gagamitin ang expired style (red).
   if (visitor.violationType || visitor.status === "expired") {
     return "status-pill--expired";
   }
 
+  // Default para sa completed records.
   return "status-pill--done";
 }
 
+// I-filter ang visitors base sa pangalan para sa search box.
 function filterVisitorsByName(allVisitors, searchText) {
-  // I-filter ang listahan base sa pangalan ng visitor.
+  // Kung walang search text, ibinabalik ang buong listahan.
   if (!searchText) {
     return allVisitors;
   }
 
+  // Ihiwa-hiwalay ang exact match at ibang match.
   const exactMatches = [];
   const otherMatches = [];
 
+  // I-iterate ang bawat visitor at tinitingnan kung may match sa pangalan.
   allVisitors.forEach(function (visitor) {
     const name = (visitor.name || "").toLowerCase();
 
@@ -67,18 +82,22 @@ function filterVisitorsByName(allVisitors, searchText) {
     }
   });
 
+  // Ibalik ang exact matches muna saka ang iba pang match.
   return [...exactMatches, ...otherMatches];
 }
 
+// I-export ang History component para sa history page.
 export default function History() {
   // I-store ang records, search text, at loading state.
   const [visitors, setVisitors] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // I-listen sa Firestore at i-filter ang completed at expired visitor records.
   useEffect(function () {
-    // Pakinggan ang visitors sa Firestore at kunin lang ang completed/expired records.
+    // Pinapakinggan ang visitors collection sa Firestore.
     const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
+      // Ginagawa ang visitor list mula sa snapshot at i-filter ang relevant statuses.
       const visitorList = snapshot.docs
         .map(function (item) {
           return {
@@ -93,22 +112,28 @@ export default function History() {
           return (second.endTime || second.startTime) - (first.endTime || first.startTime);
         });
 
+      // Ini-update ang state para maipakita ang history records.
       setVisitors(visitorList);
       setLoading(false);
     });
 
+    // I-clean up ang listener kapag aalis ang component.
     return function () {
       unsubscribe();
     };
   }, []);
 
+  // I-trim ang input at gawing lowercase para sa consistent search.
   const searchText = search.trim().toLowerCase();
+  // I-filter ang visitors base sa search input.
   const filteredVisitors = filterVisitorsByName(visitors, searchText);
 
+  // I-clear ang search field kapag pinindot ang button.
   function handleClearSearch() {
     setSearch("");
   }
 
+  // I-render ang history page layout.
   return (
     <div className="page-card">
       <div className="card">

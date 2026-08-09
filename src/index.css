@@ -856,8 +856,8 @@ select:focus {
 
 /* Row ng search input at filter controls sa history at visitor list views. */
 .history-scroll {
-  max-height: 790px;
-  min-height: 790px;
+  max-height: 780px;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -967,9 +967,12 @@ select:focus {
 .history-grid {
   display: grid;
   gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .visitor-card {
+  width: 100%;
+  max-width: 100%;
   border: 1px solid rgba(148, 163, 184, 0.16);
   border-radius: 16px;
   padding: 14px;
