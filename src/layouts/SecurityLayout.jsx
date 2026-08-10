@@ -88,6 +88,9 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
   }, [visitors]);
 
   useEffect(() => {
+    const OFFICE_BASELINE_KEY = "trackvis-office-scan-baseline";
+    const hasLoadedInitialSnapshot = { current: false };
+
     function getVisitorLocationKey(visitor) {
       const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
       if (locationName.includes("office")) {
@@ -99,39 +102,105 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
       return "entrance";
     }
 
+    function getTimestampMillis(value) {
+      if (!value) {
+        return null;
+      }
+      if (typeof value.toMillis === "function") {
+        return value.toMillis();
+      }
+      if (typeof value === "number") {
+        return value;
+      }
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function loadOfficeScanBaseline() {
+      if (typeof window === "undefined") {
+        return {};
+      }
+
+      try {
+        const stored = window.localStorage.getItem(OFFICE_BASELINE_KEY);
+        return stored ? JSON.parse(stored) : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveOfficeScanBaseline(baseline) {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      try {
+        window.localStorage.setItem(OFFICE_BASELINE_KEY, JSON.stringify(baseline));
+      } catch {
+        // ignore failures
+      }
+    }
+
+    const baselineRef = { current: loadOfficeScanBaseline() };
+
     const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
       const visitorList = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
       setVisitors(visitorList);
       const now = Date.now();
+      const issuedAlertKeys = new Set();
 
       visitorList.forEach((visitor) => {
-        const prev = previousVisitorSnapshotRef.current[visitor.id];
         const key = getVisitorLocationKey(visitor);
-        const lastSeenChanged = !prev || prev.lastSeen !== visitor.lastSeen || prev.currentLocation !== visitor.currentLocation;
         const status = (visitor.status || "").toString().toLowerCase();
         const visitorEndTime = Number(visitor.endTime || 0);
         const hasExceededTime = visitorEndTime > 0 && visitorEndTime <= now;
+        const lastSeenMillis = getTimestampMillis(visitor.lastSeen);
+        const officeScanKey = key === "office" && lastSeenMillis ? `${visitor.id}_${lastSeenMillis}` : null;
+        const persistedOfficeScanKey = Object.prototype.hasOwnProperty.call(baselineRef.current, visitor.id)
+          ? baselineRef.current[visitor.id]
+          : null;
 
-        // Check for office reader alert only
-        if (key === "office" && lastSeenChanged && !hasExceededTime && status === "active") {
-          const officeAlertKey = `office_${visitor.id}`;
-          
-          if (!isAlertAcknowledged(officeAlertKey)) {
+        const isNewOfficeScan = officeScanKey && officeScanKey !== persistedOfficeScanKey;
+
+        if (hasLoadedInitialSnapshot.current && isNewOfficeScan && !hasExceededTime && status === "active") {
+          const officeAlertKey = `office_${officeScanKey}`;
+
+          if (!isAlertAcknowledged(officeAlertKey) && !issuedAlertKeys.has(officeAlertKey)) {
             const visitorName = visitor.name || visitor.id;
             const text = `Our visitor ${visitorName}, scan by the office reader — keep watching.`;
-            setAlertAcknowledged(officeAlertKey);
             setSecurityAlert({ id: officeAlertKey, text, type: "office" });
+            issuedAlertKeys.add(officeAlertKey);
           }
         }
+      });
 
-        previousVisitorSnapshotRef.current[visitor.id] = visitor;
+      visitorList.forEach((visitor) => {
+        const lastSeenMillis = getTimestampMillis(visitor.lastSeen);
+        const key = getVisitorLocationKey(visitor);
+        const officeScanKey = key === "office" && lastSeenMillis ? `${visitor.id}_${lastSeenMillis}` : null;
+
+        previousVisitorSnapshotRef.current[visitor.id] = {
+          officeScanKey,
+          lastSeenMillis,
+          currentLocation: visitor.currentLocation,
+          location: visitor.location,
+        };
+
+        baselineRef.current[visitor.id] = officeScanKey;
       });
 
       Object.keys(previousVisitorSnapshotRef.current).forEach((id) => {
         if (!visitorList.find((item) => item.id === id)) {
           delete previousVisitorSnapshotRef.current[id];
+          delete baselineRef.current[id];
         }
       });
+
+      if (!hasLoadedInitialSnapshot.current) {
+        hasLoadedInitialSnapshot.current = true;
+      }
+
+      saveOfficeScanBaseline(baselineRef.current);
     });
 
     return () => unsubscribe();
