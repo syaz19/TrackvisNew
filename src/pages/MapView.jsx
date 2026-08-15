@@ -17,8 +17,7 @@ import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
 // import ng Firebase instances para sa auth at db.
 import { auth, db } from "../firebase";
 // import ng dashboard components para ipakita kapag naka-security/authorized.
-import SecurityDashboard from "./security/Dashboard";
-import AuthorizedDashboard from "./authorized/Dashboard";
+import RegisterVisitor from "./security/RegisterVisitor";
 
 // mga kulay na ginagamit para sa visitor markers.
 const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
@@ -56,7 +55,7 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-80, 20, -70],
+  position: [-90, 30, -85],
   target: [0, 0, 0],
   zoomDistance: 140
 };
@@ -501,7 +500,7 @@ export default function MapView() {
   // Pangunahing component para sa 3D view page.
   const [visitorMarkers, setVisitorMarkers] = useState([]);
   const [cameraState, setCameraState] = useState(DEFAULT_CAMERA_STATE);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [userSubRole, setUserSubRole] = useState(null);
   const modelUrl = BASE_MODEL_URL_WITH_CACHE_BUST;
@@ -514,8 +513,8 @@ export default function MapView() {
 
   const isSecurityUser = userRole === "security";
   const isAuthorizedUser = userRole === "authorized";
-  const showLabels = isAuthorizedUser || (isSecurityUser && !showDashboard);
-  const showMarkers = isAuthorizedUser || (isSecurityUser && !showDashboard);
+  const showLabels = isAuthorizedUser || (isSecurityUser && !showRegister);
+  const showMarkers = isAuthorizedUser || (isSecurityUser && !showRegister);
 
   useEffect(() => {
     if (canvasWrapperRef.current) {
@@ -607,8 +606,8 @@ export default function MapView() {
     }
   };
 
-  const handleDashboardToggle = () => {
-    setShowDashboard((current) => !current);
+  const handleRegisterToggle = () => {
+    setShowRegister((current) => !current);
   };
 
   const visibleVisitors = useMemo(() => {
@@ -648,9 +647,9 @@ export default function MapView() {
             {isSecurityUser && (
               <button
                 type="button"
-                onClick={handleDashboardToggle}
+                onClick={handleRegisterToggle}
                 style={{
-                  background: showDashboard ? "rgba(37, 99, 235, 0.95)" : "rgba(102, 126, 234, 0.95)",
+                  background: showRegister ? "rgba(37, 99, 235, 0.95)" : "rgba(102, 126, 234, 0.95)",
                   color: "#fff",
                   border: "none",
                   borderRadius: 10,
@@ -663,7 +662,7 @@ export default function MapView() {
                   textAlign: "center"
                 }}
               >
-                {showDashboard ? "Hide Dashboard" : "Dashboard"}
+                {showRegister ? "Hide Register" : "Register Visitor"}
               </button>
             )}
             <button
@@ -701,9 +700,9 @@ export default function MapView() {
         {/* Loading overlay renders while model isn't ready */}
         {!isModelLoaded && <LoadingOverlay />}
 
-        {showDashboard && isSecurityUser && (
+        {showRegister && isSecurityUser && (
           <div
-            className="overlay-dashboard"
+            className="overlay-register"
             style={{
               position: "absolute",
               inset: 0,
@@ -729,18 +728,8 @@ export default function MapView() {
                 backdropFilter: "blur(10px)"
               }}
             >
-              <div style={{ padding: "18px 24px", borderBottom: "1px solid rgba(148, 163, 184, 0.12)", display: "flex", alignItems: "center", gap: 12 }}>
-                <div>
-                  <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.9rem", textTransform: "uppercase", letterSpacing: "0.18em" }}>
-                    Dashboard
-                  </p>
-                  <h2 style={{ margin: "6px 0 0", color: "#f8fafc", fontSize: "1.6rem" }}>
-                    SCC 3D Dashboard
-                  </h2>
-                </div>
-              </div>
-              <div style={{ flex: 1, overflowY: "auto", padding: "22px 22px 24px" }}>
-                {userRole === "authorized" ? <AuthorizedDashboard /> : <SecurityDashboard />}
+              <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 24px" }}>
+                <RegisterVisitor />
               </div>
             </div>
           </div>

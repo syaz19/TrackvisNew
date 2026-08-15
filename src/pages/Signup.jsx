@@ -13,7 +13,7 @@ import { auth, db } from "../firebase";
 // Firestore helpers to write a document
 import { doc, setDoc } from "firebase/firestore";
 // Router helpers for navigation and links
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const pageBackground = "radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 20%), linear-gradient(180deg, #07101f 0%, #0f172a 100%)";
 const cardBackground = "#111827";
@@ -22,9 +22,6 @@ const borderColor = "rgba(148, 163, 184, 0.18)";
 const accentColor = "#2563eb";
 
 export default function Signup() {
-  // Router navigate function para mag-redirect pagkatapos ng signup
-  const navigate = useNavigate();
-
   // State: email input field
   const [email, setEmail] = useState("");
   // State: password input field
@@ -52,19 +49,30 @@ export default function Signup() {
 
   async function handleSignup(event) {
     // Step 1: pigilan ang pag-submit ng form.
-    // Step 2: gumawa ng Firebase account.
-    // Step 3: i-save ang role at sub-role sa Firestore.
-    // Step 4: mag-sign out at bumalik sa login page.
+    // Step 2: tiyakin na valid ang email.
+    // Step 3: gumawa ng Firebase account.
+    // Step 4: i-save ang role at sub-role sa Firestore.
+    // Step 5: mag-sign out at bumalik sa login page.
     event.preventDefault();
 
+    const trimmedEmail = email.trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+
+    if (!emailRegex.test(trimmedEmail)) {
+      alert("Only valid Gmail addresses ending in @gmail.com are allowed for account creation.");
+      return;
+    }
+
     try {
+      // Markahan ang signup flow bago mag-create ng user para maiwasan ang flash sa protected app route.
+      sessionStorage.setItem("trackvis-signup-pending", "1");
       // Gumawa ng Firebase user account gamit ang email at password
-      const signupResult = await createUserWithEmailAndPassword(auth, email, password);
+      const signupResult = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
       // Tukuyin kung ang napiling role ay `authorized`
       const isAuthorizedRole = role === "authorized";
       // I-build ang user document na ise-save sa `users/{email}`
       const userData = {
-        email,
+        email: trimmedEmail,
         role,
         subRole: null
       };
@@ -76,10 +84,9 @@ export default function Signup() {
 
       // Isulat ang user document (keyed by email) sa Firestore
       await setDoc(doc(db, "users", signupResult.user.email), userData);
-      // Sign out ang bagong user para i-require ang login flow pagkatapos
       await signOut(auth);
-      // I-redirect pabalik sa login page
-      navigate("/", { replace: true });
+      sessionStorage.removeItem("trackvis-signup-pending");
+      window.location.replace("/");
     } catch (error) {
       alert(error.message);
     }

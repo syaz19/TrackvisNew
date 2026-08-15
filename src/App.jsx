@@ -59,6 +59,18 @@ export default function App() {
     // Step 2: kung may user, kunin ang user data sa Firestore.
     // Step 3: i-update ang auth state sa app.
     async function handleAuthStateChange(loggedInUser) {
+      const isPendingSignup = sessionStorage.getItem("trackvis-signup-pending") === "1";
+
+      if (isPendingSignup) {
+        sessionStorage.removeItem("trackvis-signup-pending");
+        const emptyState = buildAuthState(null, null);
+        setAuthState(emptyState);
+        await signOut(auth).catch(function () {
+          // Hindi mahalaga kung may error sa sign out habang pending ang signup flow.
+        });
+        return;
+      }
+
       if (!loggedInUser) {
         const emptyState = buildAuthState(null, null);
         setAuthState(emptyState);

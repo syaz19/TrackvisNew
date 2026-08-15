@@ -47,10 +47,10 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   let menuLinks = [];
 
   if (role === "security") {
-    // Security view links: SCC 3D map, Register, History, Growth analytics
+    // Security view links: SCC 3D map, Dashboard, History, Growth analytics
     menuLinks = [
       { to: "/security/map", label: "SCC 3D" },
-      { to: "/security/register", label: "Register Visitor" },
+      { to: "/security", label: "Dashboard" },
       { to: "/security/history", label: "History" },
       { to: "/security/growth", label: "Growth" }
     ];
