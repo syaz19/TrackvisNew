@@ -6,19 +6,25 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import { db } from "../firebase";
 
-function SecurityPopup({ alert, onDismiss }) {
-  if (!alert) {
+function SecurityPopup({ alerts, onDismiss }) {
+  if (!alerts || alerts.length === 0) {
     return null;
   }
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200000, pointerEvents: "none", padding: "16px" }}>
-      <div style={{ pointerEvents: "auto", width: "min(500px, calc(100% - 32px))", background: "rgba(2, 6, 23, 0.98)", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", border: "1px solid rgba(148, 163, 184, 0.18)", padding: "18px 20px" }}>
-        <p style={{ margin: 0, color: "#fff", fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.5 }}>{alert.text}</p>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
-          <button type="button" onClick={onDismiss} style={{ background: "#2563eb", border: "none", color: "#fff", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}>OK</button>
-        </div>
-      </div>
+    <div style={{ position: "fixed", top: 0, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 200000, pointerEvents: "none", padding: "16px" }}>
+      {alerts.map(function (alert) {
+        return (
+          <div key={alert.id} style={{ pointerEvents: "auto", width: "min(500px, calc(100% - 32px))", background: "rgba(2, 6, 23, 0.98)", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", border: "1px solid rgba(148, 163, 184, 0.18)", padding: "18px 20px" }}>
+            <p style={{ margin: 0, color: "#fff", fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.5 }}>{alert.text}</p>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+              <button type="button" onClick={function () {
+                onDismiss(alert.id);
+              }} style={{ background: "#2563eb", border: "none", color: "#fff", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}>OK</button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -26,7 +32,7 @@ function SecurityPopup({ alert, onDismiss }) {
 export default function SecurityLayout({ children, currentUser, userData, hideTitle, hideSubtitle, isSmallTitle, title }) {
   // state para sa mobile sidebar open/close
   const [menuOpen, setMenuOpen] = useState(false);
-  const [securityAlert, setSecurityAlert] = useState(null);
+  const [securityAlerts, setSecurityAlerts] = useState([]);
   const [visitors, setVisitors] = useState([]);
   const previousVisitorSnapshotRef = useRef({});
   const currentTimeRef = useRef(Date.now());
@@ -52,6 +58,18 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     return acknowledged[alertKey] === true;
   }
 
+  function pushSecurityAlert(alert) {
+    setSecurityAlerts(function (currentAlerts) {
+      if (currentAlerts.some(function (item) {
+        return item.id === alert.id;
+      })) {
+        return currentAlerts;
+      }
+
+      return [...currentAlerts, alert];
+    });
+  }
+
   // Real-time timer to check for exceeded times every second
   useEffect(() => {
     const timer = setInterval(() => {
@@ -74,11 +92,11 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
         // Trigger exceed time alert when time runs out
         if (status === "active" && hasExceededTime) {
           const exceedAlertKey = `exceed_${visitor.id}`;
-          
+
           if (!isAlertAcknowledged(exceedAlertKey)) {
             const visitorName = visitor.name || visitor.id;
             const text = `Our visitor ${visitorName} exceed time`;
-            setSecurityAlert({ id: exceedAlertKey, text, type: "exceed" });
+            pushSecurityAlert({ id: exceedAlertKey, text, type: "exceed" });
           }
         }
       });
@@ -168,7 +186,7 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
           if (!isAlertAcknowledged(officeAlertKey) && !issuedAlertKeys.has(officeAlertKey)) {
             const visitorName = visitor.name || visitor.id;
             const text = `Our visitor ${visitorName}, scan by the office reader — keep watching.`;
-            setSecurityAlert({ id: officeAlertKey, text, type: "office" });
+            pushSecurityAlert({ id: officeAlertKey, text, type: "office" });
             issuedAlertKeys.add(officeAlertKey);
           }
         }
@@ -206,11 +224,15 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     return () => unsubscribe();
   }, []);
 
-  function handleAlertDismiss() {
-    if (securityAlert?.id) {
-      setAlertAcknowledged(securityAlert.id);
+  function handleAlertDismiss(alertId) {
+    if (alertId) {
+      setAlertAcknowledged(alertId);
     }
-    setSecurityAlert(null);
+    setSecurityAlerts(function (currentAlerts) {
+      return currentAlerts.filter(function (alert) {
+        return alert.id !== alertId;
+      });
+    });
   }
 
   // Toggle handler para sa topbar mobile menu button
@@ -248,7 +270,7 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
         />
         <div className="content-body">{children}</div>
       </div>
-      <SecurityPopup alert={securityAlert} onDismiss={handleAlertDismiss} />
+      <SecurityPopup alerts={securityAlerts} onDismiss={handleAlertDismiss} />
     </div>
   );
 }

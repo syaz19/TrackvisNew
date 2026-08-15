@@ -5,7 +5,8 @@ import { signOut } from "firebase/auth";
 // React hooks na gagamitin: state, lifecycle effects, at refs.
 import { useState, useEffect, useRef } from "react";
 // Firebase auth instance mula sa lokal na firebase config.
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 // Helper para i-clear ang local auth state (custom app logic sa authManager).
 import { clearAuthState } from "../authManager";
 
@@ -22,6 +23,34 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   const profileRef = useRef(null);
   // navigate function para mag-redirect programmatically
   const navigate = useNavigate();
+  const [pendingVisitorCount, setPendingVisitorCount] = useState(0);
+
+  useEffect(
+    function () {
+      if (role !== "authorized" || !userData?.subRole) {
+        setPendingVisitorCount(0);
+        return undefined;
+      }
+
+      const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
+        const count = snapshot.docs.filter(function (item) {
+          const visitor = item.data();
+          return (
+            (visitor.destination || "") === userData.subRole &&
+            visitor.status === "active" &&
+            (visitor.confirmStatus || "") !== "Done"
+          );
+        }).length;
+
+        setPendingVisitorCount(count);
+      });
+
+      return function () {
+        unsubscribe();
+      };
+    },
+    [role, userData]
+  );
 
   // function na tina-trigger kapag nag-logout ang user
   async function handleLogout() {
@@ -58,7 +87,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
     // Authorized personnel links: their map, dashboard, and history
     menuLinks = [
       { to: "/authorized/map", label: "SCC 3D" },
-      { to: "/authorized", label: "Dashboard" },
+      { to: "/authorized", label: "Dashboard", count: pendingVisitorCount },
       { to: "/authorized/history", label: "History" }
     ];
   }
@@ -137,10 +166,13 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
         {/* Navigation links generated mula sa `menuLinks` array */}
         <nav className="nav-links">
           {menuLinks.map(function (link) {
+            const isDashboardWithCount = role === "authorized" && link.to === "/authorized" && link.count > 0;
+
             return (
               // bawat Link ay nagna-navigate papunta sa tinukoy na ruta at nagsasara ng menu pagkatapos
-              <Link key={link.to} to={link.to} onClick={onClose}>
-                {link.label}
+              <Link key={link.to} to={link.to} onClick={onClose} className={isDashboardWithCount ? "nav-link-with-count" : ""}>
+                <span>{link.label}</span>
+                {isDashboardWithCount && <span className="nav-link-count">{link.count}</span>}
               </Link>
             );
           })}
