@@ -28,7 +28,6 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   useEffect(
     function () {
       if (role !== "authorized" || !userData?.subRole) {
-        setPendingVisitorCount(0);
         return undefined;
       }
 
