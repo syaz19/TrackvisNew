@@ -1,6 +1,6 @@
 // SecurityLayout: layout wrapper para sa security staff pages
 // Nagpo-provide ng Sidebar (role=security) at Topbar na naka-configure para sa security
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
@@ -34,31 +34,34 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
   const [menuOpen, setMenuOpen] = useState(false);
   const [securityAlerts, setSecurityAlerts] = useState([]);
   const [visitors, setVisitors] = useState([]);
-  const previousVisitorSnapshotRef = useRef({});
-  const currentTimeRef = useRef(Date.now());
+  const currentTimeRef = useRef(0);
+
+  useEffect(() => {
+    currentTimeRef.current = Date.now();
+  }, []);
 
   // Helper functions to manage alert acknowledgments in localStorage
-  function getAcknowledgedAlerts() {
+  const getAcknowledgedAlerts = useCallback(function () {
     try {
       const stored = localStorage.getItem("acknowledgedAlerts");
       return stored ? JSON.parse(stored) : {};
-    } catch (e) {
+    } catch {
       return {};
     }
-  }
+  }, []);
 
-  function setAlertAcknowledged(alertKey) {
+  const setAlertAcknowledged = useCallback(function (alertKey) {
     const acknowledged = getAcknowledgedAlerts();
     acknowledged[alertKey] = true;
     localStorage.setItem("acknowledgedAlerts", JSON.stringify(acknowledged));
-  }
+  }, [getAcknowledgedAlerts]);
 
-  function isAlertAcknowledged(alertKey) {
+  const isAlertAcknowledged = useCallback(function (alertKey) {
     const acknowledged = getAcknowledgedAlerts();
     return acknowledged[alertKey] === true;
-  }
+  }, [getAcknowledgedAlerts]);
 
-  function pushSecurityAlert(alert) {
+  const pushSecurityAlert = useCallback(function (alert) {
     setSecurityAlerts(function (currentAlerts) {
       if (currentAlerts.some(function (item) {
         return item.id === alert.id;
@@ -68,7 +71,24 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
 
       return [...currentAlerts, alert];
     });
-  }
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
+      const visitorList = snapshot.docs.map(function (item) {
+        return {
+          id: item.id,
+          ...item.data()
+        };
+      });
+
+      setVisitors(visitorList);
+    });
+
+    return function () {
+      unsubscribe();
+    };
+  }, []);
 
   // Real-time timer to check for exceeded times every second
   useEffect(() => {
@@ -103,126 +123,8 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     }, 1000);
 
     return () => clearInterval(checkTimer);
-  }, [visitors]);
+  }, [visitors, isAlertAcknowledged, pushSecurityAlert]);
 
-  useEffect(() => {
-    const OFFICE_BASELINE_KEY = "trackvis-office-scan-baseline";
-    const hasLoadedInitialSnapshot = { current: false };
-
-    function getVisitorLocationKey(visitor) {
-      const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
-      if (locationName.includes("office")) {
-        return "office";
-      }
-      if (locationName.includes("library")) {
-        return "library";
-      }
-      return "entrance";
-    }
-
-    function getTimestampMillis(value) {
-      if (!value) {
-        return null;
-      }
-      if (typeof value.toMillis === "function") {
-        return value.toMillis();
-      }
-      if (typeof value === "number") {
-        return value;
-      }
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : null;
-    }
-
-    function loadOfficeScanBaseline() {
-      if (typeof window === "undefined") {
-        return {};
-      }
-
-      try {
-        const stored = window.localStorage.getItem(OFFICE_BASELINE_KEY);
-        return stored ? JSON.parse(stored) : {};
-      } catch {
-        return {};
-      }
-    }
-
-    function saveOfficeScanBaseline(baseline) {
-      if (typeof window === "undefined") {
-        return;
-      }
-
-      try {
-        window.localStorage.setItem(OFFICE_BASELINE_KEY, JSON.stringify(baseline));
-      } catch {
-        // ignore failures
-      }
-    }
-
-    const baselineRef = { current: loadOfficeScanBaseline() };
-
-    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
-      const visitorList = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-      setVisitors(visitorList);
-      const now = Date.now();
-      const issuedAlertKeys = new Set();
-
-      visitorList.forEach((visitor) => {
-        const key = getVisitorLocationKey(visitor);
-        const status = (visitor.status || "").toString().toLowerCase();
-        const visitorEndTime = Number(visitor.endTime || 0);
-        const hasExceededTime = visitorEndTime > 0 && visitorEndTime <= now;
-        const lastSeenMillis = getTimestampMillis(visitor.lastSeen);
-        const officeScanKey = key === "office" && lastSeenMillis ? `${visitor.id}_${lastSeenMillis}` : null;
-        const persistedOfficeScanKey = Object.prototype.hasOwnProperty.call(baselineRef.current, visitor.id)
-          ? baselineRef.current[visitor.id]
-          : null;
-
-        const isNewOfficeScan = officeScanKey && officeScanKey !== persistedOfficeScanKey;
-
-        if (hasLoadedInitialSnapshot.current && isNewOfficeScan && !hasExceededTime && status === "active") {
-          const officeAlertKey = `office_${officeScanKey}`;
-
-          if (!isAlertAcknowledged(officeAlertKey) && !issuedAlertKeys.has(officeAlertKey)) {
-            const visitorName = visitor.name || visitor.id;
-            const text = `Our visitor ${visitorName}, scan by the office reader — keep watching.`;
-            pushSecurityAlert({ id: officeAlertKey, text, type: "office" });
-            issuedAlertKeys.add(officeAlertKey);
-          }
-        }
-      });
-
-      visitorList.forEach((visitor) => {
-        const lastSeenMillis = getTimestampMillis(visitor.lastSeen);
-        const key = getVisitorLocationKey(visitor);
-        const officeScanKey = key === "office" && lastSeenMillis ? `${visitor.id}_${lastSeenMillis}` : null;
-
-        previousVisitorSnapshotRef.current[visitor.id] = {
-          officeScanKey,
-          lastSeenMillis,
-          currentLocation: visitor.currentLocation,
-          location: visitor.location,
-        };
-
-        baselineRef.current[visitor.id] = officeScanKey;
-      });
-
-      Object.keys(previousVisitorSnapshotRef.current).forEach((id) => {
-        if (!visitorList.find((item) => item.id === id)) {
-          delete previousVisitorSnapshotRef.current[id];
-          delete baselineRef.current[id];
-        }
-      });
-
-      if (!hasLoadedInitialSnapshot.current) {
-        hasLoadedInitialSnapshot.current = true;
-      }
-
-      saveOfficeScanBaseline(baselineRef.current);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   function handleAlertDismiss(alertId) {
     if (alertId) {

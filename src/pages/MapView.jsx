@@ -200,6 +200,7 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
     anchor.position[2] + (groupIndex === 0 ? 0 : Math.sin(angle) * radius)
   ];
   const color = markerColors[groupIndex % markerColors.length];
+  const isOfficeLocation = locationKey === "office";
 
   return (
     <group>
@@ -209,15 +210,12 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
       </mesh>
       <Html portal={portal} position={[position[0], position[1] + 0.95, position[2]]} center style={{ pointerEvents: "none", zIndex: 0 }}>
         <div
+          className={isOfficeLocation ? "trackvis-office-visitor-label" : "trackvis-default-visitor-label"}
           style={{
-            background: "rgba(15, 23, 42, 0.96)",
-            color: "#fff",
             padding: "6px 10px",
             borderRadius: "999px",
             fontSize: "12px",
             whiteSpace: "nowrap",
-            border: "1px solid rgba(255, 255, 255, 0.18)",
-            boxShadow: "0 12px 28px rgba(0, 0, 0, 0.18)",
             zIndex: 0
           }}
         >
