@@ -108,6 +108,7 @@ export default function Signup() {
           <option value="IT Dean">IT Dean</option>
           <option value="Criminology Dean">Criminology Dean</option>
           <option value="Education Dean">Education Dean</option>
+          <option value="Librarian">Librarian</option>
         </select>
       </>
     );

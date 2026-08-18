@@ -659,14 +659,14 @@ a {
 
 /* Scrollable na container para sa visitor list at history views. */
 .visitor-list-scroll {
-  max-height: 380px;
+  max-height: 670px;
   min-height: 280px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .history-scroll {
-  max-height: 700px;
+  max-height: 800px;
   min-height: 520px;
   overflow-y: auto;
   padding-right: 4px;
