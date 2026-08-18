@@ -24,6 +24,8 @@ export default function Dashboard() {
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
+  // I-store ang selected visitor category tab.
+  const [selectedCategory, setSelectedCategory] = useState("Personal / Non-School Related");
 
   // I-set up ang listener para sa live updates sa visitors collection.
   useEffect(function () {
@@ -50,29 +52,52 @@ export default function Dashboard() {
 
   // I-define ang function na nag-uuri kung may violation ba ang visitor.
   function getViolationType(visitor, timeValue) {
-    // Tinitingnan kung naka-confirm na ang visitor para malaman ang tamang violation label.
-    const isConfirmed = visitor.confirmStatus === "Done";
-    // I-convert ang endTime sa number para maihambing sa current time.
-    const visitorEndTime = Number(visitor.endTime || 0);
-    // Sinusuri kung naabot na ang deadline base sa end time at current time.
-    const hasReachedDeadline = visitorEndTime > 0 && visitorEndTime <= Number(timeValue || 0);
+    // Para sa Personal / Non-School Related visitors, walang confirmation requirement.
+    // Kaya ang ONLY possible violation ay Time Exceeded.
+    if (visitor.purpose === "Personal / Non-School Related") {
+      // I-convert ang endTime sa number para maihambing sa current time.
+      const visitorEndTime = Number(visitor.endTime || 0);
+      // Sinusuri kung naabot na ang deadline base sa end time at current time.
+      const hasReachedDeadline = visitorEndTime > 0 && visitorEndTime <= Number(timeValue || 0);
 
-    // Kung walang confirmation at tapos na ang oras, may parehong violation.
-    if (!isConfirmed && hasReachedDeadline) {
-      return "Both";
+      // Kung lumampas na sa oras, ipinapakita ang Time Exceeded violation.
+      if (hasReachedDeadline) {
+        return "Time Exceeded";
+      }
+
+      // Kung walang violation, ibinabalik ang empty string.
+      return "";
     }
 
-    // Kung wala pang confirmation, ipinapakita ang ganitong violation type.
-    if (!isConfirmed) {
-      return "No Confirmation";
+    // Para sa School Related visitors, check both confirmation at time.
+    if (visitor.purpose === "School Related") {
+      // Tinitingnan kung naka-confirm na ang visitor para malaman ang tamang violation label.
+      const isConfirmed = visitor.confirmStatus === "Done";
+      // I-convert ang endTime sa number para maihambing sa current time.
+      const visitorEndTime = Number(visitor.endTime || 0);
+      // Sinusuri kung naabot na ang deadline base sa end time at current time.
+      const hasReachedDeadline = visitorEndTime > 0 && visitorEndTime <= Number(timeValue || 0);
+
+      // Kung walang confirmation at tapos na ang oras, may parehong violation.
+      if (!isConfirmed && hasReachedDeadline) {
+        return "Both";
+      }
+
+      // Kung wala pang confirmation, ipinapakita ang ganitong violation type.
+      if (!isConfirmed) {
+        return "No Confirmation";
+      }
+
+      // Kung naabot na ang deadline, ipinapakita ang overstay violation.
+      if (hasReachedDeadline) {
+        return "Time Exceeded";
+      }
+
+      // Kung walang violation, ibinabalik ang empty string.
+      return "";
     }
 
-    // Kung naabot na ang deadline, ipinapakita ang overstay violation.
-    if (hasReachedDeadline) {
-      return "Exceed Time";
-    }
-
-    // Kung walang violation, ibinabalik ang empty string.
+    // Default: walang violation type detected.
     return "";
   }
 
@@ -160,19 +185,42 @@ export default function Dashboard() {
     try {
       // Tinitingnan kung ang visitor ay may confirmation bilang done.
       const isConfirmed = visitor.confirmStatus === "Done";
-      // Kinukuha ang violation type bago i-update ang record.
-      const violationType = getViolationType(visitor, currentTime);
-      // Pinapili ang susunod na status depende sa confirmation.
-      const nextStatus = isConfirmed ? "deactivated" : "expired";
+      const isPersonalVisitor = visitor.purpose === "Personal / Non-School Related";
+      const hasReachedDeadline = Number(visitor.endTime || 0) <= currentTime;
+
+      // Para sa Personal visitors na manually deactivated BAGO mag-expire:
+      // Dapat walang violation at dapat maging "Completed" (deactivated), hindi "Expired".
+      const shouldTreatAsCompleted = isPersonalVisitor && !hasReachedDeadline;
+      // Pinapili ang susunod na status depende sa confirmation at visitor type.
+      const nextStatus = shouldTreatAsCompleted || isConfirmed ? "deactivated" : "expired";
+
+      // Kung Personal at hindi pa nag-expire, hindi may violation.
+      // Kung Personal pero nag-expire na, mag-set ng Time Exceeded violation.
+      let violationType = "";
+      if (isPersonalVisitor && hasReachedDeadline) {
+        violationType = "Time Exceeded";
+      } else if (!isPersonalVisitor) {
+        // Para sa School Related, compute ang violation base sa confirmation at time.
+        violationType = getViolationType(visitor, currentTime);
+      }
+      // Para sa Personal visitors na manually deactivated bago mag-expire:
+      // violationType ay nananatiling "" (empty string, no violation).
 
       // Ina-update ang visitor status sa database.
-      // Note: Always save violationType if it exists, even for confirmed visitors
-      await updateDoc(doc(db, "visitors", visitor.id), {
+      const updateData = {
         status: nextStatus,
         endTime: visitor.endTime || currentTime,
-        timeOut: currentTime,
-        violationType: violationType
-      });
+        timeOut: currentTime
+      };
+      
+      // Kung may violation type, i-save ito. Kung wala, i-set lang ang empty string.
+      if (violationType) {
+        updateData.violationType = violationType;
+      } else {
+        updateData.violationType = "";
+      }
+      
+      await updateDoc(doc(db, "visitors", visitor.id), updateData);
 
       // Kung may UID, ini-release ang RFID tag.
       if (visitor.uid) {
@@ -204,6 +252,22 @@ export default function Dashboard() {
   const activeVisitorsList = visitors.filter(function (visitor) {
     return visitor.status === "active";
   });
+  
+  // I-filter ang Personal / Non-School Related visitors.
+  const personalVisitors = activeVisitorsList.filter(function (visitor) {
+    return visitor.purpose === "Personal / Non-School Related";
+  });
+  
+  // I-filter ang School Related visitors.
+  const schoolRelatedVisitors = activeVisitorsList.filter(function (visitor) {
+    return visitor.purpose === "School Related";
+  });
+  
+  // I-set ang displayed visitors base sa selected category.
+  const displayedVisitors = selectedCategory === "Personal / Non-School Related" 
+    ? personalVisitors 
+    : schoolRelatedVisitors;
+  
   // Kinukuha ang total ng active visitors.
   const activeVisitorsCount = activeVisitorsList.length;
   // Kinukuha ang bilang ng visitors with violations (expired or deactivated with violations).
@@ -256,11 +320,34 @@ export default function Dashboard() {
           <span className="status-pill status-pill--active">{activeVisitorsList.length} active</span>
         </div>
 
-        {activeVisitorsList.length === 0 ? (
-          <div className="empty-state">No active visitors right now.</div>
+        <div className="visitor-category-tabs">
+          <button
+            className={`category-tab ${selectedCategory === "Personal / Non-School Related" ? "category-tab--active" : ""}`}
+            onClick={function () {
+              setSelectedCategory("Personal / Non-School Related");
+            }}
+          >
+            Personal / Non-School Related {personalVisitors.length > 0 && `(${personalVisitors.length})`}
+          </button>
+          <button
+            className={`category-tab ${selectedCategory === "School Related" ? "category-tab--active" : ""}`}
+            onClick={function () {
+              setSelectedCategory("School Related");
+            }}
+          >
+            School Related {schoolRelatedVisitors.length > 0 && `(${schoolRelatedVisitors.length})`}
+          </button>
+        </div>
+
+        {displayedVisitors.length === 0 ? (
+          <div className="empty-state">
+            {selectedCategory === "Personal / Non-School Related"
+              ? "No personal/non-school related visitors are currently active."
+              : "No school-related visitors are currently active."}
+          </div>
         ) : (
           <div className="visitor-list visitor-list-scroll">
-            {activeVisitorsList.map(function (visitor) {
+            {displayedVisitors.map(function (visitor) {
               // I-set ang default style para sa active visitor card.
               let cardClassName = "visitor-card visitor-card--active";
               let statusLabel = "Active";
@@ -287,6 +374,11 @@ export default function Dashboard() {
               if (visitor.confirmStatus === "Done") {
                 confirmLabel = "Done";
               }
+              
+              // Para sa Personal visitors, ipakita ang "Not Required" para sa confirmation.
+              if (visitor.purpose === "Personal / Non-School Related") {
+                confirmLabel = "Not Required";
+              }
 
               let timeInLabel = "N/A";
 
@@ -308,11 +400,13 @@ export default function Dashboard() {
                   <div className="visitor-meta">
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                     <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
-                    <span>🎯 {visitor.destination}</span>
-                    <span>✓ Confirm: {confirmLabel}</span>
+                    {visitor.purpose === "School Related" && (
+                      <span>🎯 Destination: {visitor.destination}</span>
+                    )}
+                    <span>✓ Confirmation: {confirmLabel}</span>
                     <span>🕒 Time In: {timeInLabel}</span>
                     <span>⏱ Duration: {renderDuration(visitor.duration, visitor.durationUnit || "minutes")}</span>
-                    <span>⏳ Time Left: {getRemainingTime(visitor.endTime)}</span>
+                    <span>⌛ Time Left: {getRemainingTime(visitor.endTime)}</span>
                   </div>
 
                   {isNearWarning && <p className="alert-text">⚠ Less than 5 minutes left.</p>}

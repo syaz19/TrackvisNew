@@ -42,6 +42,12 @@ export default function RegisterVisitor() {
       [name]: value
     };
 
+    // Kung nagbago ang purpose/visit type sa "Personal / Non-School Related",
+    // i-clear ang destination at authorized personnel confirmation.
+    if (name === "purpose" && value === "Personal / Non-School Related") {
+      nextForm.destination = "";
+    }
+
     // Ini-update ang state ng form.
     setForm(nextForm);
   }
@@ -107,13 +113,20 @@ export default function RegisterVisitor() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    // Step 1: siguraduhin na may laman ang lahat ng kailangan.
-    // Step 2: suriin ang duration at RFID tag.
-    // Step 3: i-save ang visitor at i-update ang tag status.
-    const isFormComplete = form.name && form.purpose && form.destination && form.location && form.duration;
+    // Step 1: Siguraduhin na may napiling visit type.
+    if (!form.purpose) {
+      alert("Please select a visit type.");
+      return;
+    }
 
-    // Kung may kulang na field, ipinapakita ang alert.
-    if (!isFormComplete) {
+    // Step 2: Para sa School Related visitors, kailangan ang destination.
+    if (form.purpose === "School Related" && !form.destination) {
+      alert("Please select a destination.");
+      return;
+    }
+
+    // Step 3: Siguraduhin na may laman ang ibang required fields.
+    if (!form.name || !form.location || !form.duration) {
       alert("Please complete all required fields.");
       return;
     }
@@ -192,10 +205,19 @@ export default function RegisterVisitor() {
       // bilang prefix, kaya makikita agad ang EP/CUID sa Firestore kahit magamit muli ang tag.
       const visitorDocId = `${selectedUid}_${startTime}`;
       const visitorRef = doc(db, "visitors", visitorDocId);
+      
+      // Para sa Personal/Non-School Related visitors, i-save ang destination bilang empty string.
+      // Para sa School Related visitors, i-save ang selected destination.
+      const destinationValue = form.purpose === "School Related" ? form.destination : "";
+      
+      // Para sa Personal visitors, ang confirmStatus ay "Not Required" dahil walang confirmation kailangan.
+      // Para sa School Related visitors, ang confirmStatus ay initially pending confirmation.
+      const confirmStatusValue = form.purpose === "Personal / Non-School Related" ? "Not Required" : "Pending";
+      
       await setDoc(visitorRef, {
         name: form.name,
         purpose: form.purpose,
-        destination: form.destination,
+        destination: destinationValue,
         location: form.location || "Entrance",
         duration: durationValue,
         durationUnit: form.durationUnit,
@@ -205,7 +227,8 @@ export default function RegisterVisitor() {
         timeIn: startTime,
         timeOut: null,
         status: "active",
-        confirmStatus: "No Confirmation",
+        confirmStatus: confirmStatusValue,
+        violationType: "",
         confirmedAt: null,
         confirmedBy: null
       });
@@ -246,33 +269,42 @@ export default function RegisterVisitor() {
           onChange={handleChange}
         />
         <br /><br />
-        <input
-          className="form-control"
-          name="purpose"
-          placeholder="Purpose of Visit"
-          value={form.purpose}
-          onChange={handleChange}
-        />
-        <br /><br />
         <select
           className="form-control"
-          name="destination"
-          value={form.destination}
+          name="purpose"
+          value={form.purpose}
           onChange={handleChange}
         >
           <option value="" style={{ color: "#94a3b8" }}>
-            -- Select Destination --
+            -- Select Visit Type --
           </option>
-          <option value="Admin">Admin</option>
-          <option value="Registrar">Registrar</option>
-          <option value="Guidance Counselor">Guidance Counselor</option>
-          <option value="CABA Dean">CABA Dean</option>
-          <option value="IT Dean">IT Dean</option>
-          <option value="Criminology Dean">Criminology Dean</option>
-          <option value="Education Dean">Education Dean</option>
-          <option value="Librarian">Librarian</option>
+          <option value="Personal / Non-School Related">Personal / Non-School Related</option>
+          <option value="School Related">School Related</option>
         </select>
         <br /><br />
+        {form.purpose === "School Related" && (
+          <>
+            <select
+              className="form-control"
+              name="destination"
+              value={form.destination}
+              onChange={handleChange}
+            >
+              <option value="" style={{ color: "#94a3b8" }}>
+                -- Select Destination --
+              </option>
+              <option value="Admin">Admin</option>
+              <option value="Registrar">Registrar</option>
+              <option value="Guidance Counselor">Guidance Counselor</option>
+              <option value="CABA Dean">CABA Dean</option>
+              <option value="IT Dean">IT Dean</option>
+              <option value="Criminology Dean">Criminology Dean</option>
+              <option value="Education Dean">Education Dean</option>
+              <option value="Librarian">Librarian</option>
+            </select>
+            <br /><br />
+          </>
+        )}
         <input
           className="form-control"
           name="location"

@@ -35,6 +35,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
         const count = snapshot.docs.filter(function (item) {
           const visitor = item.data();
           return (
+            visitor.purpose === "School Related" &&
             (visitor.destination || "") === userData.subRole &&
             visitor.status === "active" &&
             (visitor.confirmStatus || "") !== "Done"

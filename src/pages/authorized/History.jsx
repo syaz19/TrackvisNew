@@ -42,7 +42,12 @@ export default function History() {
             return { id: item.id, ...item.data() };
           })
           .filter(function (v) {
-            return v.destination === userData.subRole;
+            // Only show School Related visitors for authorized personnel.
+            // Personal visitors never require confirmation.
+            return (
+              v.purpose === "School Related" &&
+              v.destination === userData.subRole
+            );
           });
 
         // keep only confirmed/history items

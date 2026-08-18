@@ -53,9 +53,13 @@ export default function Dashboard() {
             ...item.data()
           };
         })
-        // filter lang para sa visitors na naka-target sa subRole ng authorized user
+        // Filter para sa School Related visitors na naka-target sa subRole ng authorized user.
+        // Personal / Non-School Related visitors ay hindi dapat mag-require ng confirmation.
         .filter(function (visitor) {
-          return visitor.destination === userData.subRole;
+          return (
+            visitor.purpose === "School Related" &&
+            visitor.destination === userData.subRole
+          );
         });
 
       setVisitors(visitorList);
