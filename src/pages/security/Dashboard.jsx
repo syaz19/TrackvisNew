@@ -400,9 +400,7 @@ export default function Dashboard() {
                   <div className="visitor-meta">
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                     <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
-                    {visitor.purpose === "School Related" && (
-                      <span>🎯 Destination: {visitor.destination}</span>
-                    )}
+                    <span>🎯 Destination: {visitor.destination || "N/A"}</span>
                     <span>✓ Confirmation: {confirmLabel}</span>
                     <span>🕒 Time In: {timeInLabel}</span>
                     <span>⏱ Duration: {renderDuration(visitor.duration, visitor.durationUnit || "minutes")}</span>

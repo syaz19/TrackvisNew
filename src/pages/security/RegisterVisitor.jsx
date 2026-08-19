@@ -24,6 +24,18 @@ const initialFormState = {
   uid: ""
 };
 
+const personalDestinations = [
+  "San Carlos College Gymnasium",
+  "Elementary Building",
+  "High School Building",
+  "High School Faculty",
+  "IT Building",
+  "Education Building",
+  "Criminology Building",
+  "CABA Building",
+  "Waiting/Bench Area"
+];
+
 // I-export ang component para sa register visitor page.
 export default function RegisterVisitor() {
   // I-store ang form values at listahan ng RFID tags.
@@ -41,12 +53,6 @@ export default function RegisterVisitor() {
       ...form,
       [name]: value
     };
-
-    // Kung nagbago ang purpose/visit type sa "Personal / Non-School Related",
-    // i-clear ang destination at authorized personnel confirmation.
-    if (name === "purpose" && value === "Personal / Non-School Related") {
-      nextForm.destination = "";
-    }
 
     // Ini-update ang state ng form.
     setForm(nextForm);
@@ -119,8 +125,8 @@ export default function RegisterVisitor() {
       return;
     }
 
-    // Step 2: Para sa School Related visitors, kailangan ang destination.
-    if (form.purpose === "School Related" && !form.destination) {
+    // Step 2: Kailangan ang destination para sa parehong visitor types.
+    if ((form.purpose === "Personal / Non-School Related" || form.purpose === "School Related") && !form.destination) {
       alert("Please select a destination.");
       return;
     }
@@ -206,10 +212,6 @@ export default function RegisterVisitor() {
       const visitorDocId = `${selectedUid}_${startTime}`;
       const visitorRef = doc(db, "visitors", visitorDocId);
       
-      // Para sa Personal/Non-School Related visitors, i-save ang destination bilang empty string.
-      // Para sa School Related visitors, i-save ang selected destination.
-      const destinationValue = form.purpose === "School Related" ? form.destination : "";
-      
       // Para sa Personal visitors, ang confirmStatus ay "Not Required" dahil walang confirmation kailangan.
       // Para sa School Related visitors, ang confirmStatus ay initially pending confirmation.
       const confirmStatusValue = form.purpose === "Personal / Non-School Related" ? "Not Required" : "Pending";
@@ -217,7 +219,7 @@ export default function RegisterVisitor() {
       await setDoc(visitorRef, {
         name: form.name,
         purpose: form.purpose,
-        destination: destinationValue,
+        destination: form.destination,
         location: form.location || "Entrance",
         duration: durationValue,
         durationUnit: form.durationUnit,
@@ -282,6 +284,24 @@ export default function RegisterVisitor() {
           <option value="School Related">School Related</option>
         </select>
         <br /><br />
+        {form.purpose === "Personal / Non-School Related" && (
+          <>
+            <select
+              className="form-control"
+              name="destination"
+              value={form.destination}
+              onChange={handleChange}
+            >
+              <option value="" style={{ color: "#94a3b8" }}>
+                -- Select Destination --
+              </option>
+              {personalDestinations.map(function (destination) {
+                return <option key={destination} value={destination}>{destination}</option>;
+              })}
+            </select>
+            <br /><br />
+          </>
+        )}
         {form.purpose === "School Related" && (
           <>
             <select

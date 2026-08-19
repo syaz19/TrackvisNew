@@ -264,9 +264,7 @@ export default function History() {
 
                   <div className="visitor-meta">
                     <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
-                    {visitor.purpose === "School Related" && (
-                      <span>🎯 Destination: {visitor.destination}</span>
-                    )}
+                    <span>🎯 Destination: {visitor.destination || "N/A"}</span>
                     <span>✓ Confirmation: {confirmationLabel}</span>
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                     <span>⏱ Duration: {visitor.duration} {visitor.durationUnit || "minutes"}</span>
