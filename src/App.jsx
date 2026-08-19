@@ -62,12 +62,17 @@ export default function App() {
       const isPendingSignup = sessionStorage.getItem("trackvis-signup-pending") === "1";
 
       if (isPendingSignup) {
-        sessionStorage.removeItem("trackvis-signup-pending");
         const emptyState = buildAuthState(null, null);
         setAuthState(emptyState);
-        await signOut(auth).catch(function () {
-          // Hindi mahalaga kung may error sa sign out habang pending ang signup flow.
-        });
+
+        if (loggedInUser) {
+          await signOut(auth).catch(function () {
+            // Hindi mahalaga kung may error sa sign out habang pending ang signup flow.
+          });
+        } else {
+          sessionStorage.removeItem("trackvis-signup-pending");
+        }
+
         return;
       }
 

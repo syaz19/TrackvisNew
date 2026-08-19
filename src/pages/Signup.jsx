@@ -30,6 +30,8 @@ export default function Signup() {
   const [role, setRole] = useState("security");
   // State: subRole para sa authorized personnel
   const [subRole, setSubRole] = useState("Admin");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   function handleEmailChange(event) {
     setEmail(event.target.value);
@@ -55,13 +57,20 @@ export default function Signup() {
     // Step 5: mag-sign out at bumalik sa login page.
     event.preventDefault();
 
+    if (isSubmitting) {
+      return;
+    }
+
     const trimmedEmail = email.trim();
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
 
     if (!emailRegex.test(trimmedEmail)) {
-      alert("Only valid Gmail addresses ending in @gmail.com are allowed for account creation.");
+      setErrorMessage("Only valid Gmail addresses ending in @gmail.com are allowed for account creation.");
       return;
     }
+
+    setIsSubmitting(true);
+    setErrorMessage("");
 
     try {
       // Markahan ang signup flow bago mag-create ng user para maiwasan ang flash sa protected app route.
@@ -85,10 +94,11 @@ export default function Signup() {
       // Isulat ang user document (keyed by email) sa Firestore
       await setDoc(doc(db, "users", signupResult.user.email), userData);
       await signOut(auth);
-      sessionStorage.removeItem("trackvis-signup-pending");
       window.location.replace("/");
     } catch (error) {
-      alert(error.message);
+      sessionStorage.removeItem("trackvis-signup-pending");
+      setIsSubmitting(false);
+      setErrorMessage(error.message || "Account creation failed. Please try again.");
     }
   }
 
@@ -157,9 +167,10 @@ export default function Signup() {
 
           {subRoleSection}
 
-          <button type="submit" style={styles.button}>
-            Create Account
+          <button type="submit" style={styles.button} disabled={isSubmitting}>
+            {isSubmitting ? "Creating account..." : "Create Account"}
           </button>
+          {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
         </form>
 
         <div style={styles.footer}>
@@ -236,6 +247,12 @@ const styles = {
     fontWeight: 700,
     cursor: "pointer",
     boxShadow: "0 18px 36px rgba(37, 99, 235, 0.2)"
+  },
+  errorText: {
+    margin: 0,
+    color: "#fca5a5",
+    fontSize: "0.9rem",
+    lineHeight: 1.5
   },
   footer: {
     marginTop: "24px",
