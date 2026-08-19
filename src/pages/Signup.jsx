@@ -13,7 +13,7 @@ import { auth, db } from "../firebase";
 // Firestore helpers to write a document
 import { doc, setDoc } from "firebase/firestore";
 // Router helpers for navigation and links
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const pageBackground = "radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 20%), linear-gradient(180deg, #07101f 0%, #0f172a 100%)";
 const cardBackground = "#111827";
@@ -32,6 +32,7 @@ export default function Signup() {
   const [subRole, setSubRole] = useState("Admin");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const navigate = useNavigate();
 
   function handleEmailChange(event) {
     setEmail(event.target.value);
@@ -94,7 +95,8 @@ export default function Signup() {
       // Isulat ang user document (keyed by email) sa Firestore
       await setDoc(doc(db, "users", signupResult.user.email), userData);
       await signOut(auth);
-      window.location.replace("/");
+      sessionStorage.removeItem("trackvis-signup-pending");
+      navigate("/", { replace: true });
     } catch (error) {
       sessionStorage.removeItem("trackvis-signup-pending");
       setIsSubmitting(false);

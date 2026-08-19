@@ -65,11 +65,7 @@ export default function App() {
         const emptyState = buildAuthState(null, null);
         setAuthState(emptyState);
 
-        if (loggedInUser) {
-          await signOut(auth).catch(function () {
-            // Hindi mahalaga kung may error sa sign out habang pending ang signup flow.
-          });
-        } else {
+        if (!loggedInUser) {
           sessionStorage.removeItem("trackvis-signup-pending");
         }
 
