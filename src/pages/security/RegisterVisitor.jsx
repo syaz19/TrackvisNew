@@ -121,13 +121,13 @@ export default function RegisterVisitor() {
 
     // Step 1: Siguraduhin na may napiling visit type.
     if (!form.purpose) {
-      alert("Please select a visit type.");
+      alert("Please complete all required fields.");
       return;
     }
 
     // Step 2: Kailangan ang destination para sa parehong visitor types.
     if ((form.purpose === "Personal / Non-School Related" || form.purpose === "School Related") && !form.destination) {
-      alert("Please select a destination.");
+      alert("Please complete all required fields.");
       return;
     }
 
@@ -284,47 +284,41 @@ export default function RegisterVisitor() {
           <option value="School Related">School Related</option>
         </select>
         <br /><br />
-        {form.purpose === "Personal / Non-School Related" && (
-          <>
-            <select
-              className="form-control"
-              name="destination"
-              value={form.destination}
-              onChange={handleChange}
-            >
-              <option value="" style={{ color: "#94a3b8" }}>
-                -- Select Destination --
-              </option>
-              {personalDestinations.map(function (destination) {
-                return <option key={destination} value={destination}>{destination}</option>;
-              })}
-            </select>
-            <br /><br />
-          </>
-        )}
-        {form.purpose === "School Related" && (
-          <>
-            <select
-              className="form-control"
-              name="destination"
-              value={form.destination}
-              onChange={handleChange}
-            >
-              <option value="" style={{ color: "#94a3b8" }}>
-                -- Select Destination --
-              </option>
-              <option value="Admin">Admin</option>
-              <option value="Registrar">Registrar</option>
-              <option value="Guidance Counselor">Guidance Counselor</option>
-              <option value="CABA Dean">CABA Dean</option>
-              <option value="IT Dean">IT Dean</option>
-              <option value="Criminology Dean">Criminology Dean</option>
-              <option value="Education Dean">Education Dean</option>
-              <option value="Librarian">Librarian</option>
-            </select>
-            <br /><br />
-          </>
-        )}
+        <div
+          onMouseDown={function () {
+            if (!form.purpose) {
+              alert("Please select a visit type before you can select a destination.");
+            }
+          }}
+        >
+          <select
+            className="form-control"
+            name="destination"
+            value={form.destination}
+            onChange={handleChange}
+            disabled={!form.purpose}
+          >
+            <option value="" style={{ color: "#94a3b8" }}>
+              -- Select Destination --
+            </option>
+            {form.purpose === "Personal / Non-School Related" && personalDestinations.map(function (destination) {
+              return <option key={destination} value={destination}>{destination}</option>;
+            })}
+            {form.purpose === "School Related" && (
+              <>
+                <option value="Admin">Admin</option>
+                <option value="Registrar">Registrar</option>
+                <option value="Guidance Counselor">Guidance Counselor</option>
+                <option value="CABA Dean">CABA Dean</option>
+                <option value="IT Dean">IT Dean</option>
+                <option value="Criminology Dean">Criminology Dean</option>
+                <option value="Education Dean">Education Dean</option>
+                <option value="Librarian">Librarian</option>
+              </>
+            )}
+          </select>
+        </div>
+        <br /><br />
         <input
           className="form-control"
           name="location"
