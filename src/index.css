@@ -666,7 +666,7 @@ a {
 }
 
 .history-scroll {
-  max-height: 750px;
+  max-height: 730px;
   min-height: 520px;
   overflow-y: auto;
   padding-right: 4px;
