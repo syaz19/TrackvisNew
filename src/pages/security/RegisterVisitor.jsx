@@ -278,7 +278,7 @@ export default function RegisterVisitor() {
           onChange={handleChange}
         >
           <option value="" style={{ color: "#94a3b8" }}>
-            -- Select Visit Type --
+            -- Purpose Visit Type --
           </option>
           <option value="Personal / Non-School Related">Personal / Non-School Related</option>
           <option value="School Related">School Related</option>

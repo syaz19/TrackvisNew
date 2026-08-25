@@ -78,7 +78,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   if (role === "security") {
     // Security view links: SCC 3D map, Dashboard, History, Growth analytics
     menuLinks = [
-      { to: "/security/map", label: "SCC 3D" },
+      { to: "/security/map", label: "San Carlos College 3D" },
       { to: "/security", label: "Dashboard" },
       { to: "/security/history", label: "History" },
       { to: "/security/growth", label: "Growth" }
@@ -87,7 +87,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
     // Authorized personnel links: their map, dashboard, and history
     menuLinks = [
       { to: "/authorized/map", label: "SCC 3D" },
-      { to: "/authorized", label: "Dashboard", count: pendingVisitorCount },
+      { to: "/authorized", label: "Confirmation", count: pendingVisitorCount },
       { to: "/authorized/history", label: "History" }
     ];
   }

@@ -26,6 +26,8 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   // State: password input field
   const [password, setPassword] = useState("");
+  // State: confirm password input field
+  const [confirmPassword, setConfirmPassword] = useState("");
   // State: role selector, default sa `security`
   const [role, setRole] = useState("security");
   // State: subRole para sa authorized personnel
@@ -40,6 +42,10 @@ export default function Signup() {
 
   function handlePasswordChange(event) {
     setPassword(event.target.value);
+  }
+
+  function handleConfirmPasswordChange(event) {
+    setConfirmPassword(event.target.value);
   }
 
   function handleRoleChange(event) {
@@ -59,6 +65,12 @@ export default function Signup() {
     event.preventDefault();
 
     if (isSubmitting) {
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      setConfirmPassword("");
       return;
     }
 
@@ -155,6 +167,18 @@ export default function Signup() {
             type="password"
             value={password}
             onChange={handlePasswordChange}
+            placeholder="********"
+            style={styles.input}
+          />
+
+          <label style={styles.label} htmlFor="confirmPassword">
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={handleConfirmPasswordChange}
             placeholder="********"
             style={styles.input}
           />
