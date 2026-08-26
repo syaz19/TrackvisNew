@@ -2,6 +2,26 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 
+function getDestinations(visitor) {
+  if (Array.isArray(visitor.destinations)) return visitor.destinations;
+  if (Array.isArray(visitor.destination)) return visitor.destination;
+  return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
+}
+
+function getDestinationConfirmations(visitor) {
+  const destinations = getDestinations(visitor);
+  if (Array.isArray(visitor.destinationConfirmations)) return visitor.destinationConfirmations;
+  return destinations.map(function (destination) {
+    return { destination, status: visitor.confirmStatus || "Pending", confirmedAt: visitor.confirmedAt || null, confirmedBy: visitor.confirmedBy || null };
+  });
+}
+
+function getPurposeLabel(visitor) {
+  return visitor.purpose === "School Related" && visitor.schoolPurpose
+    ? `School Related - ${visitor.schoolPurpose}`
+    : visitor.purpose;
+}
+
 // Authorized Dashboard: ipinapakita ang mga pending visitor requests para sa authorized user's subRole
 export default function Dashboard() {
   // visitors: mga visitor records filtered para sa user's subRole
@@ -58,7 +78,7 @@ export default function Dashboard() {
         .filter(function (visitor) {
           return (
             visitor.purpose === "School Related" &&
-            visitor.destination === userData.subRole
+            getDestinations(visitor).includes(userData.subRole)
           );
         });
 
@@ -83,27 +103,27 @@ export default function Dashboard() {
         confirmedByValue = currentUser.email;
       }
 
-      // Update sa Firestore: markahan ang confirmStatus at timestamp
-      await updateDoc(doc(db, "visitors", visitorId), {
-        confirmStatus: "Done",
-        confirmedAt: serverTimestamp(),
-        confirmedBy: confirmedByValue
+      const visitor = visitors.find(function (item) { return item.id === visitorId; });
+      const destinationConfirmations = getDestinationConfirmations(visitor).map(function (confirmation) {
+        if (confirmation.destination !== userData.subRole) return confirmation;
+        return {
+          ...confirmation,
+          status: "Done",
+          confirmedAt: null,
+          confirmedBy: confirmedByValue
+        };
+      });
+      const isFullyConfirmed = destinationConfirmations.length > 0 && destinationConfirmations.every(function (confirmation) {
+        return confirmation.status === "Done";
       });
 
-      // Update local state para mabilis makita ang pagbabago sa UI
-      setVisitors(function (oldVisitors) {
-        return oldVisitors.map(function (visitor) {
-          if (visitor.id === visitorId) {
-            return {
-              ...visitor,
-              confirmStatus: "Done",
-              confirmedAt: Date.now(),
-              confirmedBy: confirmedByValue
-            };
-          }
-
-          return visitor;
-        });
+      // Update sa Firestore: markahan ang confirmStatus at timestamp
+      await updateDoc(doc(db, "visitors", visitorId), {
+        destinationConfirmations,
+        confirmStatus: isFullyConfirmed ? "Done" : "Pending",
+        completionStatus: isFullyConfirmed ? "Completed" : "Active",
+        confirmedAt: isFullyConfirmed ? serverTimestamp() : null,
+        confirmedBy: isFullyConfirmed ? confirmedByValue : null
       });
     } catch (error) {
       alert("Error confirming visitor: " + error.message);
@@ -117,7 +137,10 @@ export default function Dashboard() {
 
   // Filter para sa mga pending visitors na active at hindi pa na-confirm
   const pendingVisitors = visitors.filter(function (visitor) {
-    return visitor.status === "active" && (visitor.confirmStatus || "") !== "Done";
+    const confirmation = getDestinationConfirmations(visitor).find(function (item) {
+      return item.destination === userData?.subRole;
+    });
+    return visitor.status === "active" && confirmation?.status !== "Done";
   });
 
   if (loading) {
@@ -151,11 +174,10 @@ export default function Dashboard() {
           ) : (
             <div className="visitor-list">
               {pendingVisitors.map(function (visitor) {
-                let confirmLabel = "Awaiting confirmation";
-
-                if (visitor.confirmStatus === "Done") {
-                  confirmLabel = "Done";
-                }
+                const destinationConfirmations = getDestinationConfirmations(visitor);
+                const ownConfirmation = destinationConfirmations.find(function (item) {
+                  return item.destination === userData?.subRole;
+                });
 
                 let timeInLabel = "N/A";
 
@@ -168,7 +190,7 @@ export default function Dashboard() {
                     <div className="visitor-card__top">
                       <div>
                         <h4 className="visitor-card__title">{visitor.name}</h4>
-                        <p className="visitor-card__subtitle">{visitor.purpose}</p>
+                        <p className="visitor-card__subtitle">{getPurposeLabel(visitor)}</p>
                       </div>
                       <span className="status-pill status-pill--active">Pending</span>
                     </div>
@@ -176,12 +198,14 @@ export default function Dashboard() {
                     <div className="visitor-meta">
                       <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                       <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
-                      <span>🎯 {visitor.destination}</span>
-                      <span>✓ Confirm Status: {confirmLabel}</span>
+                      <span>🎯 {getDestinations(visitor).join(", ")}</span>
+                      {destinationConfirmations.map(function (confirmation) {
+                        return <span key={confirmation.destination}>✓ {confirmation.destination} Confirm - {confirmation.status === "Done" ? "Confirmed" : "Pending"}</span>;
+                      })}
                       <span>🕒 Time In: {timeInLabel}</span>
                     </div>
 
-                    {visitor.confirmStatus !== "Done" && (
+                    {ownConfirmation?.status !== "Done" && (
                       <div className="visitor-actions">
                         <button className="action-button action-button--primary" onClick={function () {
                           handleConfirmButtonClick(visitor.id);

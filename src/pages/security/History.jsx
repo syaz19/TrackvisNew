@@ -13,6 +13,33 @@ import { collection, onSnapshot } from "firebase/firestore";
 // I-import ang Firestore instance para makapag-read ng data.
 import { db } from "../../firebase";
 
+function getDestinations(visitor) {
+  if (Array.isArray(visitor.destinations)) return visitor.destinations;
+  if (Array.isArray(visitor.destination)) return visitor.destination;
+  return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
+}
+
+function getDestinationConfirmations(visitor) {
+  const destinations = getDestinations(visitor);
+  if (Array.isArray(visitor.destinationConfirmations)) return visitor.destinationConfirmations;
+  return destinations.map(function (destination) {
+    return { destination, status: visitor.confirmStatus || "Pending" };
+  });
+}
+
+function isFullyConfirmed(visitor) {
+  const confirmations = getDestinationConfirmations(visitor);
+  return confirmations.length > 0 && confirmations.every(function (confirmation) {
+    return confirmation.status === "Done";
+  });
+}
+
+function getPurposeLabel(visitor) {
+  return visitor.purpose === "School Related" && visitor.schoolPurpose
+    ? `School Related - ${visitor.schoolPurpose}`
+    : visitor.purpose;
+}
+
 // I-translate ang visitor status sa label na ilalabas sa history card.
 function getViolationLabel(visitor) {
   // Para sa Personal visitors, walang "No Confirmation" o "Both"
@@ -22,7 +49,7 @@ function getViolationLabel(visitor) {
     if (visitor.violationType === "Exceed Time" || visitor.violationType === "Time Exceeded") {
       return "Time Exceeded";
     }
-    // Kung walang violation type, ipinapakita ang Completed.
+    // Ang deactivation ng Non-School Related visitor ay normal na completion.
     if (visitor.status === "deactivated") {
       return "Completed";
     }
@@ -34,9 +61,13 @@ function getViolationLabel(visitor) {
     return visitor.status || "Unknown";
   }
 
-  // Para sa School Related visitors, pwedeng may lahat ng violation types
-  if (visitor.violationType === "Both") {
-    return "Both";
+  // School Related visitors use the exact confirmation/time result stored at deactivation.
+  if (visitor.violationType === "Uncomplete Confirmation and Time Exceed") {
+    return "Uncomplete Confirmation and Time Exceed";
+  }
+
+  if (visitor.violationType === "No Confirmation and Time Exceed") {
+    return "No Confirmation and Time Exceed";
   }
 
   // Kung may violation type na No Confirmation, ipinapakita ang ganitong label.
@@ -66,7 +97,7 @@ function getViolationLabel(visitor) {
 // I-pili ang class name para sa pill color base sa status.
 function getPillClass(visitor) {
   // Kung completed na ang visitor, gagamitin ang done style.
-  if (visitor.status === "deactivated" && !visitor.violationType) {
+  if (visitor.status === "deactivated" && !visitor.violationType && isFullyConfirmed(visitor)) {
     return "status-pill--done";
   }
 
@@ -228,17 +259,6 @@ export default function History() {
         ) : (
           <div className="history-grid history-scroll">
             {filteredVisitors.map(function (visitor) {
-              let confirmationLabel = "Pending";
-
-              // Para sa Personal visitors, ipakita ang "Not Required".
-              if (visitor.purpose === "Personal / Non-School Related") {
-                confirmationLabel = "Not Required";
-              } else if (visitor.confirmStatus === "Done") {
-                // Para sa School Related visitors na confirmed na.
-                confirmationLabel = "Confirmed";
-              }
-              // Otherwise, leave as "Pending" para sa unconfirmed School Related visitors.
-
               let timeInLabel = "N/A";
               let timeOutLabel = "N/A";
 
@@ -255,7 +275,7 @@ export default function History() {
                   <div className="visitor-card__top">
                     <div>
                       <p className="visitor-card__title">{visitor.name}</p>
-                      <p className="visitor-card__subtitle">{visitor.purpose}</p>
+                        <p className="visitor-card__subtitle">{getPurposeLabel(visitor)}</p>
                     </div>
                     <span className={`status-pill ${getPillClass(visitor)}`}>
                       {getViolationLabel(visitor)}
@@ -264,8 +284,10 @@ export default function History() {
 
                   <div className="visitor-meta">
                     <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
-                    <span>🎯 Destination: {visitor.destination || "N/A"}</span>
-                    <span>✓ Confirmation: {confirmationLabel}</span>
+                    <span>🎯 Destination: {getDestinations(visitor).join(", ") || "N/A"}</span>
+                    {visitor.purpose === "School Related" && getDestinationConfirmations(visitor).map(function (confirmation) {
+                      return <span key={confirmation.destination}>✓ {confirmation.destination} Confirm: {confirmation.status === "Done" ? "Confirmed" : "Pending"}</span>;
+                    })}
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                     <span>⏱ Duration: {visitor.duration} {visitor.durationUnit || "minutes"}</span>
                     <span>🕒 Time In: {timeInLabel}</span>

@@ -18,6 +18,48 @@ import { collection, deleteField, doc, onSnapshot, updateDoc } from "firebase/fi
 // I-import ang Firestore instance na naka-connect sa app.
 import { db } from "../../firebase";
 
+function getDestinations(visitor) {
+  if (Array.isArray(visitor.destinations)) return visitor.destinations;
+  if (Array.isArray(visitor.destination)) return visitor.destination;
+  return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
+}
+
+function getDestinationConfirmations(visitor) {
+  const destinations = getDestinations(visitor);
+  if (Array.isArray(visitor.destinationConfirmations)) return visitor.destinationConfirmations;
+  return destinations.map(function (destination) {
+    return { destination, status: visitor.confirmStatus || "Pending" };
+  });
+}
+
+function isFullyConfirmed(visitor) {
+  if (visitor.purpose === "Personal / Non-School Related") return true;
+  const confirmations = getDestinationConfirmations(visitor);
+  return confirmations.length > 0 && confirmations.every(function (confirmation) {
+    return confirmation.status === "Done";
+  });
+}
+
+function getSchoolConfirmationState(visitor) {
+  const confirmations = getDestinationConfirmations(visitor);
+  const confirmedCount = confirmations.filter(function (confirmation) {
+    return confirmation.status === "Done";
+  }).length;
+
+  return {
+    total: confirmations.length,
+    confirmed: confirmedCount,
+    isFullyConfirmed: confirmations.length > 0 && confirmedCount === confirmations.length,
+    hasSomeConfirmation: confirmedCount > 0
+  };
+}
+
+function getPurposeLabel(visitor) {
+  return visitor.purpose === "School Related" && visitor.schoolPurpose
+    ? `School Related - ${visitor.schoolPurpose}`
+    : visitor.purpose;
+}
+
 // I-declare ang default export na siyang component na ipinapakita sa page.
 export default function Dashboard() {
   // I-store ang listahan ng visitors, ang loading state, at ang kasalukuyang oras.
@@ -71,30 +113,23 @@ export default function Dashboard() {
 
     // Para sa School Related visitors, check both confirmation at time.
     if (visitor.purpose === "School Related") {
-      // Tinitingnan kung naka-confirm na ang visitor para malaman ang tamang violation label.
-      const isConfirmed = visitor.confirmStatus === "Done";
+      const confirmationState = getSchoolConfirmationState(visitor);
       // I-convert ang endTime sa number para maihambing sa current time.
       const visitorEndTime = Number(visitor.endTime || 0);
       // Sinusuri kung naabot na ang deadline base sa end time at current time.
       const hasReachedDeadline = visitorEndTime > 0 && visitorEndTime <= Number(timeValue || 0);
 
-      // Kung walang confirmation at tapos na ang oras, may parehong violation.
-      if (!isConfirmed && hasReachedDeadline) {
-        return "Both";
+      if (!hasReachedDeadline) {
+        return confirmationState.isFullyConfirmed ? "" : "No Confirmation";
       }
 
-      // Kung wala pang confirmation, ipinapakita ang ganitong violation type.
-      if (!isConfirmed) {
-        return "No Confirmation";
-      }
-
-      // Kung naabot na ang deadline, ipinapakita ang overstay violation.
-      if (hasReachedDeadline) {
+      if (confirmationState.isFullyConfirmed) {
         return "Time Exceeded";
       }
 
-      // Kung walang violation, ibinabalik ang empty string.
-      return "";
+      return confirmationState.hasSomeConfirmation
+        ? "Uncomplete Confirmation and Time Exceed"
+        : "No Confirmation and Time Exceed";
     }
 
     // Default: walang violation type detected.
@@ -184,15 +219,14 @@ export default function Dashboard() {
     // Step 3: ini-release ang RFID tag para maging available ulit.
     try {
       // Tinitingnan kung ang visitor ay may confirmation bilang done.
-      const isConfirmed = visitor.confirmStatus === "Done";
       const isPersonalVisitor = visitor.purpose === "Personal / Non-School Related";
       const hasReachedDeadline = Number(visitor.endTime || 0) <= currentTime;
+      const fullyConfirmed = isFullyConfirmed(visitor);
 
-      // Para sa Personal visitors na manually deactivated BAGO mag-expire:
-      // Dapat walang violation at dapat maging "Completed" (deactivated), hindi "Expired".
-      const shouldTreatAsCompleted = isPersonalVisitor && !hasReachedDeadline;
       // Pinapili ang susunod na status depende sa confirmation at visitor type.
-      const nextStatus = shouldTreatAsCompleted || isConfirmed ? "deactivated" : "expired";
+      const nextStatus = hasReachedDeadline && (!isPersonalVisitor && !fullyConfirmed || isPersonalVisitor)
+        ? "expired"
+        : "deactivated";
 
       // Kung Personal at hindi pa nag-expire, hindi may violation.
       // Kung Personal pero nag-expire na, mag-set ng Time Exceeded violation.
@@ -209,6 +243,9 @@ export default function Dashboard() {
       // Ina-update ang visitor status sa database.
       const updateData = {
         status: nextStatus,
+        completionStatus: isPersonalVisitor && !hasReachedDeadline || !isPersonalVisitor && fullyConfirmed && !hasReachedDeadline
+          ? "Completed"
+          : "Violation",
         endTime: visitor.endTime || currentTime,
         timeOut: currentTime
       };
@@ -368,18 +405,6 @@ export default function Dashboard() {
                 statusClassName = "status-pill status-pill--warning";
               }
 
-              let confirmLabel = "Pending";
-
-              // Kung naka-confirm na ang visitor, ipinapakita ang Done label.
-              if (visitor.confirmStatus === "Done") {
-                confirmLabel = "Done";
-              }
-              
-              // Para sa Personal visitors, ipakita ang "Not Required" para sa confirmation.
-              if (visitor.purpose === "Personal / Non-School Related") {
-                confirmLabel = "Not Required";
-              }
-
               let timeInLabel = "N/A";
 
               // Kung may timeIn value, ipinapakita ang oras sa local time format.
@@ -392,7 +417,7 @@ export default function Dashboard() {
                   <div className="visitor-card__top">
                     <div>
                       <h4 className="visitor-card__title">{visitor.name}</h4>
-                      <p className="visitor-card__subtitle">{visitor.purpose}</p>
+                        <p className="visitor-card__subtitle">{getPurposeLabel(visitor)}</p>
                     </div>
                     <span className={statusClassName}>{statusLabel}</span>
                   </div>
@@ -400,8 +425,11 @@ export default function Dashboard() {
                   <div className="visitor-meta">
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                     <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
-                    <span>🎯 Destination: {visitor.destination || "N/A"}</span>
-                    <span>✓ Confirmation: {confirmLabel}</span>
+                    <span>🎯 Destination: {getDestinations(visitor).join(", ") || "N/A"}</span>
+                    {visitor.purpose === "Personal / Non-School Related" && <span>✓ Confirmation: Not Required</span>}
+                    {visitor.purpose === "School Related" && getDestinationConfirmations(visitor).map(function (confirmation) {
+                      return <span key={confirmation.destination}>✓ {confirmation.destination} Confirm - {confirmation.status === "Done" ? "Confirmed" : "Pending"}</span>;
+                    })}
                     <span>🕒 Time In: {timeInLabel}</span>
                     <span>⏱ Duration: {renderDuration(visitor.duration, visitor.durationUnit || "minutes")}</span>
                     <span>⌛ Time Left: {getRemainingTime(visitor.endTime)}</span>

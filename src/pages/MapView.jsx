@@ -55,7 +55,7 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-90, 45, -85],
+  position: [-90, 30, -70],
   target: [0, 0, 0],
   zoomDistance: 140
 };
@@ -615,7 +615,10 @@ export default function MapView() {
       }
 
       return visitorMarkers.filter((visitor) => {
-        return (visitor.destination || "").toString().toLowerCase() === userSubRole.toString().toLowerCase();
+        const destinations = Array.isArray(visitor.destinations)
+          ? visitor.destinations
+          : (visitor.destination || "").toString().split(",").map((destination) => destination.trim()).filter(Boolean);
+        return destinations.some((destination) => destination.toLowerCase() === userSubRole.toString().toLowerCase());
       });
     }
 

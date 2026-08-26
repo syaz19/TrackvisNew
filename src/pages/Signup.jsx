@@ -15,7 +15,7 @@ import { doc, setDoc } from "firebase/firestore";
 // Router helpers for navigation and links
 import { Link, useNavigate } from "react-router-dom";
 
-const pageBackground = "radial-gradient(circle at top left, rgba(59, 130, 246, 0.16), transparent 20%), linear-gradient(180deg, #07101f 0%, #0f172a 100%)";
+const pageBackground = "linear-gradient(rgba(7, 16, 31, 0.64), rgba(15, 23, 42, 0.72)), url('/images/school.jpg') center / cover no-repeat";
 const cardBackground = "#111827";
 const inputBackground = "#0f172a";
 const borderColor = "rgba(148, 163, 184, 0.18)";

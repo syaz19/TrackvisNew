@@ -17,7 +17,9 @@ import { db } from "../../firebase";
 const initialFormState = {
   name: "",
   purpose: "",
-  destination: "",
+  nonSchoolPurpose: "",
+  schoolPurpose: "",
+  destinations: [],
   location: "Entrance",
   duration: "",
   durationUnit: "minutes",
@@ -25,7 +27,7 @@ const initialFormState = {
 };
 
 const personalDestinations = [
-  "San Carlos College Gymnasium",
+  "SCC Gymnasium",
   "Elementary Building",
   "High School Building",
   "High School Faculty",
@@ -35,6 +37,12 @@ const personalDestinations = [
   "CABA Building",
   "Waiting/Bench Area"
 ];
+
+const excludedRegistrationTags = new Set([
+  "E28069150000502D9DF2EE8A",
+  "E28069150000402D9DF3FA89",
+  "E28069150000402D9DF3D97D"
+]);
 
 // I-export ang component para sa register visitor page.
 export default function RegisterVisitor() {
@@ -49,10 +57,25 @@ export default function RegisterVisitor() {
     // Kinukuha ang field name at value mula sa input.
     const { name, value } = event.target;
     // I-copy ang current form at ina-update ang selected field.
-    const nextForm = {
-      ...form,
-      [name]: value
-    };
+    const nextForm = { ...form, [name]: value };
+
+    if (name === "purpose" && value !== "School Related") {
+      nextForm.schoolPurpose = "";
+    }
+
+    if (name === "purpose" && value !== "Personal / Non-School Related") {
+      nextForm.nonSchoolPurpose = "";
+    }
+
+    if (name === "purpose") {
+      nextForm.destinations = [];
+    }
+
+    if (name === "destinations") {
+      nextForm.destinations = Array.from(event.target.selectedOptions, function (option) {
+        return option.value;
+      });
+    }
 
     // Ini-update ang state ng form.
     setForm(nextForm);
@@ -98,6 +121,8 @@ export default function RegisterVisitor() {
         // Ginagawa ang tag list mula sa snapshot.
         const tagList = snapshot.docs.map(function (item) {
           return { id: item.id, epc: item.id, ...item.data() };
+        }).filter(function (tag) {
+          return !excludedRegistrationTags.has(getTagIdentifier(tag));
         });
         // Ini-update ang state para sa tag dropdown.
         setTags(tagList);
@@ -125,9 +150,19 @@ export default function RegisterVisitor() {
       return;
     }
 
-    // Step 2: Kailangan ang destination para sa parehong visitor types.
-    if ((form.purpose === "Personal / Non-School Related" || form.purpose === "School Related") && !form.destination) {
+    // Step 2: Siguraduhin na may napiling destination.
+    if (!form.destinations.length) {
       alert("Please complete all required fields.");
+      return;
+    }
+
+    if (form.purpose === "School Related" && !form.schoolPurpose.trim()) {
+      alert("Please enter the specific school-related purpose.");
+      return;
+    }
+
+    if (form.purpose === "Personal / Non-School Related" && !form.nonSchoolPurpose.trim()) {
+      alert("Please enter the specific purpose.");
       return;
     }
 
@@ -215,11 +250,23 @@ export default function RegisterVisitor() {
       // Para sa Personal visitors, ang confirmStatus ay "Not Required" dahil walang confirmation kailangan.
       // Para sa School Related visitors, ang confirmStatus ay initially pending confirmation.
       const confirmStatusValue = form.purpose === "Personal / Non-School Related" ? "Not Required" : "Pending";
+      const destinationConfirmations = form.destinations.map(function (destination) {
+        return {
+          destination,
+          status: confirmStatusValue,
+          confirmedAt: null,
+          confirmedBy: null
+        };
+      });
       
       await setDoc(visitorRef, {
         name: form.name,
         purpose: form.purpose,
-        destination: form.destination,
+        specificPurpose: form.purpose === "School Related" ? form.schoolPurpose.trim() : form.nonSchoolPurpose.trim(),
+        schoolPurpose: form.purpose === "School Related" ? form.schoolPurpose.trim() : "",
+        nonSchoolPurpose: form.purpose === "Personal / Non-School Related" ? form.nonSchoolPurpose.trim() : "",
+        destination: form.destinations.join(", "),
+        destinations: form.destinations,
         location: form.location || "Entrance",
         duration: durationValue,
         durationUnit: form.durationUnit,
@@ -229,7 +276,9 @@ export default function RegisterVisitor() {
         timeIn: startTime,
         timeOut: null,
         status: "active",
+        completionStatus: "Active",
         confirmStatus: confirmStatusValue,
+        ...(form.purpose === "School Related" ? { destinationConfirmations } : {}),
         violationType: "",
         confirmedAt: null,
         confirmedBy: null
@@ -271,18 +320,54 @@ export default function RegisterVisitor() {
           onChange={handleChange}
         />
         <br /><br />
-        <select
-          className="form-control"
-          name="purpose"
-          value={form.purpose}
-          onChange={handleChange}
-        >
-          <option value="" style={{ color: "#94a3b8" }}>
-            -- Purpose Visit Type --
-          </option>
-          <option value="Personal / Non-School Related">Personal / Non-School Related</option>
-          <option value="School Related">School Related</option>
-        </select>
+        <div className="form-control purpose-section">
+          <label className="purpose-row">
+            <input
+              className="purpose-type"
+              type="radio"
+              name="purpose"
+              value="Personal / Non-School Related"
+              checked={form.purpose === "Personal / Non-School Related"}
+              onChange={handleChange}
+            />
+            <span className="purpose-label">Non-School Related:</span>
+            <input
+              className="form-control purpose-input"
+              name="nonSchoolPurpose"
+              placeholder="Specific purpose"
+              value={form.nonSchoolPurpose}
+              onChange={function (event) {
+                handleChange(event);
+                setForm(function (current) {
+                  return { ...current, purpose: "Personal / Non-School Related" };
+                });
+              }}
+            />
+          </label>
+          <label className="purpose-row">
+            <input
+              className="purpose-type"
+              type="radio"
+              name="purpose"
+              value="School Related"
+              checked={form.purpose === "School Related"}
+              onChange={handleChange}
+            />
+            <span className="purpose-label">School Related:</span>
+            <input
+              className="form-control purpose-input"
+              name="schoolPurpose"
+              placeholder="Specific purpose"
+              value={form.schoolPurpose}
+              onChange={function (event) {
+                handleChange(event);
+                setForm(function (current) {
+                  return { ...current, purpose: "School Related" };
+                });
+              }}
+            />
+          </label>
+        </div>
         <br /><br />
         <div
           onMouseDown={function () {
@@ -291,32 +376,43 @@ export default function RegisterVisitor() {
             }
           }}
         >
-          <select
-            className="form-control"
-            name="destination"
-            value={form.destination}
-            onChange={handleChange}
-            disabled={!form.purpose}
-          >
-            <option value="" style={{ color: "#94a3b8" }}>
-              -- Select Destination --
-            </option>
-            {form.purpose === "Personal / Non-School Related" && personalDestinations.map(function (destination) {
-              return <option key={destination} value={destination}>{destination}</option>;
-            })}
-            {form.purpose === "School Related" && (
-              <>
-                <option value="Admin">Admin</option>
-                <option value="Registrar">Registrar</option>
-                <option value="Guidance Counselor">Guidance Counselor</option>
-                <option value="CABA Dean">CABA Dean</option>
-                <option value="IT Dean">IT Dean</option>
-                <option value="Criminology Dean">Criminology Dean</option>
-                <option value="Education Dean">Education Dean</option>
-                <option value="Librarian">Librarian</option>
-              </>
+          <div className="form-control destination-section">
+            <div className="destination-heading">Destination</div>
+            {form.purpose && (
+              <div className="destination-grid">
+                {(form.purpose === "Personal / Non-School Related" ? personalDestinations : [
+                  "Admin",
+                  "Registrar",
+                  "Guidance",
+                  "CABA Dean",
+                  "IT Dean",
+                  "Criminology Dean",
+                  "Education Dean",
+                  "Librarian"
+                ]).map(function (destination) {
+                  const isSelected = form.destinations.includes(destination);
+                  return (
+                    <label key={destination} className={`destination-option ${isSelected ? "destination-option--selected" : ""}`}>
+                      <input
+                        className="destination-checkbox"
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={function () {
+                          setForm(function (current) {
+                            const destinations = isSelected
+                              ? current.destinations.filter(function (item) { return item !== destination; })
+                              : [...current.destinations, destination];
+                            return { ...current, destinations };
+                          });
+                        }}
+                      />
+                      <span className="destination-name">{destination}</span>
+                    </label>
+                  );
+                })}
+              </div>
             )}
-          </select>
+          </div>
         </div>
         <br /><br />
         <input

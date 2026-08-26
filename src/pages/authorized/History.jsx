@@ -2,6 +2,26 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot, getDoc, doc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 
+function getDestinations(visitor) {
+  if (Array.isArray(visitor.destinations)) return visitor.destinations;
+  if (Array.isArray(visitor.destination)) return visitor.destination;
+  return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
+}
+
+function getDestinationConfirmations(visitor) {
+  const destinations = getDestinations(visitor);
+  if (Array.isArray(visitor.destinationConfirmations)) return visitor.destinationConfirmations;
+  return destinations.map(function (destination) {
+    return { destination, status: visitor.confirmStatus || "Pending" };
+  });
+}
+
+function getPurposeLabel(visitor) {
+  return visitor.purpose === "School Related" && visitor.schoolPurpose
+    ? `School Related - ${visitor.schoolPurpose}`
+    : visitor.purpose;
+}
+
 export default function History() {
   const [visitors, setVisitors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +66,7 @@ export default function History() {
             // Personal visitors never require confirmation.
             return (
               v.purpose === "School Related" &&
-              v.destination === userData.subRole
+              getDestinations(v).includes(userData.subRole)
             );
           });
 
@@ -55,7 +75,9 @@ export default function History() {
           const status = (visitor.status || "").toLowerCase();
           const knownStatuses = ["deactivated", "expired", "completed", "done", "inactive", "cancelled"];
           if (knownStatuses.includes(status)) return true;
-          if ((visitor.confirmStatus || "") === "Done") return true;
+          if (getDestinationConfirmations(visitor).some(function (confirmation) {
+            return confirmation.destination === userData.subRole && confirmation.status === "Done";
+          })) return true;
           return Boolean(visitor.endTime || visitor.timeOut);
         });
 
@@ -98,13 +120,20 @@ export default function History() {
             {visitors.map(function (visitor) {
               let statusLabel = "Processed";
               let statusClassName = "status-pill status-pill--expired";
+              const ownConfirmation = getDestinationConfirmations(visitor).find(function (confirmation) {
+                return confirmation.destination === userData?.subRole;
+              });
 
-              if ((visitor.status || "").toLowerCase() === "deactivated") {
-                statusLabel = "Completed";
-                statusClassName = "status-pill status-pill--done";
-              } else if ((visitor.confirmStatus || "") === "Done") {
+              const isOwnConfirmationDone = Array.isArray(visitor.destinationConfirmations)
+                ? ownConfirmation?.status === "Done"
+                : (visitor.confirmStatus || "") === "Done";
+
+              if (isOwnConfirmationDone) {
                 statusLabel = "Confirmed";
                 statusClassName = "status-pill status-pill--done";
+              } else if ((visitor.status || "").toLowerCase() === "deactivated" || (visitor.status || "").toLowerCase() === "expired") {
+                statusLabel = "Not Confirmed";
+                statusClassName = "status-pill status-pill--expired";
               }
 
               const timeInLabel = visitor.timeIn ? new Date(visitor.timeIn).toLocaleString() : "N/A";
@@ -115,7 +144,7 @@ export default function History() {
                   <div className="visitor-card__top">
                     <div>
                       <h4 className="visitor-card__title">{visitor.name}</h4>
-                      <p className="visitor-card__subtitle">{visitor.purpose}</p>
+                        <p className="visitor-card__subtitle">{getPurposeLabel(visitor)}</p>
                     </div>
                     <span className={statusClassName}>{statusLabel}</span>
                   </div>
@@ -123,7 +152,10 @@ export default function History() {
                   <div className="visitor-meta">
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
                     <span>📍 {visitor.currentLocation || visitor.location || "Entrance"}</span>
-                    <span>🎯 {visitor.destination}</span>
+                    <span>🎯 {getDestinations(visitor).join(", ")}</span>
+                    {getDestinationConfirmations(visitor).map(function (confirmation) {
+                      return <span key={confirmation.destination}>✓ {confirmation.destination} Confirm: {confirmation.status === "Done" ? "Confirmed" : "Pending"}</span>;
+                    })}
                     <span>🕒 Time In: {timeInLabel}</span>
                     <span>⏱ Time Out: {timeOutLabel}</span>
                   </div>

@@ -10,6 +10,12 @@ import { collection, onSnapshot } from "firebase/firestore";
 // Helper para i-clear ang local auth state (custom app logic sa authManager).
 import { clearAuthState } from "../authManager";
 
+function getDestinations(visitor) {
+  if (Array.isArray(visitor.destinations)) return visitor.destinations;
+  if (Array.isArray(visitor.destination)) return visitor.destination;
+  return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
+}
+
 // Sidebar component - props:
 // - role: "security" | "authorized" | others
 // - isOpen: boolean para sa mobile menu visibility
@@ -36,9 +42,13 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
           const visitor = item.data();
           return (
             visitor.purpose === "School Related" &&
-            (visitor.destination || "") === userData.subRole &&
+            getDestinations(visitor).includes(userData.subRole) &&
             visitor.status === "active" &&
-            (visitor.confirmStatus || "") !== "Done"
+            (Array.isArray(visitor.destinationConfirmations)
+              ? visitor.destinationConfirmations.some(function (confirmation) {
+                return confirmation.destination === userData.subRole && confirmation.status !== "Done";
+              })
+              : (visitor.confirmStatus || "") !== "Done")
           );
         }).length;
 
