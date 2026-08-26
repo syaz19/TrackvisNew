@@ -34,6 +34,14 @@ function isFullyConfirmed(visitor) {
   });
 }
 
+function hasPartialConfirmation(visitor) {
+  const confirmations = getDestinationConfirmations(visitor);
+  const confirmedCount = confirmations.filter(function (confirmation) {
+    return confirmation.status === "Done";
+  }).length;
+  return confirmedCount > 0 && confirmedCount < confirmations.length;
+}
+
 function getPurposeLabel(visitor) {
   return visitor.purpose === "School Related" && visitor.schoolPurpose
     ? `School Related - ${visitor.schoolPurpose}`
@@ -73,6 +81,10 @@ function getViolationLabel(visitor) {
   // Kung may violation type na No Confirmation, ipinapakita ang ganitong label.
   if (visitor.violationType === "No Confirmation") {
     return "No Confirmation";
+  }
+
+  if (visitor.status === "deactivated" && hasPartialConfirmation(visitor)) {
+    return "Uncomplete Confirmation";
   }
 
   // Kung may violation type na Exceed Time, ipinapakita ang ganitong label.

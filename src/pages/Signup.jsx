@@ -78,7 +78,7 @@ export default function Signup() {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
 
     if (!emailRegex.test(trimmedEmail)) {
-      setErrorMessage("Only valid Gmail addresses ending in @gmail.com are allowed for account creation.");
+      setErrorMessage("Only valid Gmail addresses ending in @gmail.com are allowed.");
       return;
     }
 

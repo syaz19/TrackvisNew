@@ -55,7 +55,7 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-90, 30, -70],
+  position: [-90, 35, -75],
   target: [0, 0, 0],
   zoomDistance: 140
 };
