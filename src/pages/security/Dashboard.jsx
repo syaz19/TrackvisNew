@@ -120,7 +120,11 @@ export default function Dashboard() {
       const hasReachedDeadline = visitorEndTime > 0 && visitorEndTime <= Number(timeValue || 0);
 
       if (!hasReachedDeadline) {
-        return confirmationState.isFullyConfirmed ? "" : "No Confirmation";
+        return confirmationState.isFullyConfirmed
+          ? ""
+          : confirmationState.hasSomeConfirmation
+          ? "Uncomplete Confirmation"
+          : "No Confirmation";
       }
 
       if (confirmationState.isFullyConfirmed) {
@@ -243,6 +247,8 @@ export default function Dashboard() {
       // Ina-update ang visitor status sa database.
       const updateData = {
         status: nextStatus,
+        location: "School Exit",
+        currentLocation: "School Exit",
         completionStatus: isPersonalVisitor && !hasReachedDeadline || !isPersonalVisitor && fullyConfirmed && !hasReachedDeadline
           ? "Completed"
           : "Violation",
