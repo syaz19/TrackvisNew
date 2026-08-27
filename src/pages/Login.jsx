@@ -25,7 +25,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 // I-define ang mga color at background na gagamitin sa login UI.
-const pageBackground = "linear-gradient(rgba(7, 16, 31, 0.64), rgba(15, 23, 42, 0.72)), url('/images/school.jpg') center / cover no-repeat";
+const pageBackground = "linear-gradient(rgba(7, 16, 31, 0.64), rgba(15, 23, 42, 0.72)), url('/images/finalbg.png') center / cover no-repeat";
 const cardBackground = "#111827";
 const inputBackground = "#0f172a";
 const borderColor = "rgba(148, 163, 184, 0.18)";
