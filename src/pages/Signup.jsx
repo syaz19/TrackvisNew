@@ -140,6 +140,11 @@ export default function Signup() {
 
   return (
     <div style={styles.page}>
+      <div style={styles.brand}>
+        <div style={styles.brandMark}>◉</div>
+        <div style={styles.brandName}>TRACK<span style={styles.brandAccent}>VIS</span></div>
+        <div style={styles.brandSubtitle}>PROFESSIONAL</div>
+      </div>
       <div style={styles.card}>
         <div style={styles.header}>
           <h1 style={styles.title}>Create Account</h1>
@@ -206,6 +211,12 @@ export default function Signup() {
           </Link>
         </div>
       </div>
+      <div style={styles.schoolFooter}>
+        <div style={styles.schoolMark}>✦</div>
+        <div>
+          <strong style={styles.schoolName}>San Carlos College</strong>
+        </div>
+      </div>
     </div>
   );
 }
@@ -213,29 +224,66 @@ export default function Signup() {
 const styles = {
   page: {
     minHeight: "100vh",
-    display: "flex",
+    display: "grid",
     justifyContent: "center",
     alignItems: "center",
-    padding: "24px",
-    background: pageBackground
+    padding: "18px",
+    background: pageBackground,
+    gridTemplateRows: "auto 1fr auto",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    gap: "12px"
+  },
+  brand: {
+    justifySelf: "center",
+    textAlign: "center",
+    lineHeight: 1
+  },
+  brandMark: {
+    width: "54px",
+    height: "60px",
+    margin: "0 auto 5px",
+    display: "grid",
+    placeItems: "center",
+    color: "#f8fafc",
+    fontSize: "25px",
+    background: "#6d28d9",
+    clipPath: "polygon(50% 0, 92% 14%, 88% 68%, 50% 100%, 12% 68%, 8% 14%)",
+    boxShadow: "0 0 24px rgba(109, 40, 217, 0.45)"
+  },
+  brandName: {
+    color: "#f8fafc",
+    fontSize: "27px",
+    fontWeight: 800,
+    letterSpacing: "0.02em"
+  },
+  brandAccent: {
+    color: "#8b5cf6"
+  },
+  brandSubtitle: {
+    marginTop: "7px",
+    color: "#d1d5db",
+    fontSize: "9px",
+    letterSpacing: "0.28em"
   },
   card: {
     width: "100%",
-    maxWidth: "560px",
-    padding: "44px",
-    borderRadius: "32px",
+    maxWidth: "600px",
+    padding: "30px",
+    borderRadius: "40px",
     background: cardBackground,
     border: "1px solid #2A3150",
     boxShadow: "0 40px 120px rgba(9, 13, 26, 0.55)",
-    overflow: "hidden"
+    overflow: "hidden",
+    justifySelf: "center",
+    alignSelf: "center"
   },
   header: {
-    marginBottom: "24px"
+    marginBottom: "20px"
   },
   title: {
     margin: 0,
     color: "#f8fafc",
-    fontSize: "32px"
+    fontSize: "28px"
   },
   subtitle: {
     marginTop: "10px",
@@ -245,7 +293,7 @@ const styles = {
   },
   form: {
     display: "grid",
-    gap: "18px"
+    gap: "12px"
   },
   label: {
     color: "#cbd5e1",
@@ -292,5 +340,32 @@ const styles = {
     color: "#818CF8",
     textDecoration: "none",
     fontWeight: 700
+  },
+  schoolFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifySelf: "center",
+    gap: "12px",
+    color: "#f8fafc"
+  },
+  schoolMark: {
+    width: "32px",
+    height: "36px",
+    display: "grid",
+    placeItems: "center",
+    color: "#f8fafc",
+    fontSize: "17px",
+    background: "#6d28d9",
+    clipPath: "polygon(50% 0, 92% 14%, 88% 68%, 50% 100%, 12% 68%, 8% 14%)"
+  },
+  schoolName: {
+    display: "block",
+    fontSize: "13px"
+  },
+  schoolSubtitle: {
+    display: "block",
+    marginTop: "3px",
+    color: "#a1a1aa",
+    fontSize: "11px"
   }
 };

@@ -109,6 +109,11 @@ export default function Login() {
   // I-render ang buong login layout kasama ang form at footer.
   return (
     <div style={styles.page}>
+      <div style={styles.brand}>
+        <div style={styles.brandMark}>◉</div>
+        <div style={styles.brandName}>TRACK<span style={styles.brandAccent}>VIS</span></div>
+        <div style={styles.brandSubtitle}>PROFESSIONAL</div>
+      </div>
       {/* I-wrap ang login card sa gitna ng page para mas presentable ang layout. */}
       <div style={styles.card}>
         {/* I-display ang header na may title at subtitle para sa login screen. */}
@@ -159,6 +164,12 @@ export default function Login() {
           </Link>
         </div>
       </div>
+      <div style={styles.schoolFooter}>
+        <div style={styles.schoolMark}>✦</div>
+        <div>
+          <strong style={styles.schoolName}>San Carlos College</strong>
+        </div>
+      </div>
     </div>
   );
 }
@@ -168,32 +179,69 @@ const styles = {
   // Ito ang main container na nag-uukit ng full-page background at center alignment.
   page: {
     minHeight: "100vh",
-    display: "flex",
+    display: "grid",
     justifyContent: "center",
     alignItems: "center",
     padding: "24px",
-    background: pageBackground
+    background: pageBackground,
+    gridTemplateRows: "auto 1fr auto",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    gap: "15px"
+  },
+  brand: {
+    justifySelf: "center",
+    textAlign: "center",
+    lineHeight: 1
+  },
+  brandMark: {
+    width: "54px",
+    height: "60px",
+    margin: "0 auto 8px",
+    display: "grid",
+    placeItems: "center",
+    color: "#f8fafc",
+    fontSize: "25px",
+    background: "#6d28d9",
+    clipPath: "polygon(50% 0, 92% 14%, 88% 68%, 50% 100%, 12% 68%, 8% 14%)",
+    boxShadow: "0 0 24px rgba(109, 40, 217, 0.45)"
+  },
+  brandName: {
+    color: "#f8fafc",
+    fontSize: "27px",
+    fontWeight: 800,
+    letterSpacing: "0.02em"
+  },
+  brandAccent: {
+    color: "#8b5cf6"
+  },
+  brandSubtitle: {
+    marginTop: "7px",
+    color: "#d1d5db",
+    fontSize: "9px",
+    letterSpacing: "0.28em"
   },
   // Ito ang card na nagho-hold ng form at nagbibigay ng modern glass-like look.
   card: {
     width: "100%",
-    maxWidth: "560px",
-    padding: "44px",
-    borderRadius: "32px",
+    maxWidth: "600px",
+    padding: "30px",
+    borderRadius: "40px",
     background: cardBackground,
     border: "1px solid #2A3150",
     boxShadow: "0 40px 120px rgba(9, 13, 26, 0.55)",
-    overflow: "hidden"
+    overflow: "hidden",
+    justifySelf: "center",
+    alignSelf: "center"
   },
   // Ito ang section na naglalaman ng title at subtitle sa ibabaw ng form.
   header: {
-    marginBottom: "24px"
+    marginBottom: "20px"
   },
   // Ito ang malaking heading na nagpapakita ng pangalan ng page.
   title: {
     margin: 0,
     color: "#f8fafc",
-    fontSize: "32px"
+    fontSize: "28px"
   },
   // Ito ang smaller text na nagbibigay ng description sa login screen.
   subtitle: {
@@ -205,7 +253,7 @@ const styles = {
   // Ito ang form layout na nag-aayos ng email, password, at button vertically.
   form: {
     display: "grid",
-    gap: "18px"
+    gap: "12px"
   },
   // Ito ang label style para sa bawat input field.
   label: {
@@ -264,5 +312,32 @@ const styles = {
     border: "1px solid rgba(248, 113, 113, 0.28)",
     fontSize: "0.95rem",
     lineHeight: 1.4
+  },
+  schoolFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifySelf: "center",
+    gap: "12px",
+    color: "#f8fafc"
+  },
+  schoolMark: {
+    width: "32px",
+    height: "36px",
+    display: "grid",
+    placeItems: "center",
+    color: "#f8fafc",
+    fontSize: "17px",
+    background: "#6d28d9",
+    clipPath: "polygon(50% 0, 92% 14%, 88% 68%, 50% 100%, 12% 68%, 8% 14%)"
+  },
+  schoolName: {
+    display: "block",
+    fontSize: "13px"
+  },
+  schoolSubtitle: {
+    display: "block",
+    marginTop: "3px",
+    color: "#a1a1aa",
+    fontSize: "11px"
   }
 };

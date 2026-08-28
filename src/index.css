@@ -973,7 +973,7 @@ select:focus {
 
 /* Row ng search input at filter controls sa history at visitor list views. */
 .history-scroll {
-  max-height: 780px;
+  max-height: 715px;
   min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
