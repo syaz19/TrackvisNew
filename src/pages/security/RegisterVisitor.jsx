@@ -455,7 +455,7 @@ export default function RegisterVisitor() {
               value={form.uid}
               onChange={handleChange}
             >
-              <option value="" style={{ color: "#94a3b8" }}>
+              <option value="" style={{ color: "#A1A1AA" }}>
                 -- Select RFID Tag / EPC --
               </option>
               {tags.map(function (tag) {
@@ -471,11 +471,11 @@ export default function RegisterVisitor() {
                 );
               })}
             </select>
-            <p style={{ marginTop: "0.5rem", color: "#64748b", fontSize: "0.95rem" }}>
+            <p style={{ marginTop: "0.5rem", color: "#71717A", fontSize: "0.95rem" }}>
               Available tags are selectable. In-use tags are shown but disabled.
             </p>
             {form.uid && (
-              <p style={{ marginTop: "0.5rem", color: "#94a3b8", fontSize: "0.95rem" }}>
+              <p style={{ marginTop: "0.5rem", color: "#A1A1AA", fontSize: "0.95rem" }}>
                 Selected tag: {form.uid}
               </p>
             )}

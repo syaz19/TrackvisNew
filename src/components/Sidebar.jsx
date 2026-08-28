@@ -1,5 +1,5 @@
 // Imports mula sa React Router para sa internal navigation at pag-redirect.
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 // Firebase auth helper para mag-sign out ang user.
 import { signOut } from "firebase/auth";
 // React hooks na gagamitin: state, lifecycle effects, at refs.
@@ -29,6 +29,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   const profileRef = useRef(null);
   // navigate function para mag-redirect programmatically
   const navigate = useNavigate();
+  const location = useLocation();
   const [pendingVisitorCount, setPendingVisitorCount] = useState(0);
 
   useEffect(
@@ -177,10 +178,15 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
         <nav className="nav-links">
           {menuLinks.map(function (link) {
             const isDashboardWithCount = role === "authorized" && link.to === "/authorized" && link.count > 0;
+            const isActive = location.pathname === link.to;
+            const linkClassName = [
+              isActive ? "nav-link-active" : "",
+              isDashboardWithCount ? "nav-link-with-count" : ""
+            ].filter(Boolean).join(" ");
 
             return (
               // bawat Link ay nagna-navigate papunta sa tinukoy na ruta at nagsasara ng menu pagkatapos
-              <Link key={link.to} to={link.to} onClick={onClose} className={isDashboardWithCount ? "nav-link-with-count" : ""}>
+              <Link key={link.to} to={link.to} onClick={onClose} className={linkClassName}>
                 <span>{link.label}</span>
                 {isDashboardWithCount && <span className="nav-link-count">{link.count}</span>}
               </Link>

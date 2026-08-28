@@ -25,11 +25,11 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 // I-define ang mga color at background na gagamitin sa login UI.
-const pageBackground = "linear-gradient(rgba(7, 16, 31, 0.64), rgba(15, 23, 42, 0.72)), url('/images/finalbg.png') center / cover no-repeat";
-const cardBackground = "rgba(10, 20, 40, 0.80)";
-const inputBackground = "#0f172a";
-const borderColor = "rgba(148, 163, 184, 0.18)";
-const accentColor = "#2563eb";
+const pageBackground = "linear-gradient(rgba(9, 13, 26, 0.72), rgba(17, 21, 43, 0.82)), url('/images/finalbg.png') center / cover no-repeat";
+const cardBackground = "rgba(23, 26, 53, 0.88)";
+const inputBackground = "#11152B";
+const borderColor = "#2A3150";
+const accentColor = "#4F46E5";
 
 // I-export ang login component na nag-render ng authentication form.
 export default function Login() {
@@ -181,8 +181,8 @@ const styles = {
     padding: "44px",
     borderRadius: "32px",
     background: cardBackground,
-    border: "1px solid rgba(96, 165, 250, 0.28)",
-    boxShadow: "0 40px 120px rgba(15, 23, 42, 0.45)",
+    border: "1px solid #2A3150",
+    boxShadow: "0 40px 120px rgba(9, 13, 26, 0.55)",
     overflow: "hidden"
   },
   // Ito ang section na naglalaman ng title at subtitle sa ibabaw ng form.
@@ -235,7 +235,7 @@ const styles = {
     fontSize: "1rem",
     fontWeight: 700,
     cursor: "pointer",
-    boxShadow: "0 18px 36px rgba(37, 99, 235, 0.2)"
+    boxShadow: "0 18px 36px rgba(79, 70, 229, 0.2)"
   },
   // Ito ang footer section na naglalaman ng link para sa signup.
   footer: {
@@ -249,7 +249,7 @@ const styles = {
   },
   // Ito ang style ng clickable link para sa bagong account.
   link: {
-    color: "#60a5fa",
+    color: "#818CF8",
     textDecoration: "none",
     fontWeight: 700
   },

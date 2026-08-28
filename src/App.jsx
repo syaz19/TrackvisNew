@@ -154,7 +154,7 @@ export default function App() {
 
   if (authState.status === "loading") {
     return (
-      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#0f172a", color: "#fff" }}>
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#090D1A", color: "#F8FAFC" }}>
         <p>Loading TrackVis...</p>
       </div>
     );

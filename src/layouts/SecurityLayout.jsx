@@ -15,12 +15,12 @@ function SecurityPopup({ alerts, onDismiss }) {
     <div style={{ position: "fixed", top: 0, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 200000, pointerEvents: "none", padding: "16px" }}>
       {alerts.map(function (alert) {
         return (
-          <div key={alert.id} style={{ pointerEvents: "auto", width: "min(500px, calc(100% - 32px))", background: "rgba(2, 6, 23, 0.98)", borderRadius: 12, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", border: "1px solid rgba(148, 163, 184, 0.18)", padding: "18px 20px" }}>
+          <div key={alert.id} style={{ pointerEvents: "auto", width: "min(500px, calc(100% - 32px))", background: "#171A35", borderRadius: 12, boxShadow: "0 20px 60px rgba(9,13,26,0.5)", border: "1px solid #2A3150", padding: "18px 20px" }}>
             <p style={{ margin: 0, color: "#fff", fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.5 }}>{alert.text}</p>
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
               <button type="button" onClick={function () {
                 onDismiss(alert.id);
-              }} style={{ background: "#2563eb", border: "none", color: "#fff", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}>OK</button>
+              }} style={{ background: "#4F46E5", border: "none", color: "#fff", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}>OK</button>
             </div>
           </div>
         );

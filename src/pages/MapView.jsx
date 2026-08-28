@@ -20,7 +20,7 @@ import { auth, db } from "../firebase";
 import RegisterVisitor from "./security/RegisterVisitor";
 
 // mga kulay na ginagamit para sa visitor markers.
-const markerColors = ["#ef4444", "#f59e0b", "#38bdf8", "#22c55e", "#a855f7"];
+const markerColors = ["#ef4444", "#f59e0b", "#818CF8", "#22c55e", "#4F46E5"];
 // base URL ng 3D model asset.
 const BASE_MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb`;
 // cache-busted URL para iwas cache stale model.
@@ -55,7 +55,7 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-90, 30, -75],
+  position: [-80, 25, -85],
   target: [0, 0, 0],
   zoomDistance: 140
 };
@@ -172,7 +172,7 @@ function PartLabel({ portal, locationKey, label }) {
           borderRadius: "999px",
           background: "rgba(15, 23, 42, 0.98)",
           color: "#f8fafc",
-          border: "1px solid rgba(96, 165, 250, 0.35)",
+          border: "1px solid rgba(129, 140, 248, 0.45)",
           fontSize: "18px",
           fontWeight: 700,
           letterSpacing: "0.16em",
@@ -642,7 +642,7 @@ export default function MapView() {
 
   return (
     <div>
-      <div ref={canvasWrapperRef} style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#0b1220" }}>
+      <div ref={canvasWrapperRef} style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#090D1A" }}>
         {(isSecurityUser || isAuthorizedUser) && (
           <div style={{ position: "absolute", bottom: 18, right: 18, zIndex: 100020, display: "flex", flexDirection: "column", gap: 14, pointerEvents: "auto" }}>
             {isSecurityUser && (
@@ -650,7 +650,7 @@ export default function MapView() {
                 type="button"
                 onClick={handleRegisterToggle}
                 style={{
-                  background: showRegister ? "rgba(37, 99, 235, 0.95)" : "rgba(102, 126, 234, 0.95)",
+                  background: showRegister ? "rgba(67, 56, 202, 0.95)" : "rgba(79, 70, 229, 0.95)",
                   color: "#fff",
                   border: "none",
                   borderRadius: 10,
@@ -670,14 +670,14 @@ export default function MapView() {
               type="button"
               onClick={handleResetClick}
               style={{
-                background: "rgba(37, 99, 235, 0.95)",
+                background: "rgba(79, 70, 229, 0.95)",
                 color: "#fff",
                 border: "none",
                 borderRadius: 10,
                 padding: "10px 14px",
                 cursor: "pointer",
                 fontWeight: 600,
-                boxShadow: "0 10px 18px rgba(37, 99, 235, 0.2)",
+                boxShadow: "0 10px 18px rgba(79, 70, 229, 0.2)",
                 minWidth: 160,
                 width: 160,
                 textAlign: "center"

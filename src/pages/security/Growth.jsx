@@ -71,12 +71,12 @@ function buildChartData(visitors, now) {
         data: sortedDates.map(function (dateLabel) {
           return countsByDate[dateLabel];
         }),
-        borderColor: "#38bdf8",
-        backgroundColor: "rgba(56, 189, 248, 0.25)",
+        borderColor: "#4F46E5",
+        backgroundColor: "rgba(79, 70, 229, 0.25)",
         fill: true,
         tension: 0.3,
         pointRadius: 4,
-        pointBackgroundColor: "#38bdf8"
+        pointBackgroundColor: "#6366F1"
       }
     ]
   };
@@ -130,12 +130,12 @@ export default function Growth() {
     {
       label: "This Week",
       className: "summary-card-item summary-card-item--info",
-      valueColor: "#3b82f6"
+      valueColor: "#818CF8"
     },
     {
       label: "Total",
       className: "summary-card-item summary-card-item--purple",
-      valueColor: "#a855f7"
+      valueColor: "#6366F1"
     }
   ];
 
