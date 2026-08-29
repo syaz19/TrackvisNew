@@ -35,7 +35,10 @@ const personalDestinations = [
   "Education Building",
   "Criminology Building",
   "CABA Building",
-  "Waiting/Bench Area"
+  "Waiting/Bench Area",
+  "Canteen",
+  "Forum Hall",
+  "Sport Office"
 ];
 
 const excludedRegistrationTags = new Set([

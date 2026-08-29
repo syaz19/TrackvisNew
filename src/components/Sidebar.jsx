@@ -2,8 +2,8 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 // Firebase auth helper para mag-sign out ang user.
 import { signOut } from "firebase/auth";
-// React hooks na gagamitin: state, lifecycle effects, at refs.
-import { useState, useEffect, useRef } from "react";
+// React hooks na gagamitin: state at lifecycle effects.
+import { useState, useEffect } from "react";
 // Firebase auth instance mula sa lokal na firebase config.
 import { auth, db } from "../firebase";
 import { collection, onSnapshot } from "firebase/firestore";
@@ -23,10 +23,6 @@ function getDestinations(visitor) {
 // - currentUser: firebase auth user object
 // - userData: Firestore user document data
 export default function Sidebar({ role, isOpen, onClose, currentUser, userData }) {
-  // state para i-toggle ang profile popup visibility
-  const [profileOpen, setProfileOpen] = useState(false);
-  // ref para sa profile popup element para madetect ang click outside
-  const profileRef = useRef(null);
   // navigate function para mag-redirect programmatically
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,15 +87,15 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
     menuLinks = [
       { to: "/security/map", label: "San Carlos College 3D" },
       { to: "/security", label: "Dashboard" },
-      { to: "/security/history", label: "History" },
-      { to: "/security/growth", label: "Growth" }
+      { to: "/security/history", label: "History of Visitor" },
+      { to: "/security/growth", label: "Growth Analytics" }
     ];
   } else if (role === "authorized") {
     // Authorized personnel links: their map, dashboard, and history
     menuLinks = [
-      { to: "/authorized/map", label: "SCC 3D" },
-      { to: "/authorized", label: "Confirmation", count: pendingVisitorCount },
-      { to: "/authorized/history", label: "History" }
+      { to: "/authorized/map", label: "San Carlos College 3D" },
+      { to: "/authorized", label: "Confirmation Pending", count: pendingVisitorCount },
+      { to: "/authorized/history", label: "History Confirmed" }
     ];
   }
 
@@ -113,43 +109,16 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
     sidebarClassName = "sidebar open";
   }
 
-  // Pangalan at email na ipapakita sa profile area; fallback values kung wala
-  const email = currentUser?.email || userData?.email || "guest@example.com";
-  const displayName = userData?.name || userData?.fullName || email.split("@")[0] || "Guest";
-  // Human-readable role label para ipakita sa UI
-  const roleLabel = role === "security" ? "Security" : role === "authorized" ? "Authorized Personnel" : userData?.role || "User";
+  // Pangalan at email na ipapakita sa profile area; gamitin ang aktwal na authenticated user
+  const email = currentUser?.email || userData?.email || "";
+  const emailName = email ? email.split("@")[0].trim() : "";
+  const displayName = userData?.name || userData?.fullName || currentUser?.displayName || emailName || "User";
   // Unang letra ng display name para sa avatar badge
-  const profileInitial = displayName.charAt(0).toUpperCase() || "G";
+  const profileInitial = (displayName || "U").charAt(0).toUpperCase() || "G";
+  const accountPath = role === "security" ? "/security/account" : "/authorized/account";
+  const isAccountActive = location.pathname === accountPath;
 
-  // Toggle handler para sa profile popup
-  function handleProfileToggle() {
-    setProfileOpen(function (current) {
-      return !current;
-    });
-  }
-
-  // Effect: kapag bukas ang profile popup, mag-listen sa clicks sa window para isara kapag nag-click outside
-  useEffect(
-    function () {
-      if (!profileOpen) {
-        return undefined;
-      }
-
-      function handleClickOutside(event) {
-        if (profileRef.current && !profileRef.current.contains(event.target)) {
-          setProfileOpen(false);
-        }
-      }
-
-      window.addEventListener("mousedown", handleClickOutside);
-      return function () {
-        window.removeEventListener("mousedown", handleClickOutside);
-      };
-    },
-    [profileOpen]
-  );
-
-  // JSX return: sidebar layout, nav links, profile area, and logout button
+  // JSX return: sidebar layout, nav links, and account/logout actions
   return (
     <>
       {/* Overlay na ginagamit para i-close ang mobile menu kapag na-click */}
@@ -194,45 +163,27 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
           })}
         </nav>
 
-        {/* Footer area: profile card at logout button */}
+        {/* Footer area: account button at logout button */}
         <div className="sidebar-footer">
-          <div className="sidebar-profile-group" ref={profileRef}>
-            {/* Profile card boton na nagto-toggle ng profile popup */}
-            <button type="button" className="sidebar-profile-card" onClick={handleProfileToggle} aria-expanded={profileOpen}>
-              {/* Avatar initial */}
+          <div className="sidebar-footer-row">
+            <button
+              type="button"
+              className={`sidebar-profile-card ${isAccountActive ? "sidebar-profile-card--active" : ""}`}
+              onClick={function () {
+                navigate(accountPath);
+                onClose?.();
+              }}
+            >
               <div className="sidebar-profile-avatar">{profileInitial}</div>
               <div className="sidebar-profile-details">
-                {/* Ipakita ang pangalan ng user */}
                 <p className="sidebar-profile-name">{displayName}</p>
-                {/* Ipakita ang role */}
-                <p className="sidebar-profile-role">{roleLabel}</p>
               </div>
             </button>
 
-            {/* Profile popup na naglalaman ng account details; lumalabas kapag `profileOpen` true */}
-            {profileOpen && (
-              <div className="sidebar-profile-popup">
-                <p className="sidebar-profile-popup-title">Account Info</p>
-                <div className="sidebar-profile-popup-row">
-                  <span>Name</span>
-                  <strong>{displayName}</strong>
-                </div>
-                <div className="sidebar-profile-popup-row">
-                  <span>Email</span>
-                  <strong>{email}</strong>
-                </div>
-                <div className="sidebar-profile-popup-row">
-                  <span>Role</span>
-                  <strong>{roleLabel}</strong>
-                </div>
-              </div>
-            )}
+            <button className="logout-button" onClick={handleLogout} type="button">
+              Logout
+            </button>
           </div>
-
-          {/* Logout button sa footer */}
-          <button className="logout-button" onClick={handleLogout} type="button">
-            Logout
-          </button>
         </div>
       </aside>
     </>
