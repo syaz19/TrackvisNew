@@ -18,12 +18,19 @@ import { collection, deleteField, doc, onSnapshot, updateDoc } from "firebase/fi
 // I-import ang Firestore instance na naka-connect sa app.
 import { db } from "../../firebase";
 
+// getDestinations:
+// Tinutukoy nito kung saan pupunta ang visitor.
+// Pwede itong maging array o kaya string na may comma.
+// Ginagamit ito para malaman ang destination list sa dashboard.
 function getDestinations(visitor) {
   if (Array.isArray(visitor.destinations)) return visitor.destinations;
   if (Array.isArray(visitor.destination)) return visitor.destination;
   return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
 }
 
+// getDestinationConfirmations:
+// Ginagawa nitong listahan ang bawat destination at ang status nitong confirmation.
+// Kung wala pang data, default na Pending ang status.
 function getDestinationConfirmations(visitor) {
   const destinations = getDestinations(visitor);
   if (Array.isArray(visitor.destinationConfirmations)) return visitor.destinationConfirmations;

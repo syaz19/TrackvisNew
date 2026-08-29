@@ -2,12 +2,18 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot, updateDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 
+// getDestinations:
+// Tinutukuy kung ano ang destination o lugar na pupuntahan ng visitor.
+// Maaaring naka-array ang data o string na may comma-separated values.
 function getDestinations(visitor) {
   if (Array.isArray(visitor.destinations)) return visitor.destinations;
   if (Array.isArray(visitor.destination)) return visitor.destination;
   return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
 }
 
+// getDestinationConfirmations:
+// Ginagawa nitong listahan ang bawat destination at ang status ng confirmation.
+// Kung walang record, itutakda itong Pending bilang default value.
 function getDestinationConfirmations(visitor) {
   const destinations = getDestinations(visitor);
   if (Array.isArray(visitor.destinationConfirmations)) return visitor.destinationConfirmations;
@@ -16,27 +22,35 @@ function getDestinationConfirmations(visitor) {
   });
 }
 
+// getPurposeLabel:
+// Kung ang purpose ay School Related at may schoolPurpose, idinadagdag ito sa label.
+// Para mas malinaw kung ano ang dahilan ng pagbisita.
 function getPurposeLabel(visitor) {
   return visitor.purpose === "School Related" && visitor.schoolPurpose
     ? `School Related - ${visitor.schoolPurpose}`
     : visitor.purpose;
 }
 
-// Authorized Dashboard: ipinapakita ang mga pending visitor requests para sa authorized user's subRole
+// Authorized Dashboard:
+// Ito ang page kung saan tinitingnan ng authorized user ang mga incoming visitor requests.
+// Nakikita lang dito ang mga visitor na naka-target sa subRole ng user.
 export default function Dashboard() {
-  // visitors: mga visitor records filtered para sa user's subRole
+  // visitors: listahan ng mga visitor records na dapat makita ng authorized user.
   const [visitors, setVisitors] = useState([]);
-  // loading flag habang kinukuha ang user at visitor data
+
+  // loading: ginagamit para ipakita ang loading screen habang kinukuha pa ang data.
   const [loading, setLoading] = useState(true);
-  // userData: ang Firestore `users` document ng kasalukuyang user
+
+  // userData: ang data ng kasalukuyang logged-in user mula sa Firestore users collection.
   const [userData, setUserData] = useState(null);
 
-  // Effect: kunin ang kasalukuyang auth user at load user document mula sa Firestore
+  // useEffect na ito: kunin ang kasalukuyang logged-in user at ang user document niya.
+  // Kung walang user, walang loading at diretso nang mag-return.
   useEffect(function () {
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
-      // walang naka-login: markahan bilang hindi naglo-load at ibalik
+      // Walang naka-login: itigil ang loading at tapusin na.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
@@ -59,7 +73,8 @@ export default function Dashboard() {
     loadUserData();
   }, []);
 
-  // Effect: kapag may userData at may subRole, mag-subscribe sa `visitors` collection
+  // useEffect na ito: kapag may userData at may subRole, mag-subscribe sa visitors collection.
+  // Dito lang papasok ang mga School Related visitor na para sa assigned area ng user.
   useEffect(function () {
     if (!userData || !userData.subRole) {
       return;
@@ -73,8 +88,8 @@ export default function Dashboard() {
             ...item.data()
           };
         })
-        // Filter para sa School Related visitors na naka-target sa subRole ng authorized user.
-        // Personal / Non-School Related visitors ay hindi dapat mag-require ng confirmation.
+        // Filter: tinitingnan lang ang mga School Related visitors na may destination na same sa subRole ng user.
+        // Hindi kasama ang personal visitors o ibang department.
         .filter(function (visitor) {
           return (
             visitor.purpose === "School Related" &&
@@ -92,8 +107,11 @@ export default function Dashboard() {
   }, [userData]);
 
   // historical records are rendered in a separate History page/component
+  // Ang history page ay hiwalay na page. Ito lang ang pending dashboard.
 
-  // Handler para i-confirm ang arrival ng isang visitor
+  // handleConfirmVisitor:
+  // Kapag may pinindot na Confirm Arrival, update ang visitor record sa Firestore.
+  // Itinatakda ang status na Done kung lahat ng destination confirmation ay natapos na.
   async function handleConfirmVisitor(visitorId) {
     try {
       const currentUser = auth.currentUser;
@@ -117,7 +135,11 @@ export default function Dashboard() {
         return confirmation.status === "Done";
       });
 
-      // Update sa Firestore: markahan ang confirmStatus at timestamp
+      // Update sa Firestore:
+      // - destinationConfirmations: status ng bawat destination
+      // - confirmStatus: kung tapos na ang whole process
+      // - completionStatus: kapag natapos na, magiging Completed
+      // - confirmedAt/confirmedBy: time at user na nag-confirm
       await updateDoc(doc(db, "visitors", visitorId), {
         destinationConfirmations,
         confirmStatus: isFullyConfirmed ? "Done" : "Pending",
@@ -130,12 +152,14 @@ export default function Dashboard() {
     }
   }
 
-  // Simple wrapper para tawagin ang confirm handler
+  // handleConfirmButtonClick:
+  // Wrapper lang ito para mas madaling tawagan ang confirm function.
   function handleConfirmButtonClick(visitorId) {
     handleConfirmVisitor(visitorId);
   }
 
-  // Filter para sa mga pending visitors na active at hindi pa na-confirm
+  // pendingVisitors:
+  // Ito ang listahan ng mga visitor na active pa at hindi pa confirmed para sa user na ito.
   const pendingVisitors = visitors.filter(function (visitor) {
     const confirmation = getDestinationConfirmations(visitor).find(function (item) {
       return item.destination === userData?.subRole;
@@ -153,7 +177,7 @@ export default function Dashboard() {
     );
   }
 
-  // JSX: ipakita ang listahan ng pending visitors at actions
+  // JSX: ipinapakita ang listahan ng incoming visitors at button ng confirmation.
   return (
     <div className="page-card">
       <div className="card">

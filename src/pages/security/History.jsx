@@ -122,7 +122,9 @@ function getPillClass(visitor) {
   return "status-pill--done";
 }
 
-// I-filter ang visitors base sa pangalan para sa search box.
+// filterVisitorsByName:
+// Ginagamit ito para i-filter ang listahan ayon sa pangalan ng visitor.
+// Kung walang search, ibabalik lang ang buong list.
 function filterVisitorsByName(allVisitors, searchText) {
   // Kung walang search text, ibinabalik ang buong listahan.
   if (!searchText) {
@@ -150,11 +152,16 @@ function filterVisitorsByName(allVisitors, searchText) {
 
 // I-export ang History component para sa history page.
 export default function History() {
-  // I-store ang records, search text, at loading state.
+  // visitors: listahan ng lahat ng deactivated at expired visitor records.
   const [visitors, setVisitors] = useState([]);
+
+  // search: text na tinatype ng user para hanapin ang pangalan ng visitor.
   const [search, setSearch] = useState("");
+
+  // loading: nagsasabi kung kasalukuyang kinukuha pa ang data.
   const [loading, setLoading] = useState(true);
-  // I-store ang selected visitor category tab.
+
+  // selectedCategory: pinipili kung personal o school related records ang ipapakita.
   const [selectedCategory, setSelectedCategory] = useState("Personal / Non-School Related");
 
   // I-listen sa Firestore at i-filter ang completed at expired visitor records.

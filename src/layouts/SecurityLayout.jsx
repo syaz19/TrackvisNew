@@ -6,6 +6,10 @@ import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import { db } from "../firebase";
 
+// SecurityPopup:
+// Ito ang floating alert box na lumalabas sa taas ng screen.
+// Ginagamit ito para magpakita ng mga paalala gaya ng "visitor exceed time".
+// Kung walang alert, hindi ito magpapakita ng kahit ano.
 function SecurityPopup({ alerts, onDismiss }) {
   if (!alerts || alerts.length === 0) {
     return null;
@@ -29,18 +33,36 @@ function SecurityPopup({ alerts, onDismiss }) {
   );
 }
 
+// SecurityLayout:
+// Ito ang main wrapper para sa lahat ng page na para sa security staff.
+// Pinag-aayos nito ang sidebar, topbar, at ang content ng page.
+// Kailangan nito ang currentUser at userData para ma-display ang tamang user info.
 export default function SecurityLayout({ children, currentUser, userData, hideTitle, hideSubtitle, isSmallTitle, title }) {
-  // state para sa mobile sidebar open/close
+  // menuOpen: boolean para malaman kung bukas o sarado ang mobile sidebar.
+  // Kung true, makikita ang menu; kung false, nakatago ito.
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // securityAlerts: listahan ng mga paalala na dapat ipakita sa screen.
+  // Halimbawa: visitor ay lumagpas na sa oras.
   const [securityAlerts, setSecurityAlerts] = useState([]);
+
+  // visitors: listahan ng lahat ng visitor na nasa database.
+  // Ginagamit ito para i-check kung may visitor na lumagpas na sa endTime.
   const [visitors, setVisitors] = useState([]);
+
+  // currentTimeRef: timestamp ng oras ngayon.
+  // Ginagamit ito para ma-compare ang oras ng visitor sa kasalukuyang oras.
   const currentTimeRef = useRef(0);
 
+  // useEffect na ito ay tatakbo once lang sa simula.
+  // Itinatakda ang currentTimeRef sa kasalukuyang timestamp.
   useEffect(() => {
     currentTimeRef.current = Date.now();
   }, []);
 
-  // Helper functions to manage alert acknowledgments in localStorage
+  // getAcknowledgedAlerts:
+  // Binabasa ang mga alert na nakitang "OK" na ng user sa localStorage.
+  // Kaya hindi uulit-ulit ang parehong alert sa tuwing i-refresh ang page.
   const getAcknowledgedAlerts = useCallback(function () {
     try {
       const stored = localStorage.getItem("acknowledgedAlerts");
@@ -50,17 +72,25 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     }
   }, []);
 
+  // setAlertAcknowledged:
+  // Itinatakda ang alert bilang na-acknowledge na.
+  // Kaya kapag may alert na na-click ang OK, hindi na ito mauulit.
   const setAlertAcknowledged = useCallback(function (alertKey) {
     const acknowledged = getAcknowledgedAlerts();
     acknowledged[alertKey] = true;
     localStorage.setItem("acknowledgedAlerts", JSON.stringify(acknowledged));
   }, [getAcknowledgedAlerts]);
 
+  // isAlertAcknowledged:
+  // Tinitingnan kung ang alert ay na-acknowledge na.
   const isAlertAcknowledged = useCallback(function (alertKey) {
     const acknowledged = getAcknowledgedAlerts();
     return acknowledged[alertKey] === true;
   }, [getAcknowledgedAlerts]);
 
+  // pushSecurityAlert:
+  // Dito idinadagdag ang bagong alert sa list.
+  // Kung pareho na ang alert ID, hindi ito ma-double add.
   const pushSecurityAlert = useCallback(function (alert) {
     setSecurityAlerts(function (currentAlerts) {
       if (currentAlerts.some(function (item) {
@@ -73,6 +103,8 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     });
   }, []);
 
+  // useEffect na ito ay naka-listen sa Firestore visitors collection.
+  // Kung may pagbabago sa visitor data, awtomatikong i-update ang visitors state.
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
       const visitorList = snapshot.docs.map(function (item) {
@@ -90,7 +122,8 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     };
   }, []);
 
-  // Real-time timer to check for exceeded times every second
+  // useEffect na ito ay nagre-refresh ng oras bawat 1 segundo.
+  // Para ma-check kung na-expire na ang time of visitor.
   useEffect(() => {
     const timer = setInterval(() => {
       currentTimeRef.current = Date.now();
@@ -99,7 +132,9 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     return () => clearInterval(timer);
   }, []);
 
-  // Check for exceeded time alerts in real-time
+  // useEffect na ito ay nagsusuri ng mga active visitor bawat segundo.
+  // Kung ang visitor status ay active at ang endTime ay mas maaga or equal sa current time,
+  // maglalabas ito ng alert na nagsasabing na-exceed na ang oras nila.
   useEffect(() => {
     const checkTimer = setInterval(() => {
       const now = currentTimeRef.current;
@@ -109,7 +144,8 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
         const visitorEndTime = Number(visitor.endTime || 0);
         const hasExceededTime = visitorEndTime > 0 && visitorEndTime <= now;
 
-        // Trigger exceed time alert when time runs out
+        // Kapag active ang visitor at tapos na ang oras niya,
+        // magpapakita ng alert maliban kung na-acknowledge na.
         if (status === "active" && hasExceededTime) {
           const exceedAlertKey = `exceed_${visitor.id}`;
 
@@ -125,7 +161,9 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     return () => clearInterval(checkTimer);
   }, [visitors, isAlertAcknowledged, pushSecurityAlert]);
 
-
+  // handleAlertDismiss:
+  // Kapag pinindot ang OK sa alert, ito ang magtatakda na na-acknowledge na ang alert.
+  // At aalisin din ito sa list para mawala sa screen.
   function handleAlertDismiss(alertId) {
     if (alertId) {
       setAlertAcknowledged(alertId);
@@ -137,24 +175,32 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
     });
   }
 
-  // Toggle handler para sa topbar mobile menu button
+  // toggleMenu:
+  // Ginagamit ito kapag pinindot ang menu button sa mobile.
+  // Switchover lang ang state ng menu: open o close.
   function toggleMenu() {
     setMenuOpen(!menuOpen);
   }
 
-  // Isara ang menu (ginagamit bilang callback ng Sidebar at overlay)
+  // closeMenu:
+  // Isinara ang sidebar menu.
   function closeMenu() {
     setMenuOpen(false);
   }
 
-  // Kapag nag-click sa main content area at bukas ang menu, isara ito
+  // handleMainClick:
+  // Kapag may pinindot ang user sa main content at bukas ang sidebar,
+  // isasara agad ang menu para hindi mag-overlap.
   function handleMainClick() {
     if (menuOpen) {
       closeMenu();
     }
   }
 
-  // Render: Sidebar (security) + Topbar + content
+  // Render layout:
+  // Side menu at topbar ang laging nakabukas sa page.
+  // Ang mga child pages ay ilalagay sa center content area.
+  // Ang alert popup ay nasa pinakataas ng screen para magpapaalala.
   return (
     <div className="container">
       <Sidebar role="security" isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />

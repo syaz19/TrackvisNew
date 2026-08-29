@@ -2,12 +2,18 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot, getDoc, doc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 
+// getDestinations:
+// Tinutukoy nito ang lahat ng destination na pupuntahan ng visitor.
+// Ginagamit ito para malaman kung para saan ang visitor at kung aling department ang may hawak.
 function getDestinations(visitor) {
   if (Array.isArray(visitor.destinations)) return visitor.destinations;
   if (Array.isArray(visitor.destination)) return visitor.destination;
   return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
 }
 
+// getDestinationConfirmations:
+// Binubuo nito ang listahan ng bawat destination at kung done na ba ang confirmation.
+// Kung walang data, default ito sa Pending.
 function getDestinationConfirmations(visitor) {
   const destinations = getDestinations(visitor);
   if (Array.isArray(visitor.destinationConfirmations)) return visitor.destinationConfirmations;
@@ -16,21 +22,35 @@ function getDestinationConfirmations(visitor) {
   });
 }
 
+// getPurposeLabel:
+// Kung school-related, ipapakita rin ang detalyeng schoolPurpose.
+// Para mas malinaw kung ano ang dahilan ng pagbisita.
 function getPurposeLabel(visitor) {
   return visitor.purpose === "School Related" && visitor.schoolPurpose
     ? `School Related - ${visitor.schoolPurpose}`
     : visitor.purpose;
 }
 
+// History page:
+// Ito ang page na nagpapakita ng mga completed o confirmed visitor records ng authorized user.
+// Dito nakikita ang history ng mga visitor na may nauugnay na destination sa user.
 export default function History() {
+  // visitors: listahan ng mga visitor records na may confirmed history.
   const [visitors, setVisitors] = useState([]);
+
+  // loading: ginagamit habang kinukuha ang user at visitor data.
   const [loading, setLoading] = useState(true);
+
+  // userData: data ng kasalukuyang logged-in user mula sa Firestore users collection.
   const [userData, setUserData] = useState(null);
 
+  // useEffect na ito: kunin ang kasalukuyang user at ang user record niya.
+  // Kung walang user, hindi na maglo-load ang page.
   useEffect(function () {
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
+      // Walang naka-login, so itigil ang loading.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
@@ -52,6 +72,8 @@ export default function History() {
     loadUserData();
   }, []);
 
+  // useEffect na ito: kapag may userData at subRole, mag-subscribe sa visitors collection.
+  // Lang ng School Related visitors na may destination same sa user ang ipapakita.
   useEffect(
     function () {
       if (!userData || !userData.subRole) return;
@@ -62,15 +84,16 @@ export default function History() {
             return { id: item.id, ...item.data() };
           })
           .filter(function (v) {
-            // Only show School Related visitors for authorized personnel.
-            // Personal visitors never require confirmation.
+            // Huwag ipakita ang personal visitors.
+            // Tinitingnan lang ang School Related visitors para sa assigned area ng authorized user.
             return (
               v.purpose === "School Related" &&
               getDestinations(v).includes(userData.subRole)
             );
           });
 
-        // keep only confirmed/history items
+        // confirmedHistory:
+        // Ito ang listahan ng mga visitor na nakumpleto na, confirmed na, o may endTime.
         const confirmedHistory = visitorList.filter(function (visitor) {
           const status = (visitor.status || "").toLowerCase();
           const knownStatuses = ["deactivated", "expired", "completed", "done", "inactive", "cancelled"];
@@ -107,6 +130,8 @@ export default function History() {
     );
   }
 
+  // JSX:
+  // Ipinapakita ang title, section note, at list ng confirmed history items.
   return (
     <div className="page-card">
       <div className="card">

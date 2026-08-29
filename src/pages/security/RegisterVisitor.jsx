@@ -13,7 +13,9 @@ import { doc, collection, getDocs, onSnapshot, query, setDoc, where, updateDoc }
 // I-import ang Firestore instance para makapag-access sa database.
 import { db } from "../../firebase";
 
-// I-set ang default values ng form kapag magbubukas ang registration page.
+// initialFormState:
+// Ito ang default values ng form kapag unang buksan ang Register Visitor page.
+// Walang laman ang mga field kaya kailangan pang punan ng staff.
 const initialFormState = {
   name: "",
   purpose: "",

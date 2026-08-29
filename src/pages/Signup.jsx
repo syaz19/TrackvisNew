@@ -21,16 +21,23 @@ const inputBackground = "#11152B";
 const borderColor = "#2A3150";
 const accentColor = "#4F46E5";
 
+// Signup page:
+// Ito ang page para gumawa ng bagong account.
+// Kapag natapos ang form, gagawa ng Firebase Auth user at isusulat ang user role sa Firestore.
 export default function Signup() {
-  // State: email input field
+  // email: ang email na ipinasok ng user.
   const [email, setEmail] = useState("");
-  // State: password input field
+
+  // password: password na ipinasok ng user.
   const [password, setPassword] = useState("");
-  // State: confirm password input field
+
+  // confirmPassword: kinukumpara sa password para siguraduhin na magkapareho ang input.
   const [confirmPassword, setConfirmPassword] = useState("");
-  // State: role selector, default sa `security`
+
+  // role: role ng user, halimbawa security o authorized.
   const [role, setRole] = useState("security");
-  // State: subRole para sa authorized personnel
+
+  // subRole: kung authorized user, ito ang specific role gaya ng Admin o Librarian.
   const [subRole, setSubRole] = useState("Admin");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -56,6 +63,9 @@ export default function Signup() {
     setSubRole(event.target.value);
   }
 
+  // handleSignup:
+  // Ito ang process kapag pinindot ang Create Account.
+  // Dito papasok ang email/password, kukunin ang role, at isusulat ang user record sa Firestore.
   async function handleSignup(event) {
     // Step 1: pigilan ang pag-submit ng form.
     // Step 2: tiyakin na valid ang email.

@@ -31,14 +31,21 @@ const inputBackground = "#11152B";
 const borderColor = "#2A3150";
 const accentColor = "#4F46E5";
 
+// Login page:
+// Ito ang page na ginagamit para mag-login ang user.
+// Kung valid ang credentials, titingnan ang user role at ide-redirect ito sa tamang dashboard.
 // I-export ang login component na nag-render ng authentication form.
 export default function Login() {
-  // I-store ang email at password na ini-enter ng user.
+  // email: text na tinatype ng user sa email field.
   const [email, setEmail] = useState("");
+
+  // password: text na tinatype ng user sa password field.
   const [password, setPassword] = useState("");
-  // I-store ang error message para maipakita kapag may mali sa login.
+
+  // errorMessage: lalabas kapag may mali sa login, gaya ng wrong password o invalid account.
   const [errorMessage, setErrorMessage] = useState("");
-  // I-define ang navigate function para ilipat ang user sa tamang route.
+
+  // navigate: ginagamit para lumipat sa ibang page pagkatapos ng login.
   const navigate = useNavigate();
 
   // I-update ang email state kapag nag-type ang user at pinapanatili ang error message.
@@ -51,7 +58,9 @@ export default function Login() {
     setPassword(event.target.value);
   }
 
-  // I-handle ang proseso ng login kapag pinindot ang submit button.
+  // handleLogin:
+  // Ito ang function na tinatawag kapag pinindot ang Login button.
+  // Dito magse-sign in sa Firebase, kukunin ang role sa Firestore, at papunta sa tamang route.
   async function handleLogin(event) {
     // Step 1: pigilan ang pag-submit ng form.
     // Step 2: subukan ang login sa Firebase.

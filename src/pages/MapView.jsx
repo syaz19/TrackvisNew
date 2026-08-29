@@ -3,6 +3,7 @@
 // - Naglo-load ng /models/newschools.glb sa canvas.
 // - Nagpapakita ng visitor markers mula sa Firestore.
 // - May loading overlay at office scan alert.
+// Ang page na ito ay parang digital map ng school, kung saan nakikita ang mga visitor sa 3D campus.
 
 // import ng React hooks at utilities.
 import { Suspense, Component, memo, useEffect, useState, useMemo, useRef } from "react";
@@ -29,7 +30,9 @@ const BASE_MODEL_URL_WITH_CACHE_BUST = `${BASE_MODEL_URL}?v=${Date.now()}`;
 useGLTF.preload(BASE_MODEL_URL_WITH_CACHE_BUST);
 
 function LoadingOverlay() {
-  // Overlay na nakalagay sa ibabaw ng canvas habang naglo-load ang 3D model.
+  // LoadingOverlay:
+  // Ito ang overlay na lalabas habang hindi pa fully loaded ang 3D school model.
+  // Ginagawa ito para alam ng user na may process pa sa background.
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 100000 }}>
       <div style={{ pointerEvents: "auto", background: "rgba(35, 35, 36, 0.92)", color: "#fff", padding: "20px 28px", borderRadius: 12, boxShadow: "0 12px 36px rgba(0,0,0,0.6)", textAlign: "center", fontWeight: 500, letterSpacing: "0.08em" }}>
@@ -55,13 +58,15 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-90, 25, -70],
+  position: [-90, 22, -68],
   target: [0, 0, 0],
   zoomDistance: 140
 };
 
 function getCameraStorageKey() {
-  // Kung walang browser window, fallback sa global key.
+  // getCameraStorageKey:
+  // Ginagamit ito para magkaroon ng unique key sa camera state base sa logged-in user.
+  // Kaya ang camera position ay memory per user at hindi magkakalituhan.
   if (typeof window === "undefined") {
     return CAMERA_STORAGE_BASE_KEY;
   }
@@ -75,7 +80,8 @@ function getCameraStorageKey() {
 }
 
 function loadSavedCameraState() {
-  // Kunin ang na-save na camera state mula sessionStorage.
+  // loadSavedCameraState:
+  // Binabasa ang camera position na na-save dati upang ma-restore ang view.
   if (typeof window === "undefined") {
     return null;
   }
@@ -103,7 +109,8 @@ function loadSavedCameraState() {
 }
 
 function saveCameraState(state) {
-  // I-save ang kasalukuyang camera state sa browser sessionStorage.
+  // saveCameraState:
+  // Ini-save ang current camera view so pagbalik ng user, hindi na siya kailangan ulitin.
   if (typeof window === "undefined") {
     return;
   }
@@ -142,8 +149,8 @@ function clearCameraState(userUid = null) {
 }
 
 function getVisitorLocationKey(visitor) {
-  // I-map ang visitor record sa isang predefined na location key.
-  // Kung wala sa office/library ang pangalan, ituturing itong entrance.
+  // getVisitorLocationKey:
+  // Tinutukoy kung nasa office, library, o entrance ang visitor base sa current location field.
   const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
   if (locationName.includes("office")) {
     return "office";

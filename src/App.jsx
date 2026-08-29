@@ -17,13 +17,15 @@ import AuthorizedHistory from "./pages/authorized/History";
 import AccountPage from "./pages/Account";
 import MapView from "./pages/MapView";
 
-// Ginagamit ang initial state habang naglo-load ang app.
-// Default ready state ensures the login screen renders immediately
-// even before Firebase auth is resolved on fresh deploy.
+// initialAuthState:
+// Ito ang default value ng app habang kinukuha pa ang auth state.
+// Ang app ay ready na pero walang user pa hanggang ma-resolve ang Firebase auth.
 const initialAuthState = { status: "ready", user: null, userData: null };
 
+// PrivateRoute:
+// Tinitingnan kung may logged-in user.
+// Kung may user, papayagan ang page; kung wala, ibabalik sa login page.
 function PrivateRoute({ children, user }) {
-  // Kung may logged-in user, ipakita ang page; kung wala, ibalik sa login.
   if (user) {
     return children;
   }
@@ -31,13 +33,17 @@ function PrivateRoute({ children, user }) {
   return <Navigate to="/" replace />;
 }
 
+// buildAuthState:
+// Helper function para madaling i-construct ang auth state.
+// Kabilang dito ang status, user, at Firestore userData.
 function buildAuthState(user, userData, status = "ready") {
-  // Pinapadali ang pagbuo ng auth state sa bawat update.
   return { status, user, userData };
 }
 
+// getRedirectPath:
+// Tinutukoy kung saan dapat pumunta ang user pagkatapos mag-login.
+// Kung security, map page ng security; kung authorized, map page ng authorized.
 function getRedirectPath(userData) {
-  // Piliin ang tamang home page base sa role ng user.
   if (userData !== null && userData !== undefined) {
     if (userData.role === "security") {
       return "/security/map";
@@ -51,10 +57,15 @@ function getRedirectPath(userData) {
   return "/";
 }
 
+// App:
+// Ito ang root component ng app.
+// Dito pinapamahalaan ang authentication, role-based routing, at protected pages.
 export default function App() {
-  // I-store ang current auth state sa component.
+  // authState: current state ng user at role data.
   const [authState, setAuthState] = useState(initialAuthState);
 
+  // useEffect na ito: nakikinig sa Firebase auth state.
+  // Kapag may change sa login/logout, i-update dito ang authState ng app.
   useEffect(function () {
     // Step 1: pakinggan ang Firebase auth state.
     // Step 2: kung may user, kunin ang user data sa Firestore.
@@ -102,14 +113,16 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  // useEffect na ito: i-register ang auth setter para magamit ito ng ibang file.
+  // Halimbawa, may logout flow sa ibang bahagi ng app na dapat mag-update ng auth state.
   useEffect(function () {
-    // I-register ang setter para magamit ng ibang module.
     registerAuthSetter(setAuthState);
     return unregisterAuthSetter;
   }, []);
 
+  // useEffect na ito: nakikinig sa custom logout event.
+  // Kapag may logout event, i-reset ang auth state para mag-log out ang user sa app.
   useEffect(function () {
-    // Kapag may logout event, i-reset ang auth state.
     function handleLogout() {
       setAuthState(buildAuthState(null, null));
     }
@@ -120,8 +133,9 @@ export default function App() {
     };
   }, []);
 
+  // useEffect na ito: tinutukoy kung may pending unload o reload session.
+  // Ginagamit ang localStorage at sessionStorage para maiwasan ang stuck session pag nag-refresh ang page.
   useEffect(function () {
-    // Ginagamit ang local at session storage para maiwasan ang stuck session sa reload.
     const unloadKey = "trackvis-pending-unload";
     const sessionKey = "trackvis-session-active";
     const pendingUnload = localStorage.getItem(unloadKey);
@@ -153,6 +167,7 @@ export default function App() {
     };
   }, []);
 
+  // Kung hindi pa tapos ang auth load, ipapakita ang loading screen.
   if (authState.status === "loading") {
     return (
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#090D1A", color: "#F8FAFC" }}>
@@ -161,8 +176,14 @@ export default function App() {
     );
   }
 
+  // isAuthenticated: true lang kapag may user at may matched Firestore record.
   const isAuthenticated = Boolean(authState.user && authState.userData);
+
+  // homePath: destination ng user pagkatapos mag-login.
   const homePath = isAuthenticated ? getRedirectPath(authState.userData) : "/";
+  // routesThatNeedProtection:
+  // Listahan ng mga page na kailangan ng valid login.
+  // Bawat route may layout at element na dapat ipakita kapag may access.
   const routesThatNeedProtection = [
     { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
@@ -176,6 +197,8 @@ export default function App() {
     { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } }
   ];
 
+  // loginRouteElement at signupRouteElement:
+  // Kung naka-login na ang user, dapat hindi na ma-access ang login/signup page.
   let loginRouteElement = <Login />;
   let signupRouteElement = <Signup />;
 
@@ -184,6 +207,9 @@ export default function App() {
     signupRouteElement = <Navigate to={homePath} replace />;
   }
 
+  // Render ng app routes:
+  // - public routes: login at signup
+  // - protected routes: security/authorized pages wrapped in layouts
   return (
     <Routes>
       <Route path="/" element={loginRouteElement} />
