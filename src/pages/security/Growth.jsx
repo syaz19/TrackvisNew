@@ -167,12 +167,15 @@ export default function Growth() {
         }
       },
       y: {
-        beginAtZero: true,
-        min: 0,
-        max: 5,
+        beginAtZero: false,
+        min: 5,
+        max: 50,
         ticks: {
           color: "#cbd5e1",
-          stepSize: 1
+          stepSize: 5,
+          callback: function (value) {
+            return Number(value);
+          }
         },
         grid: {
           color: "rgba(148, 163, 184, 0.1)"

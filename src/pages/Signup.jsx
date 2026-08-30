@@ -16,8 +16,8 @@ import { doc, setDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
 
 const pageBackground = "linear-gradient(rgba(9, 13, 26, 0.72), rgba(17, 21, 43, 0.82)), url('/images/finalbg.png') center / cover no-repeat";
-const cardBackground = "rgba(23, 26, 53, 0.88)";
-const inputBackground = "#11152B";
+const cardBackground = "linear-gradient(rgba(17, 21, 43, 0.90), rgba(17, 21, 43, 0.93)), url('/images/scc.png') center 45% / 38% auto no-repeat";
+const inputBackground = "rgba(17, 21, 43, 0.82)";
 const borderColor = "#2A3150";
 const accentColor = "#4F46E5";
 
@@ -281,11 +281,12 @@ const styles = {
     padding: "30px",
     borderRadius: "40px",
     background: cardBackground,
-    border: "1px solid #2A3150",
+    border: "1px solid rgba(148, 163, 184, 0.22)",
     boxShadow: "0 40px 120px rgba(9, 13, 26, 0.55)",
     overflow: "hidden",
     justifySelf: "center",
-    alignSelf: "center"
+    alignSelf: "center",
+    backgroundBlendMode: "overlay, normal"
   },
   header: {
     marginBottom: "20px"
