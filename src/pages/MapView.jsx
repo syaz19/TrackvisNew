@@ -58,7 +58,7 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-90, 22, -68],
+  position: [-90, 22, -66],
   target: [0, 0, 0],
   zoomDistance: 140
 };
@@ -197,7 +197,7 @@ function PartLabel({ portal, locationKey, label }) {
 }
 
 function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
-  // maliit na sphere marker at label para sa bawat visitor sa 3D model.
+  // literal map pin icon at label para sa bawat visitor sa 3D model.
   const anchor = getLocationAnchor(locationKey);
   const radius = groupIndex === 0 ? 0 : 1.05;
   const angle = groupIndex * Math.PI * 0.75;
@@ -206,27 +206,43 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
     anchor.position[1],
     anchor.position[2] + (groupIndex === 0 ? 0 : Math.sin(angle) * radius)
   ];
-  const color = markerColors[groupIndex % markerColors.length];
   const isOfficeLocation = locationKey === "office";
+  const pinColor = markerColors[groupIndex % markerColors.length];
 
   return (
     <group>
-      <mesh position={position}>
-        <sphereGeometry args={[0.5, 28, 28]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
       <Html portal={portal} position={[position[0], position[1] + 0.95, position[2]]} center style={{ pointerEvents: "none", zIndex: 0 }}>
-        <div
-          className={isOfficeLocation ? "trackvis-office-visitor-label" : "trackvis-default-visitor-label"}
-          style={{
-            padding: "6px 10px",
-            borderRadius: "999px",
-            fontSize: "12px",
-            whiteSpace: "nowrap",
-            zIndex: 0
-          }}
-        >
-          {visitor.name || visitor.id}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+          <div
+            className={isOfficeLocation ? "trackvis-office-visitor-label" : "trackvis-default-visitor-label"}
+            style={{
+              padding: "6px 10px",
+              borderRadius: "999px",
+              fontSize: "12px",
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
+              zIndex: 0,
+              transform: "none",
+              transformOrigin: "center center"
+            }}
+          >
+            {visitor.name || visitor.id}
+          </div>
+          <svg
+            viewBox="0 0 64 80"
+            aria-hidden="true"
+            style={{
+              width: "26px",
+              height: "34px",
+              display: "block",
+              filter: "drop-shadow(0 8px 10px rgba(0,0,0,0.28))",
+              transform: "none",
+              transformOrigin: "center center"
+            }}
+          >
+            <path d="M32 4C17.64 4 6 15.64 6 30c0 18.2 17.82 29.12 24.34 39.6a2.5 2.5 0 0 0 3.32 0C40.18 59.12 58 48.2 58 30 58 15.64 46.36 4 32 4Z" fill={pinColor} />
+            <circle cx="32" cy="30" r="10" fill="#FFFFFF" />
+          </svg>
         </div>
       </Html>
     </group>

@@ -608,7 +608,7 @@ a {
 
 /* Malaking security panel para sa security dashboard. */
 .security-active-card {
-  min-height: 900px;
+  min-height: 620px;
 }
 
 /* Mga numero ng metrics sa analytics at summary cards. */
@@ -874,8 +874,8 @@ a {
 
 /* Scrollable na container para sa visitor list at history views. */
 .visitor-list-scroll {
-  max-height: 670px;
-  min-height: 280px;
+  max-height: 570px;
+  min-height: 220px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -904,8 +904,8 @@ a {
 .content-body {
   flex: 1;
   width: 100%;
-  overflow-y: auto;
-  padding-right: 8px;
+  overflow: hidden;
+  padding-right: 0;
 }
 
 /* Page heading na may title at subtitle. */
