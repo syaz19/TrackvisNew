@@ -26,7 +26,7 @@ import { auth, db } from "../firebase";
 
 // I-define ang mga color at background na gagamitin sa login UI.
 const pageBackground = "linear-gradient(rgba(9, 13, 26, 0.72), rgba(17, 21, 43, 0.82)), url('/images/finalbg.png') center / cover no-repeat";
-const cardBackground = "linear-gradient(rgba(17, 21, 43, 0.90), rgba(17, 21, 43, 0.93)), url('/images/scc.png') center 45% / 38% auto no-repeat";
+const cardBackground = "linear-gradient(rgba(17, 21, 43, 0.72), rgba(17, 21, 43, 0.84))";
 const inputBackground = "rgba(17, 21, 43, 0.82)";
 const borderColor = "#2A3150";
 const accentColor = "#4F46E5";
@@ -127,7 +127,10 @@ export default function Login() {
       <div style={styles.card}>
         {/* I-display ang header na may title at subtitle para sa login screen. */}
         <div style={styles.header}>
-          <h1 style={styles.title}>Login</h1>
+          <div style={styles.headerRow}>
+            <h1 style={styles.title}>Login</h1>
+            <img src="/images/scc.png" alt="San Carlos College" style={styles.schoolBadge} />
+          </div>
           <p style={styles.subtitle}>Secure access to TrackVis Professional.</p>
         </div>
 
@@ -241,17 +244,35 @@ const styles = {
     overflow: "hidden",
     justifySelf: "center",
     alignSelf: "center",
-    backgroundBlendMode: "overlay, normal"
+    backgroundBlendMode: "soft-light, normal"
   },
   // Ito ang section na naglalaman ng title at subtitle sa ibabaw ng form.
   header: {
     marginBottom: "20px"
+  },
+  headerRow: {
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: "12px",
+    marginBottom: "8px"
   },
   // Ito ang malaking heading na nagpapakita ng pangalan ng page.
   title: {
     margin: 0,
     color: "#f8fafc",
     fontSize: "28px"
+  },
+  schoolBadge: {
+    width: "62px",
+    height: "62px",
+    borderRadius: "50%",
+    objectFit: "cover",
+    border: "3px solid rgba(248, 113, 113, 0.95)",
+    background: "#fff",
+    boxShadow: "0 0 0 4px rgba(239, 68, 68, 0.12), 0 12px 24px rgba(15, 23, 42, 0.35)",
+    flexShrink: 0,
+    transform: "translateY(8px)"
   },
   // Ito ang smaller text na nagbibigay ng description sa login screen.
   subtitle: {

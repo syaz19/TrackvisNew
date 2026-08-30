@@ -16,7 +16,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { Link, useNavigate } from "react-router-dom";
 
 const pageBackground = "linear-gradient(rgba(9, 13, 26, 0.72), rgba(17, 21, 43, 0.82)), url('/images/finalbg.png') center / cover no-repeat";
-const cardBackground = "linear-gradient(rgba(17, 21, 43, 0.90), rgba(17, 21, 43, 0.93)), url('/images/scc.png') center 45% / 38% auto no-repeat";
+const cardBackground = "linear-gradient(rgba(17, 21, 43, 0.72), rgba(17, 21, 43, 0.84))";
 const inputBackground = "rgba(17, 21, 43, 0.82)";
 const borderColor = "#2A3150";
 const accentColor = "#4F46E5";
@@ -157,7 +157,10 @@ export default function Signup() {
       </div>
       <div style={styles.card}>
         <div style={styles.header}>
-          <h1 style={styles.title}>Create Account</h1>
+          <div style={styles.headerRow}>
+            <h1 style={styles.title}>Create Account</h1>
+            <img src="/images/scc.png" alt="San Carlos College" style={styles.schoolBadge} />
+          </div>
           <p style={styles.subtitle}>Set up your professional TrackVis workspace.</p>
         </div>
 
@@ -286,15 +289,33 @@ const styles = {
     overflow: "hidden",
     justifySelf: "center",
     alignSelf: "center",
-    backgroundBlendMode: "overlay, normal"
+    backgroundBlendMode: "soft-light, normal"
   },
   header: {
     marginBottom: "20px"
+  },
+  headerRow: {
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: "12px",
+    marginBottom: "8px"
   },
   title: {
     margin: 0,
     color: "#f8fafc",
     fontSize: "28px"
+  },
+  schoolBadge: {
+    width: "62px",
+    height: "62px",
+    borderRadius: "50%",
+    objectFit: "cover",
+    border: "3px solid rgba(248, 113, 113, 0.95)",
+    background: "#fff",
+    boxShadow: "0 0 0 4px rgba(239, 68, 68, 0.12), 0 12px 24px rgba(15, 23, 42, 0.35)",
+    flexShrink: 0,
+    transform: "translateY(8px)"
   },
   subtitle: {
     marginTop: "10px",
