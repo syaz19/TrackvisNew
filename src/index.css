@@ -1376,7 +1376,7 @@ select:focus {
 }
 
 .authorized-history-grid {
-  max-height: 740px;
+  max-height: 760px;
   overflow-y: auto;
   padding-right: 8px;
 }
