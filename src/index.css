@@ -1375,6 +1375,12 @@ select:focus {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.authorized-history-grid {
+  max-height: 700px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
 .visitor-card {
   width: 100%;
   max-width: 100%;

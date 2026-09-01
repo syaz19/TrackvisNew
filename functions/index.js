@@ -15,7 +15,7 @@ const db = getFirestore();
 // ==============================
 // 1. REGISTER VISITOR
 // ==============================
-// Function para i-register ang bagong visitor o i-update ang RFID tag record.
+// Function para i-register ang bagong visitor o i-update ang RFID tag record. Ito ang ginagamit kapag nag-register ng visitor at ina-assign ang RFID tag.
 exports.registerVisitor = functions.https.onRequest(async (req, res) => {
   try {
     const { epc, visitorInfo } = req.body || {};
@@ -132,6 +132,7 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       }
     }
 
+      //May RFID scan pero wala itong active visitor na naka-assign.
     if (!visitorDoc) {
       return res.json({
         success: false,
