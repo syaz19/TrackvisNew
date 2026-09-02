@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, onSnapshot, updateDoc } from "firebase/firestore";
 import { registerAuthSetter, unregisterAuthSetter } from "./authManager";
 import { auth, db } from "./firebase";
 import Login from "./pages/Login";
@@ -132,6 +132,127 @@ export default function App() {
       window.removeEventListener("trackvis-logout", handleLogout);
     };
   }, []);
+
+  // useEffect na ito: Global office entry alert listener.
+  // Tumatakbo sa lahat ng pages dahil ito ay nasa App component (root).
+  // Nag-filter based on user role at destination para sa authorized users.
+  const previousVisitorsRef = useRef({});
+  useEffect(function () {
+    // Kung wala pang user, huwag mag-subscribe sa visitors.
+    if (!authState.user || !authState.userData) {
+      return;
+    }
+
+    const userRole = authState.userData.role;
+    const userSubRole = authState.userData.subRole;
+
+    // Function para malaman kung ang location ay "office".
+    function getVisitorLocationKey(visitor) {
+      const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
+      if (locationName.includes("office")) {
+        return "office";
+      }
+      if (locationName.includes("library")) {
+        return "library";
+      }
+      return "entrance";
+    }
+
+    // Function para malaman kung dapat ipakita ang alert para sa current user.
+    function shouldShowAlertForUser(visitor) {
+      // Security users: makikita lahat ng alerts
+      if (userRole === "security") {
+        return true;
+      }
+
+      // Authorized users: makikita lang ang alerts ng visitors na assigned sa kanila
+      if (userRole === "authorized") {
+        // Kunin ang destinations ng visitor
+        const destinations = Array.isArray(visitor.destinations)
+          ? visitor.destinations
+          : (visitor.destination || "").toString().split(",").map(function (d) { return d.trim(); }).filter(Boolean);
+
+        // Check kung ang user's subRole ay included sa visitor's destinations
+        return destinations.some(function (dest) {
+          return dest.toLowerCase() === (userSubRole || "").toString().toLowerCase();
+        });
+      }
+
+      return false;
+    }
+
+    const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
+      const visitorList = snapshot.docs.map(function (item) {
+        return { id: item.id, ...item.data() };
+      });
+
+      // Detect office entry/exit at handle alerts
+      visitorList.forEach(function (currentVisitor) {
+        const previousVisitor = previousVisitorsRef.current[currentVisitor.id];
+
+        if (!previousVisitor) {
+          // New visitor, store it lang
+          previousVisitorsRef.current[currentVisitor.id] = currentVisitor;
+          return;
+        }
+
+        // Get location keys
+        const previousLocationKey = getVisitorLocationKey(previousVisitor);
+        const currentLocationKey = getVisitorLocationKey(currentVisitor);
+
+        // Check if visitor entered office (location changed to office)
+        if (previousLocationKey !== "office" && currentLocationKey === "office") {
+          // Visitor just entered office - check kung dapat ipakita ang alert para sa current user
+          if (!currentVisitor.officeEntryAlerted && shouldShowAlertForUser(currentVisitor)) {
+            // Show alert only if not already alerted at user is authorized to see it
+            const visitorName = currentVisitor.name || "Unknown";
+            window.alert(`Our visitor ${visitorName} enter office`);
+
+            // Update Firestore to mark alert as shown
+            try {
+              updateDoc(doc(db, "visitors", currentVisitor.id), {
+                officeEntryAlerted: true
+              }).catch(function (error) {
+                console.error("Failed to update officeEntryAlerted:", error);
+              });
+            } catch (error) {
+              console.error("Error updating officeEntryAlerted:", error);
+            }
+          }
+        }
+
+        // Check if visitor left office (location changed away from office)
+        if (previousLocationKey === "office" && currentLocationKey !== "office") {
+          // Visitor left office, reset alert state
+          if (currentVisitor.officeEntryAlerted) {
+            try {
+              updateDoc(doc(db, "visitors", currentVisitor.id), {
+                officeEntryAlerted: false
+              }).catch(function (error) {
+                console.error("Failed to reset officeEntryAlerted:", error);
+              });
+            } catch (error) {
+              console.error("Error resetting officeEntryAlerted:", error);
+            }
+          }
+        }
+
+        // Update the previous visitor record
+        previousVisitorsRef.current[currentVisitor.id] = currentVisitor;
+      });
+
+      // Cleanup removed visitors from previousVisitorsRef
+      Object.keys(previousVisitorsRef.current).forEach(function (id) {
+        if (!visitorList.find(function (x) { return x.id === id; })) {
+          delete previousVisitorsRef.current[id];
+        }
+      });
+    });
+
+    return function () {
+      unsubscribe();
+    };
+  }, [authState.user, authState.userData]);
 
   // useEffect na ito: tinutukoy kung may pending unload o reload session.
   // Ginagamit ang localStorage at sessionStorage para maiwasan ang stuck session pag nag-refresh ang page.

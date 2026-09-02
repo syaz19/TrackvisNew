@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword, updateProfile } from "firebase/auth";
+import { EmailAuthProvider, reauthenticateWithCredential, signOut, updatePassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase";
 
 // AccountPage:
@@ -14,6 +15,8 @@ function getRoleLabel(role) {
 }
 
 export default function AccountPage({ currentUser, userData }) {
+  const navigate = useNavigate();
+
   // authenticatedUser: active user na naka-login.
   // Ito ang pinakaimportanteng source ng user info.
   const authenticatedUser = currentUser || auth.currentUser;
@@ -176,7 +179,10 @@ export default function AccountPage({ currentUser, userData }) {
       setNewPassword("");
       setConfirmPassword("");
       setShowPasswordEditor(false);
-      setMessage("Password updated successfully.");
+
+      window.alert("You need to relog in to continue.");
+      await signOut(auth);
+      navigate("/", { replace: true });
     } catch (submitError) {
       const messageText = submitError?.message || "Unable to update password.";
 

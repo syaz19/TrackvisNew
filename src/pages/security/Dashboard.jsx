@@ -212,6 +212,14 @@ export default function Dashboard() {
     return `${value} ${unitLabel}${suffix}`;
   }
 
+  function getDisplayDuration(visitor) {
+    if (typeof visitor.durationText === "string" && visitor.durationText.trim()) {
+      return visitor.durationText.trim();
+    }
+
+    return renderDuration(visitor.duration, visitor.durationUnit || "minutes");
+  }
+
   // I-tiningnan kung malapit na ang visitor sa deadline para mag-show ng warning.
   function isWarning(endTime) {
     const remainingMinutes = getRemainingMinutes(endTime);
@@ -444,7 +452,7 @@ export default function Dashboard() {
                       return <span key={confirmation.destination}>✓ {confirmation.destination} Confirm - {confirmation.status === "Done" ? "Confirmed" : "Pending"}</span>;
                     })}
                     <span>🕒 Time In: {timeInLabel}</span>
-                    <span>⏱ Duration: {renderDuration(visitor.duration, visitor.durationUnit || "minutes")}</span>
+                    <span>⏱ Duration: {getDisplayDuration(visitor)}</span>
                     <span>⌛ Time Left: {getRemainingTime(visitor.endTime)}</span>
                   </div>
 

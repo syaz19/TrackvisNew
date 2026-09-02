@@ -49,6 +49,99 @@ const excludedRegistrationTags = new Set([
   "E28069150000402D9DF3D97D"
 ]);
 
+function parseDurationInput(rawDuration) {
+  if (typeof rawDuration !== "string") {
+    return null;
+  }
+
+  const value = rawDuration.trim().toLowerCase();
+
+  if (!value) {
+    return null;
+  }
+
+  const implicitCompositeMatch = value.match(/^(\d+(?:\.\d+)?)\s*(?:and|,)\s*(\d+(?:\.\d+)?)$/);
+
+  if (implicitCompositeMatch) {
+    const hours = Number(implicitCompositeMatch[1]);
+    const minutes = Number(implicitCompositeMatch[2]);
+
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours <= 0 || minutes < 0) {
+      return null;
+    }
+
+    return {
+      durationValue: hours * 60 + minutes,
+      durationUnit: "minutes"
+    };
+  }
+
+  const normalizedValue = value.replace(/\s+and\s+/gi, " ").replace(/\s*,\s*/g, " ");
+  const durationPattern = /(\d+(?:\.\d+)?)\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?|sec|min|hr|s|m|h)?/gi;
+  const matches = [];
+
+  let match;
+  while ((match = durationPattern.exec(normalizedValue)) !== null) {
+    if (match[0].trim() === "") {
+      continue;
+    }
+    matches.push(match);
+    if (match[0].length === 0) {
+      break;
+    }
+  }
+
+  if (!matches.length) {
+    const bareNumber = Number(value);
+    if (!Number.isFinite(bareNumber) || bareNumber <= 0) {
+      return null;
+    }
+    return {
+      durationValue: bareNumber,
+      durationUnit: "minutes"
+    };
+  }
+
+  let totalSeconds = 0;
+
+  for (const item of matches) {
+    const quantity = Number(item[1]);
+    const unitToken = (item[2] || "minutes").toLowerCase();
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return null;
+    }
+
+    let unit = "minutes";
+
+    if (["sec", "secs", "second", "seconds", "s"].includes(unitToken)) {
+      unit = "seconds";
+    } else if (["min", "mins", "minute", "minutes", "m"].includes(unitToken)) {
+      unit = "minutes";
+    } else if (["hr", "hrs", "hour", "hours", "h"].includes(unitToken)) {
+      unit = "hours";
+    }
+
+    totalSeconds += quantity * {
+      seconds: 1,
+      minutes: 60,
+      hours: 3600
+    }[unit];
+  }
+
+  if (totalSeconds >= 60) {
+    return {
+      durationValue: totalSeconds / 60,
+      durationUnit: "minutes"
+    };
+  }
+
+  return {
+    durationValue: totalSeconds,
+    durationUnit: "seconds"
+  };
+}
+
 // I-export ang component para sa register visitor page.
 export default function RegisterVisitor() {
   // I-store ang form values at listahan ng RFID tags.
@@ -177,14 +270,14 @@ export default function RegisterVisitor() {
       return;
     }
 
-    // I-convert ang duration sa number para i-validate.
-    const durationValue = Number(form.duration);
+    const parsedDuration = parseDurationInput(form.duration);
 
-    // Tinitingnan kung valid ang duration value.
-    if (!durationValue || durationValue <= 0) {
-      alert("Please enter a valid duration greater than 0.");
+    if (!parsedDuration) {
+      alert("Please enter a valid duration such as 10 seconds, 30 minutes, or 1 hour 30 minutes.");
       return;
     }
+
+    const { durationValue, durationUnit } = parsedDuration;
 
     // I-set ang loading state habang sine-save ang data.
     setLoading(true);
@@ -245,7 +338,7 @@ export default function RegisterVisitor() {
         minutes: 60000,
         hours: 3600000
       };
-      const endTime = startTime + durationValue * durationMultipliers[form.durationUnit];
+      const endTime = startTime + durationValue * durationMultipliers[durationUnit];
 
       // I-save ang visitor data sa Firestore gamit ang document ID na may literal na RFID tag
       // bilang prefix, kaya makikita agad ang EP/CUID sa Firestore kahit magamit muli ang tag.
@@ -274,7 +367,8 @@ export default function RegisterVisitor() {
         destinations: form.destinations,
         location: form.location || "Entrance",
         duration: durationValue,
-        durationUnit: form.durationUnit,
+        durationText: form.duration.trim(),
+        durationUnit,
         uid: selectedUid || "",
         startTime,
         endTime,
@@ -286,7 +380,8 @@ export default function RegisterVisitor() {
         ...(form.purpose === "School Related" ? { destinationConfirmations } : {}),
         violationType: "",
         confirmedAt: null,
-        confirmedBy: null
+        confirmedBy: null,
+        officeEntryAlerted: false
       });
 
       try {
@@ -432,22 +527,11 @@ export default function RegisterVisitor() {
           <input
             className="form-control"
             name="duration"
-            type="number"
-            min="0"
-            placeholder="Duration"
+            type="text"
+            placeholder="e.g. 10 sec, 30 min, 1 hour 30 minutes"
             value={form.duration}
             onChange={handleChange}
           />
-          <select
-            className="form-control"
-            name="durationUnit"
-            value={form.durationUnit}
-            onChange={handleChange}
-          >
-            <option value="seconds">Seconds</option>
-            <option value="minutes">Minutes</option>
-            <option value="hours">Hours</option>
-          </select>
         </div>
         <br /><br />
         {tagsLoading ? (

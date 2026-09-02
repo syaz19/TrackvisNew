@@ -289,6 +289,10 @@ export default function History() {
                 timeOutLabel = new Date(visitor.timeOut).toLocaleString();
               }
 
+              const displayDuration = typeof visitor.durationText === "string" && visitor.durationText.trim()
+                ? visitor.durationText.trim()
+                : `${visitor.duration} ${visitor.durationUnit || "minutes"}`;
+
               return (
                 <div key={visitor.id} className="visitor-card visitor-card--history">
                   <div className="visitor-card__top">
@@ -308,7 +312,7 @@ export default function History() {
                       return <span key={confirmation.destination}>✓ {confirmation.destination} Confirm: {confirmation.status === "Done" ? "Confirmed" : "Pending"}</span>;
                     })}
                     <span>🪪 UID/EPC: {visitor.uid || visitor.epc || "N/A"}</span>
-                    <span>⏱ Duration: {visitor.duration} {visitor.durationUnit || "minutes"}</span>
+                    <span>⏱ Duration: {displayDuration}</span>
                     <span>🕒 Time In: {timeInLabel}</span>
                     <span>⏳ Time Out: {timeOutLabel}</span>
                   </div>

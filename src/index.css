@@ -1133,7 +1133,7 @@ select:focus {
 
 .form-row {
   display: grid;
-  grid-template-columns: 1fr 140px;
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 

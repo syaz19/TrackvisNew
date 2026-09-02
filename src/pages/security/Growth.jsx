@@ -168,11 +168,11 @@ export default function Growth() {
       },
       y: {
         beginAtZero: false,
-        min: 5,
-        max: 50,
+        min: 1,
+        max: 60,
         ticks: {
           color: "#cbd5e1",
-          stepSize: 5,
+          stepSize: 3,
           callback: function (value) {
             return Number(value);
           }
