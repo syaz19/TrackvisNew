@@ -528,7 +528,7 @@ export default function RegisterVisitor() {
             className="form-control"
             name="duration"
             type="text"
-            placeholder="e.g. 10 sec, 30 min, 1 hour 30 minutes"
+            placeholder="Duration: e.g. 10 sec, 30 min, 1 hour 30 minutes"
             value={form.duration}
             onChange={handleChange}
           />
