@@ -149,13 +149,13 @@ export default function Signup() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="auth-page-mobile" style={styles.page}>
       <div style={styles.brand}>
         <div style={styles.brandMark}>◉</div>
         <div style={styles.brandName}>TRACK<span style={styles.brandAccent}>VIS</span></div>
         <div style={styles.brandSubtitle}>PROFESSIONAL</div>
       </div>
-      <div style={styles.card}>
+      <div className="auth-card-mobile" style={styles.card}>
         <div style={styles.header}>
           <div style={styles.headerRow}>
             <h1 style={styles.title}>Create Account</h1>

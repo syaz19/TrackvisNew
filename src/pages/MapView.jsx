@@ -58,7 +58,7 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-90, 30, -66],
+  position: [-60, 30, -80],
   target: [0, 0, 0],
   zoomDistance: 120
 };
@@ -174,6 +174,7 @@ function PartLabel({ portal, locationKey, label }) {
   return (
     <Html portal={portal} position={textPosition} center style={{ pointerEvents: "none", zIndex: 0 }} distanceFactor={24}>
       <div
+        className="trackvis-map-part-label"
         style={{
           padding: "14px 22px",
           borderRadius: "999px",
@@ -664,10 +665,10 @@ export default function MapView() {
   }, [visibleVisitors]);
 
   return (
-    <div>
-      <div ref={canvasWrapperRef} style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#090D1A" }}>
+    <div className="map-view-shell">
+      <div className="map-canvas-shell" ref={canvasWrapperRef} style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#090D1A" }}>
         {(isSecurityUser || isAuthorizedUser) && (
-          <div style={{ position: "absolute", bottom: 18, right: 18, zIndex: 100020, display: "flex", flexDirection: "column", gap: 14, pointerEvents: "auto" }}>
+          <div className="map-action-controls" style={{ position: "absolute", bottom: 18, right: 18, zIndex: 100020, display: "flex", flexDirection: "column", gap: 14, pointerEvents: "auto" }}>
             {isSecurityUser && (
               <button
                 type="button"
@@ -752,7 +753,7 @@ export default function MapView() {
                 backdropFilter: "blur(10px)"
               }}
             >
-              <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 24px" }}>
+              <div className="register-form-scroll" style={{ flex: 1, overflowY: "auto", padding: "20px 20px 24px" }}>
                 <RegisterVisitor />
               </div>
             </div>

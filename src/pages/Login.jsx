@@ -117,14 +117,14 @@ export default function Login() {
 
   // I-render ang buong login layout kasama ang form at footer.
   return (
-    <div style={styles.page}>
+    <div className="auth-page-mobile" style={styles.page}>
       <div style={styles.brand}>
         <div style={styles.brandMark}>◉</div>
         <div style={styles.brandName}>TRACK<span style={styles.brandAccent}>VIS</span></div>
         <div style={styles.brandSubtitle}>PROFESSIONAL</div>
       </div>
       {/* I-wrap ang login card sa gitna ng page para mas presentable ang layout. */}
-      <div style={styles.card}>
+      <div className="auth-card-mobile" style={styles.card}>
         {/* I-display ang header na may title at subtitle para sa login screen. */}
         <div style={styles.header}>
           <div style={styles.headerRow}>

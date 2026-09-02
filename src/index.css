@@ -1708,6 +1708,438 @@ select:focus {
   background: var(--accent);
 }
 
+/* Phone layout: keep the desktop geometry above unchanged. */
+@media (max-width: 640px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .container {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .main {
+    width: 100%;
+    min-width: 0;
+    min-height: 100vh;
+    padding: 12px;
+    overflow: visible;
+  }
+
+  .content-body {
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .topbar {
+    width: 100%;
+    margin-bottom: 14px;
+    gap: 12px;
+  }
+
+  .topbar-left {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .topbar-left > div {
+    flex: 1;
+  }
+
+  .topbar-label {
+    margin-bottom: 5px;
+    font-size: 0.62rem;
+  }
+
+  .topbar h2 {
+    font-size: 1.35rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .topbar-subtitle {
+    margin-top: 5px;
+    font-size: 0.88rem;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-menu-button {
+    flex: 0 0 44px;
+  }
+
+  .page-grid,
+  .summary-grid,
+  .account-summary__grid,
+  .account-form__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .card,
+  .form-card,
+  .action-card,
+  .page-card,
+  .account-panel {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .card,
+  .form-card,
+  .action-card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .summary-card,
+  .large-panel,
+  .security-active-card,
+  .growth-card {
+    grid-column: auto;
+    min-height: 0;
+  }
+
+  .section-header,
+  .account-summary__header,
+  .account-form__header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .visitor-category-tabs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .category-tab {
+    width: 100%;
+    min-width: 0;
+    padding: 11px 12px;
+    text-align: left;
+  }
+
+  .visitor-card__top {
+    min-width: 0;
+  }
+
+  .visitor-card__title,
+  .visitor-card__subtitle,
+  .visitor-meta,
+  .section-note,
+  .empty-state {
+    overflow-wrap: anywhere;
+  }
+
+  .visitor-actions,
+  .search-row {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .visitor-actions .action-button,
+  .search-row .action-button {
+    flex: 1 1 100%;
+    min-height: 44px;
+  }
+
+  .search-input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .history-grid.history-scroll,
+  .history-scroll,
+  .visitor-list-scroll,
+  .authorized-history-grid {
+    max-height: none;
+    min-height: 0;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .authorized-history-grid {
+    width: 100%;
+    padding: 0;
+    margin-top: 12px;
+  }
+
+  .history-grid.history-scroll {
+    width: 100%;
+    padding: 0;
+    margin-top: 12px;
+  }
+
+  .form-card {
+    width: 100%;
+  }
+
+  .purpose-row {
+    align-items: start;
+    gap: 8px;
+  }
+
+  .purpose-label {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .form-control,
+  input,
+  select {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .account-page-shell {
+    min-height: calc(100vh - 70px);
+    padding: 16px 0;
+    border-radius: 16px;
+  }
+
+  .account-panel {
+    min-height: 0;
+    padding: 20px 14px;
+    border-radius: 16px;
+  }
+
+  .account-profile-block {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .account-profile-name {
+    font-size: 1.2rem;
+    overflow-wrap: anywhere;
+  }
+
+  .account-summary__header,
+  .account-form__header {
+    flex-direction: column;
+  }
+
+  .account-edit-button,
+  .account-cancel-button,
+  .account-submit {
+    width: 100%;
+    max-width: none;
+    min-height: 44px;
+    margin-left: 0;
+  }
+
+  .map-view-shell,
+  .map-canvas-shell {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .map-canvas-shell {
+    height: max(600px, calc(100dvh - 112px)) !important;
+    min-height: 600px !important;
+    border-radius: 16px !important;
+  }
+
+  .map-action-controls {
+    right: 12px !important;
+    bottom: 12px !important;
+    left: auto;
+    gap: 6px !important;
+    align-items: stretch;
+    width: 112px;
+    z-index: 100010 !important;
+  }
+
+  .map-action-controls button {
+    width: 112px !important;
+    min-width: 112px !important;
+    min-height: 38px;
+    padding: 7px 5px !important;
+    font-size: 0.72rem;
+    line-height: 1.15;
+  }
+
+  .container:has(.sidebar.open) .map-action-controls,
+  .container:has(.sidebar.open) .trackvis-map-part-label {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .map-canvas-shell:has(.overlay-register) {
+    height: max(600px, calc(100dvh - 112px)) !important;
+    min-height: 600px !important;
+    overflow: hidden !important;
+  }
+
+  .map-canvas-shell:has(.overlay-register) .overlay-register {
+    position: absolute !important;
+    inset: 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    margin: 0;
+    border-radius: 16px !important;
+    pointer-events: auto;
+  }
+
+  .map-canvas-shell:has(.overlay-register) .overlay-register > div {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .map-canvas-shell:has(.overlay-register) .overlay-register > div > div {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    padding-bottom: 128px !important;
+  }
+
+  .map-canvas-shell:has(.overlay-register) .register-form-scroll {
+    display: block !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+
+  .map-canvas-shell:has(.overlay-register) .map-action-controls {
+    visibility: visible !important;
+    z-index: 100010 !important;
+    right: 10px !important;
+    top: auto !important;
+    bottom: 12px !important;
+    left: auto;
+    position: absolute;
+    width: 112px;
+    align-items: stretch;
+  }
+
+  .map-canvas-shell:has(.overlay-register) .map-action-controls button {
+    width: 112px !important;
+    min-width: 112px !important;
+    min-height: 38px;
+    padding: 7px 5px !important;
+    font-size: 0.75rem;
+    line-height: 1.15;
+  }
+
+  .overlay-register > div {
+    border-radius: 16px !important;
+  }
+
+  .overlay-register > div > div {
+    padding: 12px 10px 16px !important;
+  }
+
+  .sidebar {
+    width: min(360px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    padding: 18px 14px;
+    z-index: 200100;
+  }
+
+  .mobile-menu-overlay {
+    z-index: 200000;
+  }
+
+  .sidebar-footer,
+  .sidebar-footer-row,
+  .sidebar-profile-card,
+  .sidebar .logout-button {
+    width: 100%;
+    max-width: none;
+  }
+
+  .sidebar-footer-row {
+    align-items: stretch;
+  }
+
+  .nav-links a,
+  .sidebar-profile-card,
+  .logout-button,
+  .btn-primary,
+  .primary-button {
+    min-height: 44px;
+  }
+
+  .profile-menu {
+    right: -2px;
+    width: min(260px, calc(100vw - 24px));
+  }
+
+  .auth-page-mobile {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh !important;
+    padding: 16px 12px !important;
+    gap: 12px !important;
+  }
+
+  .auth-card-mobile {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    padding: 22px 16px !important;
+    border-radius: 22px !important;
+  }
+
+  .auth-card-mobile h1 {
+    min-width: 0;
+    font-size: 1.55rem !important;
+    overflow-wrap: anywhere;
+  }
+
+  .auth-card-mobile input,
+  .auth-card-mobile select,
+  .auth-card-mobile button {
+    min-width: 0;
+    min-height: 46px;
+  }
+
+  .auth-card-mobile input,
+  .auth-card-mobile select {
+    padding: 13px 14px !important;
+  }
+
+  .auth-card-mobile button {
+    padding: 13px 14px !important;
+  }
+
+  .auth-card-mobile p,
+  .auth-card-mobile a,
+  .auth-card-mobile span {
+    overflow-wrap: anywhere;
+  }
+
+  .auth-card-mobile img {
+    width: 52px !important;
+    height: 52px !important;
+  }
+
+  .auth-card-mobile > div:first-child {
+    margin-bottom: 16px !important;
+  }
+
+  .auth-card-mobile > div:last-child {
+    margin-top: 18px !important;
+  }
+}
+
 .logout-button:hover,
 .btn-primary:hover {
   background: var(--accent-hover);
