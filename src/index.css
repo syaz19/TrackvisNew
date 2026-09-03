@@ -1945,6 +1945,11 @@ select:focus {
     border-radius: 16px !important;
   }
 
+  .trackvis-default-visitor-label,
+  .trackvis-office-visitor-label {
+    font-size: 9px !important;
+  }
+
   .map-action-controls {
     right: 12px !important;
     bottom: 12px !important;
@@ -1968,6 +1973,33 @@ select:focus {
   .container:has(.sidebar.open) .trackvis-map-part-label {
     visibility: hidden !important;
     pointer-events: none !important;
+  }
+
+  .authorized-container:has(.sidebar.open) .trackvis-default-visitor-label,
+  .authorized-container:has(.sidebar.open) .trackvis-office-visitor-label {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .authorized-container:has(.sidebar.open) .map-canvas-shell {
+    z-index: 0 !important;
+  }
+
+  .authorized-container:has(.sidebar.open) .sidebar {
+    z-index: 300000 !important;
+  }
+
+  .security-container:has(.sidebar.open) .trackvis-visitor-marker {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .security-container:has(.sidebar.open) .map-canvas-shell {
+    z-index: 0 !important;
+  }
+
+  .security-container:has(.sidebar.open) .sidebar {
+    z-index: 300000 !important;
   }
 
   .map-canvas-shell:has(.overlay-register) {

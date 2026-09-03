@@ -14,6 +14,7 @@ import { auth, db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
 // Router helpers for navigation and links
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
 const pageBackground = "linear-gradient(rgba(9, 13, 26, 0.72), rgba(17, 21, 43, 0.82)), url('/images/finalbg.png') center / cover no-repeat";
 const cardBackground = "linear-gradient(rgba(17, 21, 43, 0.72), rgba(17, 21, 43, 0.84))";
@@ -33,6 +34,8 @@ export default function Signup() {
 
   // confirmPassword: kinukumpara sa password para siguraduhin na magkapareho ang input.
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // role: role ng user, halimbawa security o authorized.
   const [role, setRole] = useState("security");
@@ -53,6 +56,30 @@ export default function Signup() {
 
   function handleConfirmPasswordChange(event) {
     setConfirmPassword(event.target.value);
+  }
+
+  function handlePasswordToggle() {
+    setShowPassword(!showPassword);
+  }
+
+  function handleConfirmPasswordToggle() {
+    setShowConfirmPassword(!showConfirmPassword);
+  }
+
+  function getPasswordType(isVisible) {
+    if (isVisible) {
+      return "text";
+    }
+
+    return "password";
+  }
+
+  function getPasswordIcon(isVisible) {
+    if (isVisible) {
+      return <Eye size={20} />;
+    }
+
+    return <EyeOff size={20} />;
   }
 
   function handleRoleChange(event) {
@@ -180,26 +207,36 @@ export default function Signup() {
           <label style={styles.label} htmlFor="password">
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={handlePasswordChange}
-            placeholder="********"
-            style={styles.input}
-          />
+          <div style={styles.passwordWrapper}>
+            <input
+              id="password"
+              type={getPasswordType(showPassword)}
+              value={password}
+              onChange={handlePasswordChange}
+              placeholder="********"
+              style={styles.passwordInput}
+            />
+            <button type="button" onClick={handlePasswordToggle} style={styles.passwordToggle} aria-label="Show or hide password">
+              {getPasswordIcon(showPassword)}
+            </button>
+          </div>
 
           <label style={styles.label} htmlFor="confirmPassword">
             Confirm Password
           </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            value={confirmPassword}
-            onChange={handleConfirmPasswordChange}
-            placeholder="********"
-            style={styles.input}
-          />
+          <div style={styles.passwordWrapper}>
+            <input
+              id="confirmPassword"
+              type={getPasswordType(showConfirmPassword)}
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
+              placeholder="********"
+              style={styles.passwordInput}
+            />
+            <button type="button" onClick={handleConfirmPasswordToggle} style={styles.passwordToggle} aria-label="Show or hide confirm password">
+              {getPasswordIcon(showConfirmPassword)}
+            </button>
+          </div>
 
           <label style={styles.label} htmlFor="role">
             Role
@@ -341,6 +378,31 @@ const styles = {
     fontSize: "1rem",
     outline: "none",
     transition: "border-color 150ms ease, box-shadow 150ms ease"
+  },
+  passwordWrapper: {
+    position: "relative"
+  },
+  passwordInput: {
+    width: "100%",
+    padding: "16px 52px 16px 18px",
+    borderRadius: "18px",
+    border: `1px solid ${borderColor}`,
+    background: inputBackground,
+    color: "#f8fafc",
+    fontSize: "1rem",
+    outline: "none",
+    transition: "border-color 150ms ease, box-shadow 150ms ease"
+  },
+  passwordToggle: {
+    position: "absolute",
+    right: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    border: "none",
+    background: "transparent",
+    color: "#cbd5e1",
+    cursor: "pointer",
+    padding: "6px"
   },
   button: {
     width: "100%",

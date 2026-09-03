@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { doc, updateDoc } from "firebase/firestore";
 import { EmailAuthProvider, reauthenticateWithCredential, signOut, updatePassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase";
+import { Eye, EyeOff } from "lucide-react";
 
 // AccountPage:
 // Ito ang page na nagpapakita ng profile ng kasalukuyang user.
@@ -48,11 +49,42 @@ export default function AccountPage({ currentUser, userData }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [showEditor, setShowEditor] = useState(false);
   const [showPasswordEditor, setShowPasswordEditor] = useState(false);
+
+  function getPasswordIcon(isVisible) {
+    if (isVisible) {
+      return <Eye size={20} />;
+    }
+
+    return <EyeOff size={20} />;
+  }
+
+  function getPasswordType(isVisible) {
+    if (isVisible) {
+      return "text";
+    }
+
+    return "password";
+  }
+
+  function handleCurrentPasswordToggle() {
+    setShowCurrentPassword(!showCurrentPassword);
+  }
+
+  function handleNewPasswordToggle() {
+    setShowNewPassword(!showNewPassword);
+  }
+
+  function handleConfirmPasswordToggle() {
+    setShowConfirmPassword(!showConfirmPassword);
+  }
 
   // useEffect na ito: kapag magbago ang user data, i-update ang profile displays.
   // Hindi agad isusulat sa database ang edit; first, ino-update ang local draft state.
@@ -374,41 +406,59 @@ export default function AccountPage({ currentUser, userData }) {
               <div className="account-form__grid">
                 <div className="account-form__field account-form__field--full">
                   <label htmlFor="account-current-password">Current Password</label>
-                  <input
-                    id="account-current-password"
-                    type="password"
-                    value={currentPassword}
-                    onChange={function (event) {
-                      setCurrentPassword(event.target.value);
-                    }}
-                    placeholder="Enter your current password"
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="account-current-password"
+                      type={getPasswordType(showCurrentPassword)}
+                      value={currentPassword}
+                      onChange={function (event) {
+                        setCurrentPassword(event.target.value);
+                      }}
+                      placeholder="Enter your current password"
+                      style={{ paddingRight: "52px" }}
+                    />
+                    <button type="button" onClick={handleCurrentPasswordToggle} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", padding: "6px" }} aria-label="Show or hide current password">
+                      {getPasswordIcon(showCurrentPassword)}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="account-form__field account-form__field--full">
                   <label htmlFor="account-new-password">New Password</label>
-                  <input
-                    id="account-new-password"
-                    type="password"
-                    value={newPassword}
-                    onChange={function (event) {
-                      setNewPassword(event.target.value);
-                    }}
-                    placeholder="Enter your new password"
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="account-new-password"
+                      type={getPasswordType(showNewPassword)}
+                      value={newPassword}
+                      onChange={function (event) {
+                        setNewPassword(event.target.value);
+                      }}
+                      placeholder="Enter your new password"
+                      style={{ paddingRight: "52px" }}
+                    />
+                    <button type="button" onClick={handleNewPasswordToggle} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", padding: "6px" }} aria-label="Show or hide new password">
+                      {getPasswordIcon(showNewPassword)}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="account-form__field account-form__field--full">
                   <label htmlFor="account-confirm-password">Confirm New Password</label>
-                  <input
-                    id="account-confirm-password"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={function (event) {
-                      setConfirmPassword(event.target.value);
-                    }}
-                    placeholder="Confirm your new password"
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      id="account-confirm-password"
+                      type={getPasswordType(showConfirmPassword)}
+                      value={confirmPassword}
+                      onChange={function (event) {
+                        setConfirmPassword(event.target.value);
+                      }}
+                      placeholder="Confirm your new password"
+                      style={{ paddingRight: "52px" }}
+                    />
+                    <button type="button" onClick={handleConfirmPasswordToggle} style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", border: "none", background: "transparent", color: "#cbd5e1", cursor: "pointer", padding: "6px" }} aria-label="Show or hide confirm password">
+                      {getPasswordIcon(showConfirmPassword)}
+                    </button>
+                  </div>
                 </div>
               </div>
 

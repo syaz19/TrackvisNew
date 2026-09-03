@@ -58,7 +58,7 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-80, 24, -60],
+  position: [-97, 22, -50],
   target: [0, 0, 0],
   zoomDistance: 120
 };
@@ -213,7 +213,7 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
   return (
     <group>
       <Html portal={portal} position={[position[0], position[1] + 0.95, position[2]]} center style={{ pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+        <div className="trackvis-visitor-marker" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
           <div
             className={isOfficeLocation ? "trackvis-office-visitor-label" : "trackvis-default-visitor-label"}
             style={{

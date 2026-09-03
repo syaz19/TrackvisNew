@@ -366,6 +366,7 @@ export default function RegisterVisitor() {
         destination: form.destinations.join(", "),
         destinations: form.destinations,
         location: form.location || "Entrance",
+        currentLocation: "Entrance",
         duration: durationValue,
         durationText: form.duration.trim(),
         durationUnit,

@@ -31,7 +31,7 @@ export default function AuthorizedLayout({ children, currentUser, userData, hide
 
   // Render ng layout: Sidebar + Topbar + content area
   return (
-    <div className="container">
+    <div className="container authorized-container">
       <Sidebar role="authorized" isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />
       <div className="main" onClick={handleMainClick}>
         <Topbar

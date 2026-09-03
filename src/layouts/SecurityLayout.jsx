@@ -202,7 +202,7 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
   // Ang mga child pages ay ilalagay sa center content area.
   // Ang alert popup ay nasa pinakataas ng screen para magpapaalala.
   return (
-    <div className="container">
+    <div className="container security-container">
       <Sidebar role="security" isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />
       <div className="main" onClick={handleMainClick}>
         <Topbar

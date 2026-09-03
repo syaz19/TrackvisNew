@@ -23,6 +23,7 @@ import { browserSessionPersistence, setPersistence, signInWithEmailAndPassword, 
 import { doc, getDoc } from "firebase/firestore";
 // I-import ang initialized auth at database instance mula sa firebase config.
 import { auth, db } from "../firebase";
+import { Eye, EyeOff } from "lucide-react";
 
 // I-define ang mga color at background na gagamitin sa login UI.
 const pageBackground = "linear-gradient(rgba(9, 13, 26, 0.72), rgba(17, 21, 43, 0.82)), url('/images/finalbg.png') center / cover no-repeat";
@@ -44,6 +45,7 @@ export default function Login() {
 
   // errorMessage: lalabas kapag may mali sa login, gaya ng wrong password o invalid account.
   const [errorMessage, setErrorMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // navigate: ginagamit para lumipat sa ibang page pagkatapos ng login.
   const navigate = useNavigate();
@@ -56,6 +58,26 @@ export default function Login() {
   // I-update ang password state kapag nag-type ang user at pinapanatili ang error message.
   function handlePasswordChange(event) {
     setPassword(event.target.value);
+  }
+
+  function handlePasswordToggle() {
+    setShowPassword(!showPassword);
+  }
+
+  function getPasswordType() {
+    if (showPassword) {
+      return "text";
+    }
+
+    return "password";
+  }
+
+  function getPasswordIcon() {
+    if (showPassword) {
+      return <Eye size={20} />;
+    }
+
+    return <EyeOff size={20} />;
   }
 
   // handleLogin:
@@ -151,14 +173,19 @@ export default function Login() {
           <label style={styles.label} htmlFor="password">
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={handlePasswordChange}
-            placeholder="********"
-            style={styles.input}
-          />
+          <div style={styles.passwordWrapper}>
+            <input
+              id="password"
+              type={getPasswordType()}
+              value={password}
+              onChange={handlePasswordChange}
+              placeholder="********"
+              style={styles.passwordInput}
+            />
+            <button type="button" onClick={handlePasswordToggle} style={styles.passwordToggle} aria-label="Show or hide password">
+              {getPasswordIcon()}
+            </button>
+          </div>
 
           {/* I-render ang submit button para simulan ang authentication. */}
           <button type="submit" style={styles.button}>
@@ -302,6 +329,31 @@ const styles = {
     fontSize: "1rem",
     outline: "none",
     transition: "border-color 150ms ease, box-shadow 150ms ease"
+  },
+  passwordWrapper: {
+    position: "relative"
+  },
+  passwordInput: {
+    width: "100%",
+    padding: "16px 52px 16px 18px",
+    borderRadius: "18px",
+    border: `1px solid ${borderColor}`,
+    background: inputBackground,
+    color: "#f8fafc",
+    fontSize: "1rem",
+    outline: "none",
+    transition: "border-color 150ms ease, box-shadow 150ms ease"
+  },
+  passwordToggle: {
+    position: "absolute",
+    right: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    border: "none",
+    background: "transparent",
+    color: "#cbd5e1",
+    cursor: "pointer",
+    padding: "6px"
   },
   // Ito ang primary button style para sa login action.
   button: {
