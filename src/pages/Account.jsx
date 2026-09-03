@@ -23,14 +23,26 @@ export default function AccountPage({ currentUser, userData }) {
   const authenticatedUser = currentUser || auth.currentUser;
 
   // email: actual email ng logged-in user.
-  const email = authenticatedUser?.email || userData?.email || "";
+  const email = authenticatedUser && authenticatedUser.email
+    ? authenticatedUser.email
+    : userData && userData.email
+      ? userData.email
+      : "";
 
   // emailName: part bago ang @, ginagamit bilang fallback name kung walang display name.
   const emailName = email ? email.split("@")[0].trim() : "";
 
   // defaultName at activeDisplayName: ginagamit para ma-show ang current name sa page.
-  const defaultName = userData?.name || authenticatedUser?.displayName || emailName || "User";
-  const activeDisplayName = authenticatedUser?.displayName || userData?.name || emailName || "User";
+  const defaultName = userData && userData.name
+    ? userData.name
+    : authenticatedUser && authenticatedUser.displayName
+      ? authenticatedUser.displayName
+      : emailName || "User";
+  const activeDisplayName = authenticatedUser && authenticatedUser.displayName
+    ? authenticatedUser.displayName
+    : userData && userData.name
+      ? userData.name
+      : emailName || "User";
 
   // savedProfile: data na naka-save na at visible sa page.
   // draftProfile: temporary copy ng data habang nag-eedit ang user.
@@ -91,9 +103,9 @@ export default function AccountPage({ currentUser, userData }) {
   useEffect(function () {
     const nextSavedProfile = {
       name: activeDisplayName,
-      phoneNumber: userData?.phoneNumber || userData?.phone || "",
-      address: userData?.address || "",
-      age: userData?.age ? String(userData.age) : ""
+      phoneNumber: userData && (userData.phoneNumber || userData.phone) || "",
+      address: userData && userData.address || "",
+      age: userData && userData.age ? String(userData.age) : ""
     };
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -113,7 +125,7 @@ export default function AccountPage({ currentUser, userData }) {
     }
 
     const trimmedName = draftProfile.name.trim();
-    const userEmail = currentUser?.email || userData?.email;
+    const userEmail = currentUser && currentUser.email || userData && userData.email;
     const normalizedPhone = draftProfile.phoneNumber.trim();
     const normalizedAddress = draftProfile.address.trim();
     const numericAge = draftProfile.age.trim();
@@ -133,7 +145,9 @@ export default function AccountPage({ currentUser, userData }) {
       setError("");
       setMessage("");
 
-      if (trimmedName !== (authenticatedUser?.displayName || userData?.name || "")) {
+      const oldDisplayName = authenticatedUser && authenticatedUser.displayName || userData && userData.name || "";
+
+      if (trimmedName !== oldDisplayName) {
         await updateProfile(auth.currentUser, {
           displayName: trimmedName
         });
@@ -160,7 +174,7 @@ export default function AccountPage({ currentUser, userData }) {
       setMessage("Profile updated successfully.");
       setShowEditor(false);
     } catch (submitError) {
-      const messageText = submitError?.message || "Unable to update profile.";
+      const messageText = submitError && submitError.message || "Unable to update profile.";
       setError(messageText);
     } finally {
       setSaving(false);
@@ -216,7 +230,7 @@ export default function AccountPage({ currentUser, userData }) {
       await signOut(auth);
       navigate("/", { replace: true });
     } catch (submitError) {
-      const messageText = submitError?.message || "Unable to update password.";
+      const messageText = submitError && submitError.message || "Unable to update password.";
 
       if (messageText.includes("requires-recent-login") || messageText.includes("recent login")) {
         setError("Please sign out and sign back in before changing your password.");
@@ -234,7 +248,8 @@ export default function AccountPage({ currentUser, userData }) {
     }
   }
 
-  const roleLabel = getRoleLabel(userData?.role || authenticatedUser?.role || "user");
+  const role = userData && userData.role || authenticatedUser && authenticatedUser.role || "user";
+  const roleLabel = getRoleLabel(role);
   const profileInitial = (savedProfile.name.trim() || emailName || "U").charAt(0).toUpperCase();
   const accountDisplayName = savedProfile.name.trim() || emailName || "User";
   const summaryFields = [

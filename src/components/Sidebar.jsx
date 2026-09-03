@@ -13,7 +13,23 @@ import { clearAuthState } from "../authManager";
 function getDestinations(visitor) {
   if (Array.isArray(visitor.destinations)) return visitor.destinations;
   if (Array.isArray(visitor.destination)) return visitor.destination;
-  return visitor.destination ? visitor.destination.split(",").map(function (value) { return value.trim(); }).filter(Boolean) : [];
+
+  if (!visitor.destination) {
+    return [];
+  }
+
+  const destinations = [];
+  const destinationValues = visitor.destination.split(",");
+
+  for (let i = 0; i < destinationValues.length; i++) {
+    const destination = destinationValues[i].trim();
+
+    if (destination) {
+      destinations.push(destination);
+    }
+  }
+
+  return destinations;
 }
 
 // Sidebar component - props:
@@ -30,14 +46,16 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
 
   useEffect(
     function () {
-      if (role !== "authorized" || !userData?.subRole) {
+      if (role !== "authorized" || !userData || !userData.subRole) {
         return undefined;
       }
 
       const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
-        const count = snapshot.docs.filter(function (item) {
+        let count = 0;
+
+        snapshot.docs.forEach(function (item) {
           const visitor = item.data();
-          return (
+          const isPending = (
             visitor.purpose === "School Related" &&
             getDestinations(visitor).includes(userData.subRole) &&
             visitor.status === "active" &&
@@ -47,7 +65,11 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
               })
               : (visitor.confirmStatus || "") !== "Done")
           );
-        }).length;
+
+          if (isPending) {
+            count += 1;
+          }
+        });
 
         setPendingVisitorCount(count);
       });
@@ -66,7 +88,11 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
     // 3) i-clear ang local auth state at i-dispatch ang custom event
     // 4) i-redirect ang user pabalik sa login route
     try {
-      const currentUserUid = auth.currentUser?.uid || null;
+      let currentUserUid = null;
+
+      if (auth.currentUser && auth.currentUser.uid) {
+        currentUserUid = auth.currentUser.uid;
+      }
       await signOut(auth);
       clearAuthState();
       // event para ang ibang bahagi ng app ay maaaring mag-react sa logout
@@ -110,9 +136,19 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   }
 
   // Pangalan at email na ipapakita sa profile area; gamitin ang aktwal na authenticated user
-  const email = currentUser?.email || userData?.email || "";
+  const email = currentUser && currentUser.email
+    ? currentUser.email
+    : userData && userData.email
+      ? userData.email
+      : "";
   const emailName = email ? email.split("@")[0].trim() : "";
-  const displayName = userData?.name || userData?.fullName || currentUser?.displayName || emailName || "User";
+  const displayName = userData && userData.name
+    ? userData.name
+    : userData && userData.fullName
+      ? userData.fullName
+      : currentUser && currentUser.displayName
+        ? currentUser.displayName
+        : emailName || "User";
   // Unang letra ng display name para sa avatar badge
   const profileInitial = (displayName || "U").charAt(0).toUpperCase() || "G";
   const accountPath = role === "security" ? "/security/account" : "/authorized/account";
@@ -148,10 +184,15 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
           {menuLinks.map(function (link) {
             const isDashboardWithCount = role === "authorized" && link.to === "/authorized" && link.count > 0;
             const isActive = location.pathname === link.to;
-            const linkClassName = [
-              isActive ? "nav-link-active" : "",
-              isDashboardWithCount ? "nav-link-with-count" : ""
-            ].filter(Boolean).join(" ");
+            let linkClassName = "";
+
+            if (isActive) {
+              linkClassName = "nav-link-active";
+            }
+
+            if (isDashboardWithCount) {
+              linkClassName += linkClassName ? " nav-link-with-count" : "nav-link-with-count";
+            }
 
             return (
               // bawat Link ay nagna-navigate papunta sa tinukoy na ruta at nagsasara ng menu pagkatapos
@@ -171,7 +212,9 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
               className={`sidebar-profile-card ${isAccountActive ? "sidebar-profile-card--active" : ""}`}
               onClick={function () {
                 navigate(accountPath);
-                onClose?.();
+                if (onClose) {
+                  onClose();
+                }
               }}
             >
               <div className="sidebar-profile-avatar">{profileInitial}</div>

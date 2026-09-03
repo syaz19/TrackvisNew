@@ -56,7 +56,7 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
 
   // useEffect na ito ay tatakbo once lang sa simula.
   // Itinatakda ang currentTimeRef sa kasalukuyang timestamp.
-  useEffect(() => {
+  useEffect(function () {
     currentTimeRef.current = Date.now();
   }, []);
 
@@ -105,7 +105,7 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
 
   // useEffect na ito ay naka-listen sa Firestore visitors collection.
   // Kung may pagbabago sa visitor data, awtomatikong i-update ang visitors state.
-  useEffect(() => {
+  useEffect(function () {
     const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
       const visitorList = snapshot.docs.map(function (item) {
         return {
@@ -125,21 +125,23 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
   // useEffect na ito ay nagre-refresh ng oras bawat 1 segundo.
   // Para ma-check kung na-expire na ang time of visitor.
   useEffect(() => {
-    const timer = setInterval(() => {
+    const timer = setInterval(function () {
       currentTimeRef.current = Date.now();
     }, 1000);
 
-    return () => clearInterval(timer);
+    return function () {
+      clearInterval(timer);
+    };
   }, []);
 
   // useEffect na ito ay nagsusuri ng mga active visitor bawat segundo.
   // Kung ang visitor status ay active at ang endTime ay mas maaga or equal sa current time,
   // maglalabas ito ng alert na nagsasabing na-exceed na ang oras nila.
-  useEffect(() => {
-    const checkTimer = setInterval(() => {
+  useEffect(function () {
+    const checkTimer = setInterval(function () {
       const now = currentTimeRef.current;
 
-      visitors.forEach((visitor) => {
+      visitors.forEach(function (visitor) {
         const status = (visitor.status || "").toString().toLowerCase();
         const visitorEndTime = Number(visitor.endTime || 0);
         const hasExceededTime = visitorEndTime > 0 && visitorEndTime <= now;
@@ -158,7 +160,9 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
       });
     }, 1000);
 
-    return () => clearInterval(checkTimer);
+    return function () {
+      clearInterval(checkTimer);
+    };
   }, [visitors, isAlertAcknowledged, pushSecurityAlert]);
 
   // handleAlertDismiss:

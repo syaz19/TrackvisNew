@@ -29,6 +29,12 @@ export default function AuthorizedLayout({ children, currentUser, userData, hide
     }
   }
 
+  let pageTitle = title;
+
+  if (!pageTitle) {
+    pageTitle = "AUTHORIZED PERSONNEL";
+  }
+
   // Render ng layout: Sidebar + Topbar + content area
   return (
     <div className="container authorized-container">
@@ -36,7 +42,7 @@ export default function AuthorizedLayout({ children, currentUser, userData, hide
       <div className="main" onClick={handleMainClick}>
         <Topbar
           role="authorized"
-          title={title || "AUTHORIZED PERSONNEL"}
+          title={pageTitle}
           onMenuToggle={toggleMenu}
           menuOpen={menuOpen}
           currentUser={currentUser}

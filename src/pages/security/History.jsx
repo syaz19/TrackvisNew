@@ -43,9 +43,11 @@ function hasPartialConfirmation(visitor) {
 }
 
 function getPurposeLabel(visitor) {
-  return visitor.purpose === "School Related" && visitor.schoolPurpose
-    ? `School Related - ${visitor.schoolPurpose}`
-    : visitor.purpose;
+  if (visitor.purpose === "School Related" && visitor.schoolPurpose) {
+    return `School Related - ${visitor.schoolPurpose}`;
+  }
+
+  return visitor.purpose;
 }
 
 // I-translate ang visitor status sa label na ilalabas sa history card.
@@ -232,7 +234,7 @@ export default function History() {
               setSelectedCategory("Personal / Non-School Related");
             }}
           >
-            Personal / Non-School Related {visitors.filter(v => v.purpose === "Personal / Non-School Related").length > 0 && `(${visitors.filter(v => v.purpose === "Personal / Non-School Related").length})`}
+            Personal / Non-School Related {visitors.filter(function (visitor) { return visitor.purpose === "Personal / Non-School Related"; }).length > 0 && `(${visitors.filter(function (visitor) { return visitor.purpose === "Personal / Non-School Related"; }).length})`}
           </button>
           <button
             className={`category-tab ${selectedCategory === "School Related" ? "category-tab--active" : ""}`}
@@ -240,7 +242,7 @@ export default function History() {
               setSelectedCategory("School Related");
             }}
           >
-            School Related {visitors.filter(v => v.purpose === "School Related").length > 0 && `(${visitors.filter(v => v.purpose === "School Related").length})`}
+            School Related {visitors.filter(function (visitor) { return visitor.purpose === "School Related"; }).length > 0 && `(${visitors.filter(function (visitor) { return visitor.purpose === "School Related"; }).length})`}
           </button>
         </div>
 

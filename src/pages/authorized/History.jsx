@@ -26,9 +26,11 @@ function getDestinationConfirmations(visitor) {
 // Kung school-related, ipapakita rin ang detalyeng schoolPurpose.
 // Para mas malinaw kung ano ang dahilan ng pagbisita.
 function getPurposeLabel(visitor) {
-  return visitor.purpose === "School Related" && visitor.schoolPurpose
-    ? `School Related - ${visitor.schoolPurpose}`
-    : visitor.purpose;
+  if (visitor.purpose === "School Related" && visitor.schoolPurpose) {
+    return `School Related - ${visitor.schoolPurpose}`;
+  }
+
+  return visitor.purpose;
 }
 
 // History page:
@@ -146,11 +148,11 @@ export default function History() {
               let statusLabel = "Processed";
               let statusClassName = "status-pill status-pill--expired";
               const ownConfirmation = getDestinationConfirmations(visitor).find(function (confirmation) {
-                return confirmation.destination === userData?.subRole;
+                return confirmation.destination === (userData ? userData.subRole : undefined);
               });
 
               const isOwnConfirmationDone = Array.isArray(visitor.destinationConfirmations)
-                ? ownConfirmation?.status === "Done"
+                ? ownConfirmation && ownConfirmation.status === "Done"
                 : (visitor.confirmStatus || "") === "Done";
 
               if (isOwnConfirmationDone) {

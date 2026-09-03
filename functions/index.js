@@ -39,9 +39,9 @@ exports.registerVisitor = functions.https.onRequest(async (req, res) => {
 
     // response sa caller na successful ang registration.
     res.send("Visitor Registered");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(err.message);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send(error.message);
   }
 });
 
@@ -89,9 +89,9 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
     );
 
     res.send("Location Updated");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send(err.message);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send(error.message);
   }
 });
 
@@ -267,8 +267,8 @@ exports.onVisitorDelete = functions.firestore
       );
 
       return null;
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       return null;
     }
   });
@@ -305,8 +305,8 @@ exports.onAuthUserDelete = functions.auth.user().onDelete(async (user) => {
     }
 
     return null;
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
     return null;
   }
 });

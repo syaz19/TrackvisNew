@@ -7,10 +7,8 @@
 // - hideTitle/hideSubtitle: flag para itago ang title/subtitle
 // - isSmallTitle: gamitin ang maliit na title style kung true
 export default function Topbar({ title, subtitle, onMenuToggle, menuOpen, hideTitle, hideSubtitle, isSmallTitle }) {
-  // placeholder para sa subtitle JSX kung ipapakita
   let subtitleBlock = null;
 
-  // Kung may subtitle at hindi ito itinatago, i-build ang JSX block
   if (subtitle && !hideSubtitle) {
     subtitleBlock = <p className="topbar-subtitle">{subtitle}</p>;
   }

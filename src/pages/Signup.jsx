@@ -128,7 +128,7 @@ export default function Signup() {
       // Gumawa ng Firebase user account gamit ang email at password
       const signupResult = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
       // Tukuyin kung ang napiling role ay `authorized`
-      const isAuthorizedRole = role === "authorized";
+      const authorizedRoleSelected = role === "authorized";
       // I-build ang user document na ise-save sa `users/{email}`
       const userData = {
         email: trimmedEmail,
@@ -137,7 +137,7 @@ export default function Signup() {
       };
 
       // Kung authorized, isama ang napiling subRole
-      if (isAuthorizedRole) {
+      if (authorizedRoleSelected) {
         userData.subRole = subRole;
       }
 

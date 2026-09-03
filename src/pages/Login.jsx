@@ -108,8 +108,8 @@ export default function Login() {
 
       navigate(nextRoute, { replace: true });
     } catch (error) {
-      const errorCode = error?.code || "";
-      let message = error?.message || "Login failed. Please try again.";
+      const errorCode = error && error.code ? error.code : "";
+      let message = error && error.message ? error.message : "Login failed. Please try again.";
       let clearEmail = false;
       let clearPassword = false;
 

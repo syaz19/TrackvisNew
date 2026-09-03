@@ -62,15 +62,19 @@ function buildChartData(visitors, now) {
     return new Date(first) - new Date(second);
   });
 
+  const dailyCounts = [];
+
+  for (let i = 0; i < sortedDates.length; i++) {
+    dailyCounts.push(countsByDate[sortedDates[i]]);
+  }
+
   // Ibalik ang labels at values para sa line chart.
   return {
     labels: sortedDates,
     datasets: [
       {
         label: "Visitors per Day",
-        data: sortedDates.map(function (dateLabel) {
-          return countsByDate[dateLabel];
-        }),
+        data: dailyCounts,
         borderColor: "#4F46E5",
         backgroundColor: "rgba(79, 70, 229, 0.25)",
         fill: true,

@@ -186,12 +186,21 @@ export default function RegisterVisitor() {
 
   // I-extract ang tag identifier sa paraang gumagana sa iba't ibang field name.
   function getTagIdentifier(tag) {
-    return tag.epc || tag.uid || tag.id || "Unknown";
+    if (tag.epc) return tag.epc;
+    if (tag.uid) return tag.uid;
+    if (tag.id) return tag.id;
+    return "Unknown";
   }
 
   // I-extract ang status ng RFID tag sa kahit anong naming convention.
   function getTagStatus(tag) {
-    return (tag.Status || tag.status || "").toString() || "Unknown";
+    const status = tag.Status || tag.status || "";
+
+    if (!status) {
+      return "Unknown";
+    }
+
+    return status.toString();
   }
 
   // I-extract ang nagmamay-ari ng tag kapag in-use.

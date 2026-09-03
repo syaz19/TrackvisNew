@@ -62,9 +62,11 @@ function getSchoolConfirmationState(visitor) {
 }
 
 function getPurposeLabel(visitor) {
-  return visitor.purpose === "School Related" && visitor.schoolPurpose
-    ? `School Related - ${visitor.schoolPurpose}`
-    : visitor.purpose;
+  if (visitor.purpose === "School Related" && visitor.schoolPurpose) {
+    return `School Related - ${visitor.schoolPurpose}`;
+  }
+
+  return visitor.purpose;
 }
 
 // I-declare ang default export na siyang component na ipinapakita sa page.

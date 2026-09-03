@@ -58,7 +58,7 @@ const locationMarkers = {
 // Base key para sa session storage ng camera state.
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-97, 22, -50],
+  position: [-97, 24, -50],
   target: [0, 0, 0],
   zoomDistance: 120
 };
@@ -135,12 +135,12 @@ function clearCameraState(userUid = null) {
       keysToClear.push(`${CAMERA_STORAGE_BASE_KEY}-${userUid}`);
     } else {
       const currentUser = auth.currentUser;
-      if (currentUser?.uid) {
+      if (currentUser && currentUser.uid) {
         keysToClear.push(`${CAMERA_STORAGE_BASE_KEY}-${currentUser.uid}`);
       }
     }
 
-    keysToClear.forEach((key) => {
+    keysToClear.forEach(function (key) {
       window.sessionStorage.removeItem(key);
     });
   } catch {
@@ -254,7 +254,7 @@ function SchoolModel({ sceneRef, modelUrl, setModelLoaded }) {
   // Naglo-load ng GLTF model at inaayos ang mesh shadow properties.
   const { scene } = useGLTF(modelUrl);
 
-  useEffect(() => {
+  useEffect(function () {
     // mark loaded after scene is available
     try {
       scene.traverse(function (child) {
@@ -584,39 +584,47 @@ export default function MapView() {
 
     window.addEventListener("trackvis-logout", handleLogout);
 
-    return () => {
+    return function () {
       unsubscribeAuth();
       window.removeEventListener("trackvis-logout", handleLogout);
     };
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "visitors"), (snapshot) => {
-      const visitorList = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+  useEffect(function () {
+    const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
+      const visitorList = snapshot.docs.map(function (item) {
+        return { id: item.id, ...item.data() };
+      });
       const activeVisitors = visitorList.filter(isActiveVisitorWithLocation);
 
-      Object.keys(previousVisitorsRef.current).forEach((id) => {
-        if (!visitorList.find((x) => x.id === id)) {
+      Object.keys(previousVisitorsRef.current).forEach(function (id) {
+        if (!visitorList.find(function (visitor) { return visitor.id === id; })) {
           delete previousVisitorsRef.current[id];
         }
       });
 
-      visitorList.forEach((v) => {
-        previousVisitorsRef.current[v.id] = v;
+      visitorList.forEach(function (visitor) {
+        previousVisitorsRef.current[visitor.id] = visitor;
       });
 
       setVisitorMarkers(activeVisitors);
     });
 
-    return () => unsubscribe();
+    return function () {
+      unsubscribe();
+    };
   }, []);
 
-  useEffect(() => {
-    const t = setTimeout(() => setIsModelLoaded(false), 0);
-    return () => clearTimeout(t);
+  useEffect(function () {
+    const timeout = setTimeout(function () {
+      setIsModelLoaded(false);
+    }, 0);
+    return function () {
+      clearTimeout(timeout);
+    };
   }, [modelUrl]);
 
-  const handleResetClick = () => {
+  function handleResetClick() {
     const resetState = { ...DEFAULT_CAMERA_STATE };
     setCameraState(resetState);
     saveCameraState(resetState);
@@ -626,11 +634,13 @@ export default function MapView() {
       controlsRef.current.target.set(...resetState.target);
       controlsRef.current.update();
     }
-  };
+  }
 
-  const handleRegisterToggle = () => {
-    setShowRegister((current) => !current);
-  };
+  function handleRegisterToggle() {
+    setShowRegister(function (current) {
+      return !current;
+    });
+  }
 
   const visibleVisitors = useMemo(() => {
     if (isAuthorizedUser) {

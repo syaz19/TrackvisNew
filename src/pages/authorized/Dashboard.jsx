@@ -26,9 +26,11 @@ function getDestinationConfirmations(visitor) {
 // Kung ang purpose ay School Related at may schoolPurpose, idinadagdag ito sa label.
 // Para mas malinaw kung ano ang dahilan ng pagbisita.
 function getPurposeLabel(visitor) {
-  return visitor.purpose === "School Related" && visitor.schoolPurpose
-    ? `School Related - ${visitor.schoolPurpose}`
-    : visitor.purpose;
+  if (visitor.purpose === "School Related" && visitor.schoolPurpose) {
+    return `School Related - ${visitor.schoolPurpose}`;
+  }
+
+  return visitor.purpose;
 }
 
 // Authorized Dashboard:
@@ -162,9 +164,9 @@ export default function Dashboard() {
   // Ito ang listahan ng mga visitor na active pa at hindi pa confirmed para sa user na ito.
   const pendingVisitors = visitors.filter(function (visitor) {
     const confirmation = getDestinationConfirmations(visitor).find(function (item) {
-      return item.destination === userData?.subRole;
+      return item.destination === (userData ? userData.subRole : undefined);
     });
-    return visitor.status === "active" && confirmation?.status !== "Done";
+    return visitor.status === "active" && (!confirmation || confirmation.status !== "Done");
   });
 
   if (loading) {
@@ -194,13 +196,13 @@ export default function Dashboard() {
           </div>
 
           {pendingVisitors.length === 0 ? (
-            <div className="empty-state">No pending visitors for {userData?.subRole || "your role"}.</div>
+            <div className="empty-state">No pending visitors for {(userData && userData.subRole) || "your role"}.</div>
           ) : (
             <div className="visitor-list">
               {pendingVisitors.map(function (visitor) {
                 const destinationConfirmations = getDestinationConfirmations(visitor);
                 const ownConfirmation = destinationConfirmations.find(function (item) {
-                  return item.destination === userData?.subRole;
+                  return item.destination === (userData ? userData.subRole : undefined);
                 });
 
                 let timeInLabel = "N/A";
@@ -229,7 +231,7 @@ export default function Dashboard() {
                       <span>🕒 Time In: {timeInLabel}</span>
                     </div>
 
-                    {ownConfirmation?.status !== "Done" && (
+                    {(!ownConfirmation || ownConfirmation.status !== "Done") && (
                       <div className="visitor-actions">
                         <button className="action-button action-button--primary" onClick={function () {
                           handleConfirmButtonClick(visitor.id);
