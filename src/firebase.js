@@ -1,10 +1,10 @@
-// Ginagawa ang Firebase setup dito para madaling ma-access sa buong app.
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
-// Ang Firebase config na ginagamit para kumonekta sa project.
+
 const firebaseConfig = {
   apiKey: "AIzaSyB1fqOdy2Ns6p0rhBaT_Dz1FI0XX0UaSQA",
   authDomain: "trackvis-c9599.firebaseapp.com",
@@ -15,15 +15,15 @@ const firebaseConfig = {
   measurementId: "G-4LT1HP2SE1"
 };
 
-// Inisyalisa ang Firebase app.
+
 const app = initializeApp(firebaseConfig);
 const authService = getAuth(app);
 const dbService = getFirestore(app);
 const analyticsService = getAnalytics(app);
 
-// Inilalabas ang services para magamit sa ibang file.
+
 export const auth = authService;
 export const db = dbService;
 
-// Optional ang analytics, pero pinapanatili para hindi magbago ang feature.
+
 export const analytics = analyticsService;

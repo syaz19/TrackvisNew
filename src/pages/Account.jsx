@@ -5,10 +5,7 @@ import { EmailAuthProvider, reauthenticateWithCredential, signOut, updatePasswor
 import { auth, db } from "../firebase";
 import { Eye, EyeOff } from "lucide-react";
 
-// AccountPage:
-// Ito ang page na nagpapakita ng profile ng kasalukuyang user.
-// May mga button para mag-edit ng profile at mag-change ng password.
-// Ang data ay kinukuha sa authenticated user at sa Firestore users document.
+
 function getRoleLabel(role) {
   if (role === "security") return "Security";
   if (role === "authorized") return "Authorized";
@@ -18,21 +15,20 @@ function getRoleLabel(role) {
 export default function AccountPage({ currentUser, userData }) {
   const navigate = useNavigate();
 
-  // authenticatedUser: active user na naka-login.
-  // Ito ang pinakaimportanteng source ng user info.
+  
   const authenticatedUser = currentUser || auth.currentUser;
 
-  // email: actual email ng logged-in user.
+  
   const email = authenticatedUser && authenticatedUser.email
     ? authenticatedUser.email
     : userData && userData.email
       ? userData.email
       : "";
 
-  // emailName: part bago ang @, ginagamit bilang fallback name kung walang display name.
+  
   const emailName = email ? email.split("@")[0].trim() : "";
 
-  // defaultName at activeDisplayName: ginagamit para ma-show ang current name sa page.
+  
   const defaultName = userData && userData.name
     ? userData.name
     : authenticatedUser && authenticatedUser.displayName
@@ -44,8 +40,7 @@ export default function AccountPage({ currentUser, userData }) {
       ? userData.name
       : emailName || "User";
 
-  // savedProfile: data na naka-save na at visible sa page.
-  // draftProfile: temporary copy ng data habang nag-eedit ang user.
+  
   const [savedProfile, setSavedProfile] = useState({
     name: defaultName,
     phoneNumber: "",
@@ -98,8 +93,7 @@ export default function AccountPage({ currentUser, userData }) {
     setShowConfirmPassword(!showConfirmPassword);
   }
 
-  // useEffect na ito: kapag magbago ang user data, i-update ang profile displays.
-  // Hindi agad isusulat sa database ang edit; first, ino-update ang local draft state.
+  
   useEffect(function () {
     const nextSavedProfile = {
       name: activeDisplayName,
@@ -113,9 +107,7 @@ export default function AccountPage({ currentUser, userData }) {
     setDraftProfile(nextSavedProfile);
   }, [currentUser, userData, activeDisplayName]);
 
-  // handleSubmit:
-  // Ito ang function na tinatawag kapag nai-save na ang edited profile.
-  // Una, i-validate ang input, tapos i-update sa Firebase Auth at sa Firestore.
+  
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -181,9 +173,7 @@ export default function AccountPage({ currentUser, userData }) {
     }
   }
 
-  // handlePasswordSubmit:
-  // Ito ang process para baguhin ang password.
-  // Kailangan muna ang current password para ma-reauthenticate bago mag-update.
+  
   async function handlePasswordSubmit(event) {
     event.preventDefault();
 

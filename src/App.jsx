@@ -17,14 +17,10 @@ import AuthorizedHistory from "./pages/authorized/History";
 import AccountPage from "./pages/Account";
 import MapView from "./pages/MapView";
 
-// initialAuthState:
-// Ito ang default value ng app habang kinukuha pa ang auth state.
-// Ang app ay ready na pero walang user pa hanggang ma-resolve ang Firebase auth.
+
 const initialAuthState = { status: "ready", user: null, userData: null };
 
-// PrivateRoute:
-// Tinitingnan kung may logged-in user.
-// Kung may user, papayagan ang page; kung wala, ibabalik sa login page.
+
 function PrivateRoute({ children, user }) {
   if (user) {
     return children;
@@ -33,16 +29,12 @@ function PrivateRoute({ children, user }) {
   return <Navigate to="/" replace />;
 }
 
-// buildAuthState:
-// Helper function para madaling i-construct ang auth state.
-// Kabilang dito ang status, user, at Firestore userData.
+
 function buildAuthState(user, userData, status = "ready") {
   return { status, user, userData };
 }
 
-// getRedirectPath:
-// Tinutukoy kung saan dapat pumunta ang user pagkatapos mag-login.
-// Kung security, map page ng security; kung authorized, map page ng authorized.
+
 function getRedirectPath(userData) {
   if (userData !== null && userData !== undefined) {
     if (userData.role === "security") {
@@ -57,19 +49,14 @@ function getRedirectPath(userData) {
   return "/";
 }
 
-// App:
-// Ito ang root component ng app.
-// Dito pinapamahalaan ang authentication, role-based routing, at protected pages.
+
 export default function App() {
-  // authState: current state ng user at role data.
+ 
   const [authState, setAuthState] = useState(initialAuthState);
 
-  // useEffect na ito: nakikinig sa Firebase auth state.
-  // Kapag may change sa login/logout, i-update dito ang authState ng app.
+  
   useEffect(function () {
-    // Step 1: pakinggan ang Firebase auth state.
-    // Step 2: kung may user, kunin ang user data sa Firestore.
-    // Step 3: i-update ang auth state sa app.
+    
     async function handleAuthStateChange(loggedInUser) {
       const isPendingSignup = sessionStorage.getItem("trackvis-signup-pending") === "1";
 
@@ -113,15 +100,13 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  // useEffect na ito: i-register ang auth setter para magamit ito ng ibang file.
-  // Halimbawa, may logout flow sa ibang bahagi ng app na dapat mag-update ng auth state.
+  
   useEffect(function () {
     registerAuthSetter(setAuthState);
     return unregisterAuthSetter;
   }, []);
 
-  // useEffect na ito: nakikinig sa custom logout event.
-  // Kapag may logout event, i-reset ang auth state para mag-log out ang user sa app.
+  
   useEffect(function () {
     function handleLogout() {
       setAuthState(buildAuthState(null, null));
@@ -133,12 +118,10 @@ export default function App() {
     };
   }, []);
 
-  // useEffect na ito: Global office entry alert listener.
-  // Tumatakbo sa lahat ng pages dahil ito ay nasa App component (root).
-  // Nag-filter based on user role at destination para sa authorized users.
+  
   const previousVisitorsRef = useRef({});
   useEffect(function () {
-    // Kung wala pang user, huwag mag-subscribe sa visitors.
+    
     if (!authState.user || !authState.userData) {
       return;
     }
@@ -146,7 +129,7 @@ export default function App() {
     const userRole = authState.userData.role;
     const userSubRole = authState.userData.subRole;
 
-    // Function para malaman kung ang location ay "office".
+  
     function getVisitorLocationKey(visitor) {
       const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
       if (locationName.includes("office")) {
@@ -158,21 +141,21 @@ export default function App() {
       return "entrance";
     }
 
-    // Function para malaman kung dapat ipakita ang alert para sa current user.
+    
     function shouldShowAlertForUser(visitor) {
-      // Security users: makikita lahat ng alerts
+      
       if (userRole === "security") {
         return true;
       }
 
-      // Authorized users: makikita lang ang alerts ng visitors na assigned sa kanila
+      
       if (userRole === "authorized") {
-        // Kunin ang destinations ng visitor
+        
         const destinations = Array.isArray(visitor.destinations)
           ? visitor.destinations
           : (visitor.destination || "").toString().split(",").map(function (d) { return d.trim(); }).filter(Boolean);
 
-        // Check kung ang user's subRole ay included sa visitor's destinations
+        
         return destinations.some(function (dest) {
           return dest.toLowerCase() === (userSubRole || "").toString().toLowerCase();
         });
@@ -186,29 +169,29 @@ export default function App() {
         return { id: item.id, ...item.data() };
       });
 
-      // Detect office entry/exit at handle alerts
+     
       visitorList.forEach(function (currentVisitor) {
         const previousVisitor = previousVisitorsRef.current[currentVisitor.id];
 
         if (!previousVisitor) {
-          // New visitor, store it lang
+          
           previousVisitorsRef.current[currentVisitor.id] = currentVisitor;
           return;
         }
 
-        // Get location keys
+      
         const previousLocationKey = getVisitorLocationKey(previousVisitor);
         const currentLocationKey = getVisitorLocationKey(currentVisitor);
 
-        // Check if visitor entered office (location changed to office)
+        
         if (previousLocationKey !== "office" && currentLocationKey === "office") {
-          // Visitor just entered office - check kung dapat ipakita ang alert para sa current user
+          
           if (!currentVisitor.officeEntryAlerted && shouldShowAlertForUser(currentVisitor)) {
-            // Show alert only if not already alerted at user is authorized to see it
+            
             const visitorName = currentVisitor.name || "Unknown";
             window.alert(`Our visitor ${visitorName} enter office`);
 
-            // Update Firestore to mark alert as shown
+          
             try {
               updateDoc(doc(db, "visitors", currentVisitor.id), {
                 officeEntryAlerted: true
@@ -221,9 +204,9 @@ export default function App() {
           }
         }
 
-        // Check if visitor left office (location changed away from office)
+        
         if (previousLocationKey === "office" && currentLocationKey !== "office") {
-          // Visitor left office, reset alert state
+        
           if (currentVisitor.officeEntryAlerted) {
             try {
               updateDoc(doc(db, "visitors", currentVisitor.id), {
@@ -237,11 +220,11 @@ export default function App() {
           }
         }
 
-        // Update the previous visitor record
+       
         previousVisitorsRef.current[currentVisitor.id] = currentVisitor;
       });
 
-      // Cleanup removed visitors from previousVisitorsRef
+     
       Object.keys(previousVisitorsRef.current).forEach(function (id) {
         if (!visitorList.find(function (x) { return x.id === id; })) {
           delete previousVisitorsRef.current[id];
@@ -254,8 +237,7 @@ export default function App() {
     };
   }, [authState.user, authState.userData]);
 
-  // useEffect na ito: tinutukoy kung may pending unload o reload session.
-  // Ginagamit ang localStorage at sessionStorage para maiwasan ang stuck session pag nag-refresh ang page.
+  
   useEffect(function () {
     const unloadKey = "trackvis-pending-unload";
     const sessionKey = "trackvis-session-active";
@@ -268,7 +250,7 @@ export default function App() {
       });
 
       signOut(auth).catch(function () {
-        // Hindi mahalaga kung may error sa unang sign out.
+        
       });
     }
 
@@ -288,7 +270,7 @@ export default function App() {
     };
   }, []);
 
-  // Kung hindi pa tapos ang auth load, ipapakita ang loading screen.
+  
   if (authState.status === "loading") {
     return (
       <div style={{ minHeight: "100vh", display: "grid", placeItems: "center", background: "#090D1A", color: "#F8FAFC" }}>
@@ -297,14 +279,12 @@ export default function App() {
     );
   }
 
-  // isAuthenticated: true lang kapag may user at may matched Firestore record.
+  
   const isAuthenticated = Boolean(authState.user && authState.userData);
 
-  // homePath: destination ng user pagkatapos mag-login.
+  
   const homePath = isAuthenticated ? getRedirectPath(authState.userData) : "/";
-  // routesThatNeedProtection:
-  // Listahan ng mga page na kailangan ng valid login.
-  // Bawat route may layout at element na dapat ipakita kapag may access.
+  
   const routesThatNeedProtection = [
     { path: "/security", element: <SecurityDashboard />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
@@ -318,8 +298,7 @@ export default function App() {
     { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } }
   ];
 
-  // loginRouteElement at signupRouteElement:
-  // Kung naka-login na ang user, dapat hindi na ma-access ang login/signup page.
+  
   let loginRouteElement = <Login />;
   let signupRouteElement = <Signup />;
 
@@ -328,9 +307,7 @@ export default function App() {
     signupRouteElement = <Navigate to={homePath} replace />;
   }
 
-  // Render ng app routes:
-  // - public routes: login at signup
-  // - protected routes: security/authorized pages wrapped in layouts
+  
   return (
     <Routes>
       <Route path="/" element={loginRouteElement} />

@@ -1,4 +1,4 @@
-﻿/* Base variables at global styling para sa buong app. */
+﻿
 :root {
   color-scheme: dark;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -24,12 +24,12 @@
   --shadow: 0 24px 80px rgba(9, 13, 26, 0.45);
 }
 
-/* Global box-sizing: batayang box-sizing na ginagamit ng buong app. */
+
 * {
   box-sizing: border-box;
 }
 
-/* Tinitiyak na ang root element at body ay umaabot sa buong viewport. */
+
 html,
 body,
 #root {
@@ -37,7 +37,7 @@ body,
   height: 100%;
 }
 
-/* Global na background at kulay ng teksto para sa buong app. */
+
 body {
   margin: 0;
   background: radial-gradient(circle at top left, rgba(79, 70, 229, 0.14), transparent 28%),
@@ -46,7 +46,7 @@ body {
   color: var(--text-primary);
 }
 
-/* Ang button, input, textarea, at select ay susunod sa global na font ng app. */
+
 button,
 input,
 textarea,
@@ -54,7 +54,7 @@ select {
   font: inherit;
 }
 
-/* Ang default anchor (<a>) ay ipinapasa ang kulay ng teksto at walang underline. */
+
 a {
   color: inherit;
   text-decoration: none;
@@ -64,8 +64,7 @@ a {
   min-height: 100vh;
 }
 
-/* ---------------------- Layout ---------------------- */
-/* Ang container ay naglalaman ng Sidebar at main content area. Ginagamit sa AuthorizedLayout at SecurityLayout. */
+
 .container {
   display: flex;
   min-height: 100vh;
@@ -73,8 +72,7 @@ a {
   overflow: hidden;
 }
 
-/* ---------------------- Sidebar (components/Sidebar.jsx) ---------------------- */
-/* Sidebar: left navigation panel para sa security at authorized pages. */
+
 .sidebar {
   width: 240px;
   background: var(--surface);
@@ -91,7 +89,7 @@ a {
   align-self: flex-start;
 }
 
-/* Main content area: dito nirender ang mga pahina tulad ng dashboard, history, at SCC 3D map. */
+
 .main {
   flex: 1;
   min-height: 100vh;
@@ -99,14 +97,14 @@ a {
   overflow: hidden;
 }
 
-/* Brand block sa sidebar header: logo at app name. */
+
 .brand-block {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* Brand mark na maliit na bilog/square sa sidebar header, bahagi ng logo. */
+
 .brand-mark {
   width: 34px;
   height: 34px;
@@ -119,7 +117,7 @@ a {
   font-size: 0.9rem;
 }
 
-/* Brand label text sa sidebar header (TRACKVIS). */
+
 .brand-label {
   margin: 0;
   font-size: 0.92rem;
@@ -127,21 +125,21 @@ a {
   text-transform: uppercase;
 }
 
-/* Subtitle sa sidebar brand block; ginagamit sa lahat ng layout na may sidebar. */
+
 .brand-subtitle {
   margin: 4px 0 0;
   color: #9ca3af;
   font-size: 0.9rem;
 }
 
-/* Container para sa sidebar navigation links (SCC 3D, Dashboard, History, etc.). */
+
 .nav-links {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* Style ng bawat sidebar link sa menu; ginagamit sa lahat ng route link sa Sidebar. */
+
 .nav-links a {
   display: inline-flex;
   align-items: center;
@@ -175,12 +173,12 @@ a {
   line-height: 1;
 }
 
-/* Hover state para sa sidebar links upang malinaw ang user interaction. */
+
 .nav-links a:hover {
   background: rgba(59, 130, 246, 0.14);
 }
 
-/* Sidebar footer: dito nakalagay ang profile summary at logout button. */
+
 .sidebar-footer {
   margin-top: auto;
   display: flex;
@@ -197,7 +195,7 @@ a {
   gap: 12px;
 }
 
-/* Compact profile card sa sidebar footer: ipinapakita ang user name at role */
+
 .sidebar-profile-card {
   display: flex;
   align-items: center;
@@ -219,7 +217,7 @@ a {
   box-shadow: 0 14px 28px rgba(79, 70, 229, 0.34);
 }
 
-/* Utility para sa logout button at iba pang primary buttons na kailangan ng buong lapad. */
+
 .logout-button,
 .btn-primary {
   width: 100%;
@@ -230,12 +228,12 @@ a {
   max-width: none;
 }
 
-/* Hover effect kapag nilapitan ang profile card sa sidebar. */
+
 .sidebar-profile-card:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Small circular avatar na nagpapakita ng initial sa sidebar profile card. */
+
 .sidebar-profile-avatar {
   width: 36px;
   height: 36px;
@@ -251,14 +249,14 @@ a {
   flex-shrink: 0;
 }
 
-/* Detalye ng profile text sa sidebar, kasama ang pangalan at role. */
+
 .sidebar-profile-details {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-/* Estilo ng pangalan ng user sa sidebar profile card. */
+
 .sidebar-profile-name {
   margin: 0;
   font-weight: 700;
@@ -269,7 +267,7 @@ a {
   white-space: nowrap;
 }
 
-/* Subtitle ng role ng user sa sidebar profile card. */
+
 .sidebar-profile-role {
   margin: 0;
   color: #94a3b8;
@@ -279,7 +277,7 @@ a {
   white-space: nowrap;
 }
 
-/* Profile popup para sa account info, nakikita kapag nag-click sa sidebar profile card. */
+
 .sidebar-profile-popup {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -297,7 +295,7 @@ a {
   box-sizing: border-box;
 }
 
-/* Title ng section sa loob ng profile popup. */
+
 .sidebar-profile-popup-title {
   margin: 0;
   font-size: 0.9rem;
@@ -305,7 +303,7 @@ a {
   color: #e2e8f0;
 }
 
-/* Row sa profile popup para sa field label at value. */
+
 .sidebar-profile-popup-row {
   display: flex;
   justify-content: space-between;
@@ -328,7 +326,7 @@ a {
   text-align: right;
 }
 
-/* Pinagsamang estilo para sa logout, primary, at outline buttons. */
+
 .logout-button,
 .btn-primary,
 .btn-outline {
@@ -339,7 +337,7 @@ a {
   transition: transform 0.2s ease, background 0.2s ease;
 }
 
-/* Primary button na ginagamit sa iba't ibang lugar ng app. */
+
 .logout-button,
 .btn-primary {
   width: 100%;
@@ -354,7 +352,7 @@ a {
   background: var(--accent-strong);
 }
 
-/* Outline na button variant para sa secondary actions. */
+
 .btn-outline {
   width: max-content;
   background: transparent;
@@ -366,8 +364,7 @@ a {
   background: rgba(59, 130, 246, 0.08);
 }
 
-/* ---------------------- Main / Topbar ---------------------- */
-/* Main app content area: naglalaman ng Topbar at page body sa loob ng layout. */
+
 .main {
   flex: 1;
   display: flex;
@@ -378,14 +375,14 @@ a {
   overflow: hidden;
 }
 
-/* Scrollable na content area kung saan nirender ang bawat page component. */
+
 .content-body {
   flex: 1;
   overflow-y: auto;
   padding-right: 8px;
 }
 
-/* Mga estilo ng Topbar component para sa header ng page. */
+
 .topbar {
   display: flex;
   justify-content: space-between;
@@ -395,7 +392,7 @@ a {
   flex-wrap: wrap;
 }
 
-/* Maliit na uppercase label sa itaas ng title ng pahina. */
+
 .topbar-label {
   margin: 0 0 8px;
   color: #9ca3af;
@@ -404,28 +401,28 @@ a {
   font-size: 0.72rem;
 }
 
-/* Estilo ng page title na nasa Topbar. */
+
 .topbar h2 {
   margin: 0;
   font-size: clamp(1.6rem, 2.2vw, 2.1rem);
   line-height: 1.05;
 }
 
-/* Variant para sa maliit na title sa Topbar. */
+
 .topbar-title-small {
   font-size: 0.95rem !important;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
-/* Subtitle na teksto sa ilalim ng Topbar title. */
+
 .topbar-subtitle {
   margin: 8px 0 0;
   color: #9ca3af;
   max-width: 100%;
 }
 
-/* Kaliwang bahagi ng Topbar: mobile menu button at title block. */
+
 .topbar-left {
   display: flex;
   align-items: flex-start;
@@ -437,7 +434,7 @@ a {
   min-width: 0;
 }
 
-/* Kanang bahagi ng Topbar para sa profile at action buttons. */
+
 .topbar-right {
   position: relative;
   display: flex;
@@ -445,7 +442,7 @@ a {
   gap: 14px;
 }
 
-/* Compact profile button sa Topbar na may pangalan at avatar. */
+
 .profile-button {
   display: inline-flex;
   align-items: center;
@@ -467,7 +464,7 @@ a {
   background: rgba(15, 23, 42, 1);
 }
 
-/* Mas malaking avatar para sa Topbar at profile menus. */
+
 .profile-avatar {
   width: 48px;
   height: 48px;
@@ -479,7 +476,7 @@ a {
   background: linear-gradient(135deg, #2563eb, #0ea5e9);
 }
 
-/* Bloke ng profile text sa Topbar. */
+
 .profile-details {
   display: grid;
   gap: 2px;
@@ -501,7 +498,7 @@ a {
   color: #94a3b8;
 }
 
-/* Dropdown menu ng profile sa Topbar, para sa account actions at links. */
+
 .profile-menu {
   position: absolute;
   right: 0;
@@ -535,7 +532,7 @@ a {
   font-size: 0.92rem;
 }
 
-/* Hamburger button para sa mobile menu, nakatago sa desktop. */
+
 .mobile-menu-button {
   display: none;
   width: 44px;
@@ -558,7 +555,7 @@ a {
   border-radius: 999px;
 }
 
-/* Close button para sa mobile sidebar kapag bukas. */
+
 .close-menu-button {
   display: none;
   border: none;
@@ -569,20 +566,20 @@ a {
   line-height: 1;
 }
 
-/* Overlay sa mobile kapag bukas ang sidebar para madilim ang likod. */
+
 .mobile-menu-overlay {
   display: none;
 }
 
 /* ---------------------- Cards / Pages / Lists ---------------------- */
-/* Grid layout para sa dashboard summary cards. */
+
 .page-grid {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-/* Pangkalahatang card para sa panels, forms, at listahan. */
+
 .card,
 .form-card,
 .action-card {
@@ -593,7 +590,7 @@ a {
   padding: 14px;
 }
 
-/* Mas maliit na highlight card para sa quick stats. */
+
 .highlight-card {
   min-height: 130px;
 }

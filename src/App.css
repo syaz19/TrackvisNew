@@ -1,5 +1,4 @@
-/* Basic CSS para sa app shell. Ang mga klase ay pinanatili para hindi mabago ang layout. */
-/* Ito ang style para sa counter box na karaniwang ginagamit para sa bilang o stat. */
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
@@ -20,7 +19,7 @@
   outline-offset: 2px;
 }
 
-/* Ito ang wrapper para sa hero section na may positional layout para sa mga decorative elements. */
+
 .hero {
   position: relative;
 }
@@ -58,7 +57,7 @@
   transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg) scale(0.8);
 }
 
-/* Ito ang main center section na nag-aayos ng content sa gitna ng page. */
+
 #center {
   display: flex;
   flex-direction: column;
@@ -68,7 +67,7 @@
   flex-grow: 1;
 }
 
-/* Ito ang section na naglalaman ng next steps na naka-layout sa horizontal row. */
+
 #next-steps {
   display: flex;
   border-top: 1px solid var(--border);
@@ -86,7 +85,7 @@
   height: 22px;
 }
 
-/* Ito ang part na nagde-design ng docs column sa next steps section. */
+
 #docs {
   border-right: 1px solid var(--border);
 }
@@ -125,13 +124,13 @@
   width: 18px;
 }
 
-/* Ito ang spacer na nagdadagdag ng space sa pagitan ng sections. */
+
 #spacer {
   height: 88px;
   border-top: 1px solid var(--border);
 }
 
-/* Ito ang decorative tick marker na ginagamit para sa visual divider. */
+
 .ticks {
   position: relative;
   width: 100%;

@@ -1,18 +1,12 @@
-/**
- * Signup.jsx
- *
- * Line-by-line comments added: page for creating new user accounts and writing
- * role/subRole info to Firestore. Uses Firebase Auth + Firestore.
- */
-// React hook for local component state
+
 import { useState } from "react";
-// Firebase Auth functions used to create account and sign out
+
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
-// Firebase instances (auth and firestore database)
+
 import { auth, db } from "../firebase";
-// Firestore helpers to write a document
+
 import { doc, setDoc } from "firebase/firestore";
-// Router helpers for navigation and links
+
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -22,25 +16,23 @@ const inputBackground = "rgba(17, 21, 43, 0.82)";
 const borderColor = "#2A3150";
 const accentColor = "#4F46E5";
 
-// Signup page:
-// Ito ang page para gumawa ng bagong account.
-// Kapag natapos ang form, gagawa ng Firebase Auth user at isusulat ang user role sa Firestore.
+
 export default function Signup() {
-  // email: ang email na ipinasok ng user.
+  
   const [email, setEmail] = useState("");
 
-  // password: password na ipinasok ng user.
+  
   const [password, setPassword] = useState("");
 
-  // confirmPassword: kinukumpara sa password para siguraduhin na magkapareho ang input.
+  
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // role: role ng user, halimbawa security o authorized.
+  
   const [role, setRole] = useState("security");
 
-  // subRole: kung authorized user, ito ang specific role gaya ng Admin o Librarian.
+  
   const [subRole, setSubRole] = useState("Admin");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -90,15 +82,9 @@ export default function Signup() {
     setSubRole(event.target.value);
   }
 
-  // handleSignup:
-  // Ito ang process kapag pinindot ang Create Account.
-  // Dito papasok ang email/password, kukunin ang role, at isusulat ang user record sa Firestore.
+  
   async function handleSignup(event) {
-    // Step 1: pigilan ang pag-submit ng form.
-    // Step 2: tiyakin na valid ang email.
-    // Step 3: gumawa ng Firebase account.
-    // Step 4: i-save ang role at sub-role sa Firestore.
-    // Step 5: mag-sign out at bumalik sa login page.
+    
     event.preventDefault();
 
     if (isSubmitting) {
@@ -123,25 +109,25 @@ export default function Signup() {
     setErrorMessage("");
 
     try {
-      // Markahan ang signup flow bago mag-create ng user para maiwasan ang flash sa protected app route.
+      
       sessionStorage.setItem("trackvis-signup-pending", "1");
-      // Gumawa ng Firebase user account gamit ang email at password
+      
       const signupResult = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
-      // Tukuyin kung ang napiling role ay `authorized`
+      
       const authorizedRoleSelected = role === "authorized";
-      // I-build ang user document na ise-save sa `users/{email}`
+      
       const userData = {
         email: trimmedEmail,
         role,
         subRole: null
       };
 
-      // Kung authorized, isama ang napiling subRole
+      
       if (authorizedRoleSelected) {
         userData.subRole = subRole;
       }
 
-      // Isulat ang user document (keyed by email) sa Firestore
+      
       await setDoc(doc(db, "users", signupResult.user.email), userData);
       await signOut(auth);
       sessionStorage.removeItem("trackvis-signup-pending");

@@ -1,38 +1,29 @@
-// MapView.jsx
-// Layunin: Pinapakita ang SCC 3D campus model at visitor marker UI.
-// - Naglo-load ng /models/newschools.glb sa canvas.
-// - Nagpapakita ng visitor markers mula sa Firestore.
-// - May loading overlay at office scan alert.
-// Ang page na ito ay parang digital map ng school, kung saan nakikita ang mga visitor sa 3D campus.
 
-// import ng React hooks at utilities.
 import { Suspense, Component, memo, useEffect, useState, useMemo, useRef } from "react";
-// import ng Canvas at useThree para sa 3D scene.
+
 import { Canvas, useThree } from "@react-three/fiber";
-// import ng Drei utilities para sa controls, model loading, at HTML overlay.
+
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
-// import ng THREE.js core library para sa raycaster at vector math.
+
 import * as THREE from "three";
-// import ng Firestore methods para sa live listener at dokumento.
+
 import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
-// import ng Firebase instances para sa auth at db.
+
 import { auth, db } from "../firebase";
-// import ng dashboard components para ipakita kapag naka-security/authorized.
+
 import RegisterVisitor from "./security/RegisterVisitor";
 
-// mga kulay na ginagamit para sa visitor markers.
+
 const markerColors = ["#ef4444", "#f59e0b", "#818CF8", "#22c55e", "#4F46E5"];
-// base URL ng 3D model asset.
+
 const BASE_MODEL_URL = `${import.meta.env.BASE_URL}models/newschools.glb`;
-// cache-busted URL para iwas cache stale model.
+
 const BASE_MODEL_URL_WITH_CACHE_BUST = `${BASE_MODEL_URL}?v=${Date.now()}`;
-// preload ng GLTF model bago mag-render para mas mabilis.
+
 useGLTF.preload(BASE_MODEL_URL_WITH_CACHE_BUST);
 
 function LoadingOverlay() {
-  // LoadingOverlay:
-  // Ito ang overlay na lalabas habang hindi pa fully loaded ang 3D school model.
-  // Ginagawa ito para alam ng user na may process pa sa background.
+  
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", zIndex: 100000 }}>
       <div style={{ pointerEvents: "auto", background: "rgba(35, 35, 36, 0.92)", color: "#fff", padding: "20px 28px", borderRadius: 12, boxShadow: "0 12px 36px rgba(0,0,0,0.6)", textAlign: "center", fontWeight: 500, letterSpacing: "0.08em" }}>
@@ -42,7 +33,7 @@ function LoadingOverlay() {
   );
 }
 
-// Mga anchor positions para sa bawat location marker sa 3D campus model.
+
 const locationMarkers = {
   library: {
     position: [-11, 1.2, -1.2]
@@ -55,7 +46,7 @@ const locationMarkers = {
   }
 };
 
-// Base key para sa session storage ng camera state.
+
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
   position: [-100, 22, -55],
@@ -64,9 +55,7 @@ const DEFAULT_CAMERA_STATE = {
 };
 
 function getCameraStorageKey() {
-  // getCameraStorageKey:
-  // Ginagamit ito para magkaroon ng unique key sa camera state base sa logged-in user.
-  // Kaya ang camera position ay memory per user at hindi magkakalituhan.
+
   if (typeof window === "undefined") {
     return CAMERA_STORAGE_BASE_KEY;
   }
@@ -80,8 +69,7 @@ function getCameraStorageKey() {
 }
 
 function loadSavedCameraState() {
-  // loadSavedCameraState:
-  // Binabasa ang camera position na na-save dati upang ma-restore ang view.
+  
   if (typeof window === "undefined") {
     return null;
   }
@@ -109,8 +97,7 @@ function loadSavedCameraState() {
 }
 
 function saveCameraState(state) {
-  // saveCameraState:
-  // Ini-save ang current camera view so pagbalik ng user, hindi na siya kailangan ulitin.
+ 
   if (typeof window === "undefined") {
     return;
   }
@@ -124,7 +111,7 @@ function saveCameraState(state) {
 }
 
 function clearCameraState(userUid = null) {
-  // Tanggalin ang session storage entries kapag nag-logout o nag-reset ng user.
+  
   if (typeof window === "undefined") {
     return;
   }
@@ -144,13 +131,12 @@ function clearCameraState(userUid = null) {
       window.sessionStorage.removeItem(key);
     });
   } catch {
-    // ignore remove failures
+    //
   }
 }
 
 function getVisitorLocationKey(visitor) {
-  // getVisitorLocationKey:
-  // Tinutukoy kung nasa office, library, o entrance ang visitor base sa current location field.
+  
   const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
   if (locationName.includes("office")) {
     return "office";
@@ -162,12 +148,12 @@ function getVisitorLocationKey(visitor) {
 }
 
 function getLocationAnchor(locationKey) {
-  // Kumuha ng 3D anchor position batay sa location key.
+  
   return locationMarkers[locationKey] || locationMarkers.library;
 }
 
 function PartLabel({ portal, locationKey, label }) {
-  // HTML label na naka-overlay sa 3D position ng location anchor.
+  
   const anchor = getLocationAnchor(locationKey);
   const textPosition = [anchor.position[0], anchor.position[1] + 8.8, anchor.position[2]];
 
@@ -198,7 +184,7 @@ function PartLabel({ portal, locationKey, label }) {
 }
 
 function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
-  // literal map pin icon at label para sa bawat visitor sa 3D model.
+ 
   const anchor = getLocationAnchor(locationKey);
   const radius = groupIndex === 0 ? 0 : 1.05;
   const angle = groupIndex * Math.PI * 0.75;
@@ -251,11 +237,11 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
 }
 
 function SchoolModel({ sceneRef, modelUrl, setModelLoaded }) {
-  // Naglo-load ng GLTF model at inaayos ang mesh shadow properties.
+ 
   const { scene } = useGLTF(modelUrl);
 
   useEffect(function () {
-    // mark loaded after scene is available
+   
     try {
       scene.traverse(function (child) {
         if (child.isMesh) {
@@ -282,7 +268,7 @@ function SchoolModel({ sceneRef, modelUrl, setModelLoaded }) {
 }
 
 const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markersByLocation, sceneRef, controlsRef, showLabels, showMarkers, portal, setModelLoaded }) {
-  // Mataas na level ng 3D scene; memoized para maiwasan ang unnecessary rerender.
+  
   return (
     <Canvas
       style={{ width: "100%", height: "100%" }}
@@ -326,7 +312,7 @@ const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markers
 });
 
 function CameraControls({ controlsRef, initialState }) {
-  // OrbitControls setup at initial camera position.
+  
   const { camera } = useThree();
 
   useEffect(() => {

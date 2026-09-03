@@ -1,28 +1,24 @@
-// AuthorizedLayout: layout wrapper para sa mga routes ng authorized personnel
-// Naglalaman ng Sidebar (navigation) at Topbar (header) at isang content area para sa children
+
 import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 
-// Props:
-// - children: ang page content na ipapakita sa loob ng layout
-// - currentUser / userData: user context mula sa Firebase Auth / Firestore
-// - hideTitle/hideSubtitle/isSmallTitle/title: props para i-customize ang Topbar
+
 export default function AuthorizedLayout({ children, currentUser, userData, hideTitle, hideSubtitle, isSmallTitle, title }) {
-  // state kung naka-open ang mobile menu (used by Sidebar/Topbar)
+  
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Toggle function para sa mobile menu button
+  
   function toggleMenu() {
     setMenuOpen(!menuOpen);
   }
 
-  // Isara ang menu (ginagamit kapag nag-click sa overlay o link)
+  
   function closeMenu() {
     setMenuOpen(false);
   }
 
-  // Kapag nag-click sa main content at bukas ang menu, isara ito
+  
   function handleMainClick() {
     if (menuOpen) {
       closeMenu();
@@ -35,7 +31,7 @@ export default function AuthorizedLayout({ children, currentUser, userData, hide
     pageTitle = "AUTHORIZED PERSONNEL";
   }
 
-  // Render ng layout: Sidebar + Topbar + content area
+  
   return (
     <div className="container authorized-container">
       <Sidebar role="authorized" isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />
