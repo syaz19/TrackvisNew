@@ -13,13 +13,13 @@ admin.initializeApp();
 const db = getFirestore();
 
 
-exports.registerVisitor = functions.https.onRequest(async (req, res) => {
+exports.registerVisitor = functions.https.onRequest(async (req, res) => { 
   try {
     const { epc, visitorInfo } = req.body || {};
 
     
-    if (!epc) {
-      return res.status(400).send("Missing EPC");
+    if (!epc) { 
+      return res.status(400).send("Missing EPC"); 
     }
 
    

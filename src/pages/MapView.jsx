@@ -36,15 +36,78 @@ function LoadingOverlay() {
 
 const locationMarkers = {
   library: {
-    position: [-11, 1.2, -1.2]
+    position: [-11, -4.5, 5]
   },
   office: {
-    position: [-30, 1.2, -30]
+    position: [-20, 3.9, -52] 
   },
   entrance: {
-    position: [50, 1.2, -43]
+    position: [50, -5, -43]
+  },
+  gymnasium: {
+    position: [-50, 3, -6]
+  },
+  canteen: {
+    position: [10, -6.5, -17]
+  },
+  caba: {
+    position: [-11, 5, 5]
+  },
+  it: {
+    position: [-28, 3.9, -52]
+  },
+  criminology: {
+    position: [10, -2, -3]
+  },
+  education: {
+    position: [5, -5.8, -52]
+  },
+  guidance: {
+    position: [20, -8, -52]
+  },
+    registrar: {
+      position: [42, -8, -52]
+  },
+  highSchoolFaculty: {
+    position: [-23, -7, -30]
+  },
+  highSchoolOffice: {
+    position: [-35, -7, -30]
+  },
+  elementaryDepartment: {
+    position: [-80, 1.2, -1.2]
+  },
+  highSchoolBuilding: {
+    position: [-50, 1.2, -30]
+  },
+  seniorHighSchoolBuilding: {
+    position: [-37, -8, -52]
+  },
+  sportOffice: {
+    position: [10, -6.5, 9]
+  },
+  forumHall: {
+    position: [10, -1, -52]
   }
 };
+
+const additionalPartLabels = [
+  ["gymnasium", "SCC GYMNASIUM"],
+  ["canteen", "SCC CANTEEN"],
+  ["caba", "CABA BUILDING PART"],
+  ["it", "IT BUILDING PART"],
+  ["criminology", "CRIMINOLOGY BUILDING PART"],
+  ["education", "EDUCATION BUILDING PART"],
+  ["guidance", "GUIDANCE"],
+  ["registrar", "REGISTRAR"],
+  ["highSchoolFaculty", "HIGH SCHOOL FACULTY"],
+  ["highSchoolOffice", "HIGH SCHOOL OFFICE"],
+  ["elementaryDepartment", "ELEMENTARY DEPARTMENT"],
+  ["highSchoolBuilding", "HIGH SCHOOL BUILDING"],
+  ["seniorHighSchoolBuilding", "SENIOR HIGH SCHOOL BUILDING"],
+  ["sportOffice", "SPORT OFFICE"],
+  ["forumHall", "FORUM HALL"]
+];
 
 
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
@@ -186,8 +249,8 @@ function PartLabel({ portal, locationKey, label }) {
 function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
  
   const anchor = getLocationAnchor(locationKey);
-  const radius = groupIndex === 0 ? 0 : 1.05;
-  const angle = groupIndex * Math.PI * 0.75;
+  const radius = groupIndex === 0 ? 0 : 0.5;
+  const angle = groupIndex * Math.PI * 5;
   const position = [
     anchor.position[0] + (groupIndex === 0 ? 0 : Math.cos(angle) * radius),
     anchor.position[1],
@@ -198,7 +261,7 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
 
   return (
     <group>
-      <Html portal={portal} position={[position[0], position[1] + 0.95, position[2]]} center style={{ pointerEvents: "none", zIndex: 0 }}>
+      <Html portal={portal} position={[position[0], position[1] + 5, position[2]]} center style={{ pointerEvents: "none", zIndex: 0 }}>
         <div className="trackvis-visitor-marker" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
           <div
             className={isOfficeLocation ? "trackvis-office-visitor-label" : "trackvis-default-visitor-label"}
@@ -292,6 +355,9 @@ const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markers
               <PartLabel portal={portal} locationKey="library" label="LIBRARY PART" />
               <PartLabel portal={portal} locationKey="office" label="OFFICE PART" />
               <PartLabel portal={portal} locationKey="entrance" label="ENTRANCE PART" />
+              {additionalPartLabels.map(function ([locationKey, label]) {
+                return <PartLabel key={locationKey} portal={portal} locationKey={locationKey} label={label} />;
+              })}
             </>
           )}
           {showMarkers && markersByLocation.entrance.map((visitor, index) => (

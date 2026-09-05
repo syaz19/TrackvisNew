@@ -176,7 +176,7 @@ export default function Dashboard() {
           {pendingVisitors.length === 0 ? (
             <div className="empty-state">No pending visitors for {(userData && userData.subRole) || "your role"}.</div>
           ) : (
-            <div className="visitor-list">
+            <div className="visitor-list authorized-pending-grid">
               {pendingVisitors.map(function (visitor) {
                 const destinationConfirmations = getDestinationConfirmations(visitor);
                 const ownConfirmation = destinationConfirmations.find(function (item) {

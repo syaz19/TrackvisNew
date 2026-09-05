@@ -21,7 +21,7 @@ function getDestinations(visitor) {
   const destinations = [];
   const destinationValues = visitor.destination.split(",");
 
-  for (let i = 0; i < destinationValues.length; i++) {
+  for (let i = 0; i < destinationValues.length; i++) {  
     const destination = destinationValues[i].trim();
 
     if (destination) {
@@ -106,7 +106,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
       { to: "/security/map", label: "San Carlos College 3D" },
       { to: "/security", label: "Dashboard/Deactivation" },
       { to: "/security/history", label: "Visitor History" },
-      { to: "/security/growth", label: "Growth Analytics" }
+      { to: "/security/growth", label: "Analytics" }
     ];
   } else if (role === "authorized") {
     

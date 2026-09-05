@@ -1372,10 +1372,19 @@ select:focus {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.authorized-pending-grid,
 .authorized-history-grid {
-  max-height: 760px;
+  height: min(720px, calc(100vh - 340px));
+  min-height: 220px;
+  max-height: 720px;
   overflow-y: auto;
   padding-right: 8px;
+  padding-bottom: 24px;
+}
+
+.authorized-container .content-body {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .visitor-card {
@@ -1854,7 +1863,9 @@ select:focus {
   .history-grid.history-scroll,
   .history-scroll,
   .visitor-list-scroll,
+  .authorized-pending-grid,
   .authorized-history-grid {
+    height: auto;
     max-height: none;
     min-height: 0;
     padding-right: 0;

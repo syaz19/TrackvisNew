@@ -9,6 +9,7 @@ import { doc, setDoc } from "firebase/firestore";
 
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import TrackvisLogo from "../components/TrackvisLogo";
 
 const pageBackground = "linear-gradient(rgba(9, 13, 26, 0.72), rgba(17, 21, 43, 0.82)), url('/images/finalbg.png') center / cover no-repeat";
 const cardBackground = "linear-gradient(rgba(17, 21, 43, 0.72), rgba(17, 21, 43, 0.84))";
@@ -164,7 +165,7 @@ export default function Signup() {
   return (
     <div className="auth-page-mobile" style={styles.page}>
       <div style={styles.brand}>
-        <div style={styles.brandMark}>◉</div>
+        <div style={styles.brandMark}><TrackvisLogo /></div>
         <div style={styles.brandName}>TRACK<span style={styles.brandAccent}>VIS</span></div>
         <div style={styles.brandSubtitle}>PROFESSIONAL</div>
       </div>
@@ -248,7 +249,7 @@ export default function Signup() {
         </div>
       </div>
       <div style={styles.schoolFooter}>
-        <div style={styles.schoolMark}>✦</div>
+        <div style={styles.schoolMark}><TrackvisLogo /></div>
         <div>
           <strong style={styles.schoolName}>San Carlos College</strong>
         </div>
@@ -281,10 +282,7 @@ const styles = {
     display: "grid",
     placeItems: "center",
     color: "#f8fafc",
-    fontSize: "25px",
-    background: "#6d28d9",
-    clipPath: "polygon(50% 0, 92% 14%, 88% 68%, 50% 100%, 12% 68%, 8% 14%)",
-    boxShadow: "0 0 24px rgba(109, 40, 217, 0.45)"
+    fontSize: "25px"
   },
   brandName: {
     color: "#f8fafc",
@@ -434,9 +432,7 @@ const styles = {
     display: "grid",
     placeItems: "center",
     color: "#f8fafc",
-    fontSize: "17px",
-    background: "#6d28d9",
-    clipPath: "polygon(50% 0, 92% 14%, 88% 68%, 50% 100%, 12% 68%, 8% 14%)"
+    fontSize: "17px"
   },
   schoolName: {
     display: "block",
