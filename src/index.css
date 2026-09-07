@@ -1364,6 +1364,14 @@ select:focus {
   padding-bottom: 24px;
 }
 
+.authorized-history-grid--single {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  padding-bottom: 0;
+}
+
 .authorized-pending-grid {
   align-content: start;
   grid-auto-rows: max-content;

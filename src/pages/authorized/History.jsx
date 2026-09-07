@@ -130,7 +130,7 @@ export default function History() {
         {visitors.length === 0 ? (
           <div className="empty-state">No confirmed visitor history yet.</div>
         ) : (
-          <div className="history-grid authorized-history-grid">
+          <div className={`history-grid authorized-history-grid ${visitors.length === 1 ? "authorized-history-grid--single" : ""}`}>
             {visitors.map(function (visitor) {
               let statusLabel = "Processed";
               let statusClassName = "status-pill status-pill--expired";

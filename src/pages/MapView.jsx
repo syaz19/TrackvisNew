@@ -92,8 +92,8 @@ const locationMarkers = {
 };
 
 const additionalPartLabels = [
-  ["gymnasium", "SCC GYMNASIUM"],
-  ["canteen", "SCC CANTEEN"],
+  ["gymnasium", "GYMNASIUM"],
+  ["canteen", "CANTEEN"],
   ["caba", "CABA BUILDING PART"],
   ["it", "IT BUILDING PART"],
   ["criminology", "CRIMINOLOGY BUILDING PART"],
@@ -103,8 +103,8 @@ const additionalPartLabels = [
   ["highSchoolFaculty", "HIGH SCHOOL FACULTY"],
   ["highSchoolOffice", "HIGH SCHOOL OFFICE"],
   ["elementaryDepartment", "ELEMENTARY DEPARTMENT"],
-  ["highSchoolBuilding", "HIGH SCHOOL BUILDING"],
-  ["seniorHighSchoolBuilding", "SENIOR HIGH SCHOOL BUILDING"],
+  ["highSchoolBuilding", "HIGH SCHOOL BUILDING PART"],
+  ["seniorHighSchoolBuilding", "SENIOR HIGH SCHOOL BUILDING PART"],
   ["sportOffice", "SPORT OFFICE"],
   ["forumHall", "FORUM HALL"]
 ];
@@ -112,7 +112,7 @@ const additionalPartLabels = [
 
 const CAMERA_STORAGE_BASE_KEY = "trackvis-school-3d-camera";
 const DEFAULT_CAMERA_STATE = {
-  position: [-105, 25, -55],
+  position: [-105, 28, -55],
   target: [0, 0, 0],
   zoomDistance: 120
 };

@@ -33,12 +33,6 @@ const personalDestinations = [
   "Sport Office"
 ];
 
-const excludedRegistrationTags = new Set([
-  "E28069150000502D9DF2EE8A",
-  "E28069150000402D9DF3FA89",
-  "E28069150000402D9DF3D97D"
-]);
-
 function parseDurationInput(rawDuration) {
   if (typeof rawDuration !== "string") {
     return null;
@@ -137,6 +131,7 @@ export default function RegisterVisitor() {
   
   const [form, setForm] = useState(initialFormState);
   const [tags, setTags] = useState([]);
+  const [activeTagIds, setActiveTagIds] = useState(new Set());
   const [tagsLoading, setTagsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -183,16 +178,6 @@ export default function RegisterVisitor() {
   }
 
   
-  function getTagStatus(tag) {
-    const status = tag.Status || tag.status || "";
-
-    if (!status) {
-      return "Unknown";
-    }
-
-    return status.toString();
-  }
-
   
   
 
@@ -201,7 +186,8 @@ export default function RegisterVisitor() {
 
   
   function isTagAvailable(tag) {
-    return getTagStatus(tag).toLowerCase() === "available";
+    const tagIdentifier = getTagIdentifier(tag);
+    return !activeTagIds.has(tagIdentifier);
   }
 
   
@@ -218,8 +204,6 @@ export default function RegisterVisitor() {
         
         const tagList = snapshot.docs.map(function (item) {
           return { id: item.id, epc: item.id, ...item.data() };
-        }).filter(function (tag) {
-          return !excludedRegistrationTags.has(getTagIdentifier(tag));
         });
         
         setTags(tagList);
@@ -232,6 +216,25 @@ export default function RegisterVisitor() {
     );
 
     
+    return function () {
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(function () {
+    const unsubscribe = onSnapshot(
+      query(collection(db, "visitors"), where("status", "==", "active")),
+      function (snapshot) {
+        setActiveTagIds(new Set(snapshot.docs.map(function (item) {
+          return item.data().uid;
+        }).filter(Boolean)));
+      },
+      function (error) {
+        console.error("Failed to load active RFID assignments:", error);
+        setActiveTagIds(new Set());
+      }
+    );
+
     return function () {
       unsubscribe();
     };
@@ -305,8 +308,7 @@ export default function RegisterVisitor() {
       }
 
       
-      const tagStatus = getTagStatus(selectedTag).toLowerCase();
-      const isTagAvailable = tagStatus === "available";
+      const isTagAvailable = !activeTagIds.has(selectedUid);
 
       
       if (!isTagAvailable) {
