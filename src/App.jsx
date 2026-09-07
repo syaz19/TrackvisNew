@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, collection, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { registerAuthSetter, unregisterAuthSetter } from "./authManager";
 import { auth, db } from "./firebase";
 import Login from "./pages/Login";
@@ -119,124 +119,6 @@ export default function App() {
   }, []);
 
   
-  const previousVisitorsRef = useRef({});
-  useEffect(function () {
-    
-    if (!authState.user || !authState.userData) {
-      return;
-    }
-
-    const userRole = authState.userData.role;
-    const userSubRole = authState.userData.subRole;
-
-  
-    function getVisitorLocationKey(visitor) {
-      const locationName = (visitor.currentLocation || visitor.location || "").toString().toLowerCase();
-      if (locationName.includes("office")) {
-        return "office";
-      }
-      if (locationName.includes("library")) {
-        return "library";
-      }
-      return "entrance";
-    }
-
-    
-    function shouldShowAlertForUser(visitor) {
-      
-      if (userRole === "security") {
-        return true;
-      }
-
-      
-      if (userRole === "authorized") {
-        
-        const destinations = Array.isArray(visitor.destinations)
-          ? visitor.destinations
-          : (visitor.destination || "").toString().split(",").map(function (d) { return d.trim(); }).filter(Boolean);
-
-        
-        return destinations.some(function (dest) {
-          return dest.toLowerCase() === (userSubRole || "").toString().toLowerCase();
-        });
-      }
-
-      return false;
-    }
-
-    const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
-      const visitorList = snapshot.docs.map(function (item) {
-        return { id: item.id, ...item.data() };
-      });
-
-     
-      visitorList.forEach(function (currentVisitor) {
-        const previousVisitor = previousVisitorsRef.current[currentVisitor.id];
-
-        if (!previousVisitor) {
-          
-          previousVisitorsRef.current[currentVisitor.id] = currentVisitor;
-          return;
-        }
-
-      
-        const previousLocationKey = getVisitorLocationKey(previousVisitor);
-        const currentLocationKey = getVisitorLocationKey(currentVisitor);
-
-        
-        if (previousLocationKey !== "office" && currentLocationKey === "office") {
-          
-          if (!currentVisitor.officeEntryAlerted && shouldShowAlertForUser(currentVisitor)) {
-            
-            const visitorName = currentVisitor.name || "Unknown";
-            window.alert(`Our visitor ${visitorName} enter office`);
-
-          
-            try {
-              updateDoc(doc(db, "visitors", currentVisitor.id), {
-                officeEntryAlerted: true
-              }).catch(function (error) {
-                console.error("Failed to update officeEntryAlerted:", error);
-              });
-            } catch (error) {
-              console.error("Error updating officeEntryAlerted:", error);
-            }
-          }
-        }
-
-        
-        if (previousLocationKey === "office" && currentLocationKey !== "office") {
-        
-          if (currentVisitor.officeEntryAlerted) {
-            try {
-              updateDoc(doc(db, "visitors", currentVisitor.id), {
-                officeEntryAlerted: false
-              }).catch(function (error) {
-                console.error("Failed to reset officeEntryAlerted:", error);
-              });
-            } catch (error) {
-              console.error("Error resetting officeEntryAlerted:", error);
-            }
-          }
-        }
-
-       
-        previousVisitorsRef.current[currentVisitor.id] = currentVisitor;
-      });
-
-     
-      Object.keys(previousVisitorsRef.current).forEach(function (id) {
-        if (!visitorList.find(function (x) { return x.id === id; })) {
-          delete previousVisitorsRef.current[id];
-        }
-      });
-    });
-
-    return function () {
-      unsubscribe();
-    };
-  }, [authState.user, authState.userData]);
-
   
   useEffect(function () {
     const unloadKey = "trackvis-pending-unload";

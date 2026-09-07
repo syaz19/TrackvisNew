@@ -1283,39 +1283,6 @@ select:focus {
   color: #93c5fd;
 }
 
-@keyframes trackvisOfficeFlash {
-  0% {
-    background: rgba(15, 23, 42, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  }
-  20% {
-    background: rgba(153, 27, 27, 0.96);
-    border: 1px solid rgba(248, 113, 113, 0.9);
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(239, 68, 68, 0.45);
-  }
-  40% {
-    background: rgba(15, 23, 42, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  }
-  60% {
-    background: rgba(153, 27, 27, 0.96);
-    border: 1px solid rgba(248, 113, 113, 0.9);
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(239, 68, 68, 0.45);
-  }
-  100% {
-    background: rgba(15, 23, 42, 0.96);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  }
-}
-
 .trackvis-default-visitor-label {
   background: rgba(15, 23, 42, 0.96);
   color: #fff;
@@ -1323,12 +1290,27 @@ select:focus {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
-.trackvis-office-visitor-label {
+@keyframes trackvisTimeExceededFlash {
+  0%,
+  49% {
+    color: #fff;
+    background: rgba(15, 23, 42, 0.96);
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+  50%,
+  100% {
+    color: #fecaca;
+    background: rgba(127, 29, 29, 0.96);
+    border-color: rgba(248, 113, 113, 0.9);
+  }
+}
+
+.trackvis-time-exceeded-visitor-label {
   background: rgba(15, 23, 42, 0.96);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
-  animation: trackvisOfficeFlash 0.7s steps(1) infinite;
+  animation: trackvisTimeExceededFlash 0.8s steps(1) infinite;
 }
 
 /* Category tabs para sa visitor filtering (Personal / Non-School Related vs School Related) */
@@ -1382,9 +1364,33 @@ select:focus {
   padding-bottom: 24px;
 }
 
+.authorized-pending-grid {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+
 .authorized-container .content-body {
   min-height: 0;
   overflow: hidden;
+}
+
+.authorized-pending-page > .card {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.authorized-pending-page .summary-card {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.authorized-pending-page .authorized-pending-grid {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
 }
 
 .visitor-card {
@@ -1810,6 +1816,11 @@ select:focus {
     min-height: 0;
   }
 
+  .authorized-pending-page > .card {
+    height: auto;
+    overflow: visible;
+  }
+
   .section-header,
   .account-summary__header,
   .account-form__header {
@@ -1953,8 +1964,11 @@ select:focus {
     border-radius: 16px !important;
   }
 
-  .trackvis-default-visitor-label,
-  .trackvis-office-visitor-label {
+  .trackvis-default-visitor-label {
+    font-size: 9px !important;
+  }
+
+  .trackvis-time-exceeded-visitor-label {
     font-size: 9px !important;
   }
 
@@ -1983,8 +1997,12 @@ select:focus {
     pointer-events: none !important;
   }
 
-  .authorized-container:has(.sidebar.open) .trackvis-default-visitor-label,
-  .authorized-container:has(.sidebar.open) .trackvis-office-visitor-label {
+  .authorized-container:has(.sidebar.open) .trackvis-default-visitor-label {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .authorized-container:has(.sidebar.open) .trackvis-time-exceeded-visitor-label {
     visibility: hidden !important;
     pointer-events: none !important;
   }

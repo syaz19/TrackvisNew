@@ -246,7 +246,7 @@ function PartLabel({ portal, locationKey, label }) {
   );
 }
 
-function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
+function VisitorMarker({ portal, visitor, locationKey, groupIndex, currentTime }) {
  
   const anchor = getLocationAnchor(locationKey);
   const radius = groupIndex === 0 ? 0 : 0.5;
@@ -256,15 +256,15 @@ function VisitorMarker({ portal, visitor, locationKey, groupIndex }) {
     anchor.position[1],
     anchor.position[2] + (groupIndex === 0 ? 0 : Math.sin(angle) * radius)
   ];
-  const isOfficeLocation = locationKey === "office";
   const pinColor = markerColors[groupIndex % markerColors.length];
+  const isTimeExceeded = Number(visitor.endTime || 0) > 0 && Number(visitor.endTime) <= currentTime;
 
   return (
     <group>
       <Html portal={portal} position={[position[0], position[1] + 5, position[2]]} center style={{ pointerEvents: "none", zIndex: 0 }}>
         <div className="trackvis-visitor-marker" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
           <div
-            className={isOfficeLocation ? "trackvis-office-visitor-label" : "trackvis-default-visitor-label"}
+            className={isTimeExceeded ? "trackvis-time-exceeded-visitor-label" : "trackvis-default-visitor-label"}
             style={{
               padding: "6px 10px",
               borderRadius: "999px",
@@ -330,7 +330,7 @@ function SchoolModel({ sceneRef, modelUrl, setModelLoaded }) {
   return <primitive ref={sceneRef} object={scene} dispose={null} scale={0.18} position={[0, -1.1, 0]} />;
 }
 
-const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markersByLocation, sceneRef, controlsRef, showLabels, showMarkers, portal, setModelLoaded }) {
+const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markersByLocation, sceneRef, controlsRef, showLabels, showMarkers, portal, setModelLoaded, currentTime }) {
   
   return (
     <Canvas
@@ -361,13 +361,13 @@ const MemoizedMapScene = memo(function MapScene({ cameraState, modelUrl, markers
             </>
           )}
           {showMarkers && markersByLocation.entrance.map((visitor, index) => (
-            <VisitorMarker key={visitor.id || `${visitor.uid}-entrance-${index}`} portal={portal} visitor={visitor} locationKey="entrance" groupIndex={index} />
+            <VisitorMarker key={visitor.id || `${visitor.uid}-entrance-${index}`} portal={portal} visitor={visitor} locationKey="entrance" groupIndex={index} currentTime={currentTime} />
           ))}
           {showMarkers && markersByLocation.library.map((visitor, index) => (
-            <VisitorMarker key={visitor.id || `${visitor.uid}-library-${index}`} portal={portal} visitor={visitor} locationKey="library" groupIndex={index} />
+            <VisitorMarker key={visitor.id || `${visitor.uid}-library-${index}`} portal={portal} visitor={visitor} locationKey="library" groupIndex={index} currentTime={currentTime} />
           ))}
           {showMarkers && markersByLocation.office.map((visitor, index) => (
-            <VisitorMarker key={visitor.id || `${visitor.uid}-office-${index}`} portal={portal} visitor={visitor} locationKey="office" groupIndex={index} />
+            <VisitorMarker key={visitor.id || `${visitor.uid}-office-${index}`} portal={portal} visitor={visitor} locationKey="office" groupIndex={index} currentTime={currentTime} />
           ))}
         </Suspense>
       </ModelErrorBoundary>
@@ -573,6 +573,7 @@ function isActiveVisitorWithLocation(visitor) {
 export default function MapView() {
   // Pangunahing component para sa 3D view page.
   const [visitorMarkers, setVisitorMarkers] = useState([]);
+  const [currentTime, setCurrentTime] = useState(0);
   const [cameraState, setCameraState] = useState(DEFAULT_CAMERA_STATE);
   const [showRegister, setShowRegister] = useState(false);
   const [userRole, setUserRole] = useState(null);
@@ -589,6 +590,21 @@ export default function MapView() {
   const isAuthorizedUser = userRole === "authorized";
   const showLabels = isAuthorizedUser || (isSecurityUser && !showRegister);
   const showMarkers = isAuthorizedUser || (isSecurityUser && !showRegister);
+
+  useEffect(function () {
+    const timer = setTimeout(function () {
+      setCurrentTime(Date.now());
+    }, 0);
+
+    const clock = setInterval(function () {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return function () {
+      clearTimeout(timer);
+      clearInterval(clock);
+    };
+  }, []);
 
   useEffect(() => {
     if (canvasWrapperRef.current) {
@@ -783,6 +799,7 @@ export default function MapView() {
           showMarkers={showMarkers}
           portal={portalElement}
           setModelLoaded={setIsModelLoaded}
+          currentTime={currentTime}
         />
         {/* Loading overlay renders while model isn't ready */}
         {!isModelLoaded && <LoadingOverlay />}

@@ -159,7 +159,7 @@ export default function Dashboard() {
 
 
   return (
-    <div className="page-card">
+    <div className="page-card authorized-pending-page">
       <div className="card">
         <h1>Authorized Personnel Dashboard</h1>
         <p className="section-note">Review incoming requests and track your confirmed visitors.</p>
