@@ -16,6 +16,8 @@ import AuthorizedDashboard from "./pages/authorized/Dashboard";
 import AuthorizedHistory from "./pages/authorized/History";
 import AccountPage from "./pages/Account";
 import MapView from "./pages/MapView";
+import Logs from "./pages/security/Logs";
+import LogDetails from "./pages/security/LogDetails";
 
 
 const initialAuthState = { status: "ready", user: null, userData: null };
@@ -27,6 +29,19 @@ function PrivateRoute({ children, user }) {
   }
 
   return <Navigate to="/" replace />;
+}
+
+
+function SecurityRoute({ children, user, userData }) {
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (!userData || userData.role !== "security") {
+    return <Navigate to={getRedirectPath(userData)} replace />;
+  }
+
+  return children;
 }
 
 
@@ -172,6 +187,9 @@ export default function App() {
     { path: "/security/register", element: <RegisterVisitor />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/history", element: <History />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/growth", element: <Growth />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
+    { path: "/security/logs", element: <Logs />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true }, securityOnly: true },
+    { path: "/security/logs/:epc", element: <LogDetails />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true }, securityOnly: true },
+    { path: "/security/logs/:epc/:visitorId", element: <LogDetails />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true }, securityOnly: true },
     { path: "/security/account", element: <AccountPage currentUser={authState.user} userData={authState.userData} />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/authorized", element: <AuthorizedDashboard />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/authorized/history", element: <AuthorizedHistory />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
@@ -203,11 +221,19 @@ export default function App() {
             key={route.path}
             path={route.path}
             element={
-              <PrivateRoute user={authState.user}>
-                <Layout currentUser={authState.user} userData={authState.userData} {...(route.layoutProps || {})}>
-                  {route.element}
-                </Layout>
-              </PrivateRoute>
+              route.securityOnly ? (
+                <SecurityRoute user={authState.user} userData={authState.userData}>
+                  <Layout currentUser={authState.user} userData={authState.userData} {...(route.layoutProps || {})}>
+                    {route.element}
+                  </Layout>
+                </SecurityRoute>
+              ) : (
+                <PrivateRoute user={authState.user}>
+                  <Layout currentUser={authState.user} userData={authState.userData} {...(route.layoutProps || {})}>
+                    {route.element}
+                  </Layout>
+                </PrivateRoute>
+              )
             }
           />
         );

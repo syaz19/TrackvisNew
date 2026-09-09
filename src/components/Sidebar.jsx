@@ -106,7 +106,8 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
       { to: "/security/map", label: "San Carlos College 3D" },
       { to: "/security", label: "Dashboard/Deactivation" },
       { to: "/security/history", label: "Visitor History" },
-      { to: "/security/growth", label: "Analytics" }
+      { to: "/security/growth", label: "Analytics" },
+      { to: "/security/logs", label: "Logs" }
     ];
   } else if (role === "authorized") {
     
