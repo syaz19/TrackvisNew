@@ -18,6 +18,7 @@ import AccountPage from "./pages/Account";
 import MapView from "./pages/MapView";
 import Logs from "./pages/security/Logs";
 import LogDetails from "./pages/security/LogDetails";
+import { SecurityAlertProvider } from "./layouts/SecurityAlertContext";
 
 
 const initialAuthState = { status: "ready", user: null, userData: null };
@@ -209,7 +210,8 @@ export default function App() {
 
   
   return (
-    <Routes>
+    <SecurityAlertProvider>
+      <Routes>
       <Route path="/" element={loginRouteElement} />
       <Route path="/signup" element={signupRouteElement} />
 
@@ -240,6 +242,7 @@ export default function App() {
       })}
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </SecurityAlertProvider>
   );
 }

@@ -1,28 +1,44 @@
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import { db } from "../firebase";
+import { useSecurityAlert } from "./SecurityAlertContext";
 
 
 
 function SecurityPopup({ alerts, onDismiss }) {
+  const [currentTime, setCurrentTime] = useState(0);
+
+  useEffect(function () {
+    if (!alerts || alerts.length === 0) {
+      return undefined;
+    }
+
+    const timer = setInterval(function () {
+      setCurrentTime(Date.now());
+    }, 100);
+
+    return function () {
+      clearInterval(timer);
+    };
+  }, [alerts]);
+
   if (!alerts || alerts.length === 0) {
     return null;
   }
 
   return (
-    <div style={{ position: "fixed", top: 0, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, zIndex: 200000, pointerEvents: "none", padding: "16px" }}>
+    <div style={{ position: "fixed", top: 16, right: 16, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12, zIndex: 200000, pointerEvents: "none", width: "min(360px, calc(100vw - 32px))" }}>
       {alerts.map(function (alert) {
         return (
-          <div key={alert.id} style={{ pointerEvents: "auto", width: "min(500px, calc(100% - 32px))", background: "#171A35", borderRadius: 12, boxShadow: "0 20px 60px rgba(9,13,26,0.5)", border: "1px solid #2A3150", padding: "18px 20px" }}>
-            <p style={{ margin: 0, color: "#fff", fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.5 }}>{alert.text}</p>
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
-              <button type="button" onClick={function () {
-                onDismiss(alert.id);
-              }} style={{ background: "#4F46E5", border: "none", color: "#fff", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontWeight: 700, fontSize: "0.9rem" }}>OK</button>
-            </div>
+          <div key={alert.id} style={{ pointerEvents: "auto", position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-start", gap: 12, width: "100%", boxSizing: "border-box", background: "#171A35", borderRadius: 8, boxShadow: "0 12px 30px rgba(9,13,26,0.35)", border: "1px solid #2A3150", padding: "14px 12px 14px 16px" }}>
+            <p style={{ flex: 1, margin: 0, color: "#fff", fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.4 }}>{alert.text}</p>
+            <button type="button" aria-label="Dismiss notification" onClick={function () {
+              onDismiss(alert.id);
+            }} style={{ flex: "0 0 auto", background: "transparent", border: "none", color: "#AAB2D5", padding: 0, cursor: "pointer", fontWeight: 700, fontSize: "1.2rem", lineHeight: 1 }}>X</button>
+            <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: 3, background: "#6366F1", transformOrigin: "left", animation: "toast-progress 5s linear forwards", animationDelay: `-${Math.min(Math.max(currentTime - alert.createdAt, 0), 5000)}ms` }} />
           </div>
         );
       })}
@@ -36,7 +52,7 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
   const [menuOpen, setMenuOpen] = useState(false);
 
   
-  const [securityAlerts, setSecurityAlerts] = useState([]);
+  const { alerts: securityAlerts, pushSecurityAlert, dismissAlert, isAlertAcknowledged } = useSecurityAlert();
 
   
   const [visitors, setVisitors] = useState([]);
@@ -50,41 +66,6 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
   }, []);
 
   
-  const getAcknowledgedAlerts = useCallback(function () {
-    try {
-      const stored = localStorage.getItem("acknowledgedAlerts");
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  }, []);
-
-  
-  const setAlertAcknowledged = useCallback(function (alertKey) {
-    const acknowledged = getAcknowledgedAlerts();
-    acknowledged[alertKey] = true;
-    localStorage.setItem("acknowledgedAlerts", JSON.stringify(acknowledged));
-  }, [getAcknowledgedAlerts]);
-
-  
-  const isAlertAcknowledged = useCallback(function (alertKey) {
-    const acknowledged = getAcknowledgedAlerts();
-    return acknowledged[alertKey] === true;
-  }, [getAcknowledgedAlerts]);
-
-  
-  const pushSecurityAlert = useCallback(function (alert) {
-    setSecurityAlerts(function (currentAlerts) {
-      if (currentAlerts.some(function (item) {
-        return item.id === alert.id;
-      })) {
-        return currentAlerts;
-      }
-
-      return [...currentAlerts, alert];
-    });
-  }, []);
-
   
   useEffect(function () {
     const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
@@ -144,14 +125,7 @@ export default function SecurityLayout({ children, currentUser, userData, hideTi
 
   
   function handleAlertDismiss(alertId) {
-    if (alertId) {
-      setAlertAcknowledged(alertId);
-    }
-    setSecurityAlerts(function (currentAlerts) {
-      return currentAlerts.filter(function (alert) {
-        return alert.id !== alertId;
-      });
-    });
+    dismissAlert(alertId);
   }
 
   

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { doc, collection, getDocs, onSnapshot, query, setDoc, where, updateDoc } from "firebase/firestore";
 
 import { db } from "../../firebase";
+import { useSecurityAlert } from "../../layouts/SecurityAlertContext";
 
 
 const initialFormState = {
@@ -134,6 +135,15 @@ export default function RegisterVisitor() {
   const [activeTagIds, setActiveTagIds] = useState(new Set());
   const [tagsLoading, setTagsLoading] = useState(true);
   const [loading, setLoading] = useState(false);
+  const { pushSecurityAlert: onSecurityAlert } = useSecurityAlert();
+
+  function showAlert(text) {
+    onSecurityAlert({
+      id: `register_${Date.now()}_${Math.random()}`,
+      text,
+      type: "register"
+    });
+  }
 
 
   function handleChange(event) {
@@ -246,36 +256,36 @@ export default function RegisterVisitor() {
 
     
     if (!form.purpose) {
-      alert("Please complete all required fields.");
+      showAlert("Please complete all required fields.");
       return;
     }
 
     
     if (!form.destinations.length) {
-      alert("Please complete all required fields.");
+      showAlert("Please complete all required fields.");
       return;
     }
 
     if (form.purpose === "School Related" && !form.schoolPurpose.trim()) {
-      alert("Please enter the specific school-related purpose.");
+      showAlert("Please enter the specific school-related purpose.");
       return;
     }
 
     if (form.purpose === "Personal / Non-School Related" && !form.nonSchoolPurpose.trim()) {
-      alert("Please enter the specific purpose.");
+      showAlert("Please enter the specific purpose.");
       return;
     }
 
     
     if (!form.name || !form.location || !form.duration) {
-      alert("Please complete all required fields.");
+      showAlert("Please complete all required fields.");
       return;
     }
 
     const parsedDuration = parseDurationInput(form.duration);
 
     if (!parsedDuration) {
-      alert("Please enter a valid duration such as 10 seconds, 30 minutes, or 1 hour 30 minutes.");
+      showAlert("Please enter a valid duration such as 10 seconds, 30 minutes, or 1 hour 30 minutes.");
       return;
     }
 
@@ -290,7 +300,7 @@ export default function RegisterVisitor() {
 
       
       if (!selectedUid) {
-        alert("Please select an RFID tag to use.");
+        showAlert("Please select an RFID tag to use.");
         setLoading(false);
         return;
       }
@@ -302,7 +312,7 @@ export default function RegisterVisitor() {
 
       
       if (!selectedTag) {
-        alert("Selected RFID tag was not found. Please choose a valid tag.");
+        showAlert("Selected RFID tag was not found. Please choose a valid tag.");
         setLoading(false);
         return;
       }
@@ -312,7 +322,7 @@ export default function RegisterVisitor() {
 
       
       if (!isTagAvailable) {
-        alert("Selected RFID tag is currently in use. Please choose another one.");
+        showAlert("Selected RFID tag is currently in use. Please choose another one.");
         setLoading(false);
         return;
       }
@@ -327,7 +337,7 @@ export default function RegisterVisitor() {
 
      
       if (!sameUidSnapshot.empty) {
-        alert("This RFID tag is already assigned to an active visitor.");
+        showAlert("This RFID tag is already assigned to an active visitor.");
         setLoading(false);
         return;
       }
@@ -397,10 +407,10 @@ export default function RegisterVisitor() {
       }
 
      
-      alert("Visitor Registered Successfully!");
+      showAlert("Visitor Registered Successfully!");
       resetForm();
     } catch (error) {
-      alert(error.message);
+      showAlert(error.message);
     }
 
     
@@ -472,7 +482,7 @@ export default function RegisterVisitor() {
         <div
           onMouseDown={function () {
             if (!form.purpose) {
-              alert("Please select a visit type before you can select a destination.");
+              showAlert("Please select a visit type before you can select a destination.");
             }
           }}
         >
