@@ -12,6 +12,60 @@ admin.initializeApp();
 
 const db = getFirestore();
 
+const authorizedPositions = new Set([
+  "IT Dean",
+  "CABA Dean",
+  "Criminology Dean",
+  "Education Dean",
+  "Librarian",
+  "Registrar",
+  "Guidance Counselor",
+]);
+
+exports.createAuthorizedUser = functions.https.onCall(async (data, context) => {
+  if (!context.auth || !context.auth.token.email) {
+    throw new functions.https.HttpsError("unauthenticated", "You must be signed in.");
+  }
+
+  const adminProfile = await db.collection("users").doc(context.auth.token.email).get();
+  if (!adminProfile.exists || adminProfile.data().role !== "admin") {
+    throw new functions.https.HttpsError("permission-denied", "Only Admin users can create accounts.");
+  }
+
+  const requestData = data || {};
+  const fullName = typeof requestData.fullName === "string" ? requestData.fullName.trim() : "";
+  const email = typeof requestData.email === "string" ? requestData.email.trim().toLowerCase() : "";
+  const password = typeof requestData.password === "string" ? requestData.password : "";
+  const subRole = typeof requestData.subRole === "string" ? requestData.subRole : "";
+
+  if (!fullName || !email || password.length < 6 || !authorizedPositions.has(subRole)) {
+    throw new functions.https.HttpsError("invalid-argument", "Invalid Authorized Personnel account details.");
+  }
+
+  let createdUser;
+  try {
+    createdUser = await admin.auth().createUser({ displayName: fullName, email, password });
+    await db.collection("users").doc(email).set({
+      email,
+      name: fullName,
+      fullName,
+      role: "authorized",
+      subRole,
+    });
+  } catch (error) {
+    if (createdUser) {
+      await admin.auth().deleteUser(createdUser.uid);
+    }
+    if (error.code === "auth/email-already-exists") {
+      throw new functions.https.HttpsError("already-exists", "An account with this email already exists.");
+    }
+    console.error(error);
+    throw new functions.https.HttpsError("internal", "Unable to create account.");
+  }
+
+  return { success: true };
+});
+
 
 exports.registerVisitor = functions.https.onRequest(async (req, res) => { 
   try {

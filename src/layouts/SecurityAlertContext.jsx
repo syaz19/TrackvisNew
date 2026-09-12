@@ -48,6 +48,10 @@ export function SecurityAlertProvider({ children }) {
   }, [setAlertAcknowledged]);
 
   const pushSecurityAlert = useCallback(function (alert) {
+    if (alertTimersRef.current.has(alert.id)) {
+      return;
+    }
+
     const alertWithCreatedAt = { ...alert, createdAt: Date.now() };
     setAlerts(function (currentAlerts) {
       if (currentAlerts.some(function (item) {

@@ -83,6 +83,8 @@ export default function Login() {
 
       if (userData.role === "security") {
         nextRoute = "/security/map";
+      } else if (userData.role === "admin") {
+        nextRoute = "/authorized/map";
       }
 
       navigate(nextRoute, { replace: true });

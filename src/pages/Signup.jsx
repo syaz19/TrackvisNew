@@ -34,7 +34,6 @@ export default function Signup() {
   const [role, setRole] = useState("security");
 
   
-  const [subRole, setSubRole] = useState("Admin");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
@@ -79,11 +78,6 @@ export default function Signup() {
     setRole(event.target.value);
   }
 
-  function handleSubRoleChange(event) {
-    setSubRole(event.target.value);
-  }
-
-  
   async function handleSignup(event) {
     
     event.preventDefault();
@@ -115,20 +109,12 @@ export default function Signup() {
       
       const signupResult = await createUserWithEmailAndPassword(auth, trimmedEmail, password);
       
-      const authorizedRoleSelected = role === "authorized";
-      
       const userData = {
         email: trimmedEmail,
         role,
         subRole: null
       };
 
-      
-      if (authorizedRoleSelected) {
-        userData.subRole = subRole;
-      }
-
-      
       await setDoc(doc(db, "users", signupResult.user.email), userData);
       await signOut(auth);
       sessionStorage.removeItem("trackvis-signup-pending");
@@ -138,28 +124,6 @@ export default function Signup() {
       setIsSubmitting(false);
       setErrorMessage(error.message || "Account creation failed. Please try again.");
     }
-  }
-
-  let subRoleSection = null;
-
-  if (role === "authorized") {
-    subRoleSection = (
-      <>
-        <label style={styles.label} htmlFor="subRole">
-          Authorized Role
-        </label>
-        <select id="subRole" value={subRole} onChange={handleSubRoleChange} style={styles.input}>
-          <option value="Admin">Admin</option>
-          <option value="Registrar">Registrar</option>
-          <option value="Guidance Counselor">Guidance Counselor</option>
-          <option value="CABA Dean">CABA Dean</option>
-          <option value="IT Dean">IT Dean</option>
-          <option value="Criminology Dean">Criminology Dean</option>
-          <option value="Education Dean">Education Dean</option>
-          <option value="Librarian">Librarian</option>
-        </select>
-      </>
-    );
   }
 
   return (
@@ -230,10 +194,8 @@ export default function Signup() {
           </label>
           <select id="role" value={role} onChange={handleRoleChange} style={styles.input}>
             <option value="security">Security</option>
-            <option value="authorized">Authorized Personnel</option>
+            <option value="admin">Admin</option>
           </select>
-
-          {subRoleSection}
 
           <button type="submit" style={styles.button} disabled={isSubmitting}>
             {isSubmitting ? "Creating account..." : "Create Account"}

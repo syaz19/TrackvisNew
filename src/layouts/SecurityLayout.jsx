@@ -9,22 +9,6 @@ import { useSecurityAlert } from "./SecurityAlertContext";
 
 
 function SecurityPopup({ alerts, onDismiss }) {
-  const [currentTime, setCurrentTime] = useState(0);
-
-  useEffect(function () {
-    if (!alerts || alerts.length === 0) {
-      return undefined;
-    }
-
-    const timer = setInterval(function () {
-      setCurrentTime(Date.now());
-    }, 100);
-
-    return function () {
-      clearInterval(timer);
-    };
-  }, [alerts]);
-
   if (!alerts || alerts.length === 0) {
     return null;
   }
@@ -38,7 +22,9 @@ function SecurityPopup({ alerts, onDismiss }) {
             <button type="button" aria-label="Dismiss notification" onClick={function () {
               onDismiss(alert.id);
             }} style={{ flex: "0 0 auto", background: "transparent", border: "none", color: "#AAB2D5", padding: 0, cursor: "pointer", fontWeight: 700, fontSize: "1.2rem", lineHeight: 1 }}>X</button>
-            <div aria-hidden="true" style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: 3, background: "#6366F1", transformOrigin: "left", animation: "toast-progress 5s linear forwards", animationDelay: `-${Math.min(Math.max(currentTime - alert.createdAt, 0), 5000)}ms` }} />
+            <div aria-hidden="true" onAnimationEnd={function () {
+              onDismiss(alert.id);
+            }} style={{ position: "absolute", bottom: 0, left: 0, width: "100%", height: 3, background: "#6366F1", transformOrigin: "left", animation: "toast-progress 5s linear forwards" }} />
           </div>
         );
       })}

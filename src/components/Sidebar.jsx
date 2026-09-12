@@ -38,10 +38,11 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   const navigate = useNavigate();
   const location = useLocation();
   const [pendingVisitorCount, setPendingVisitorCount] = useState(0);
+  const assignedSubRole = userData && userData.role === "admin" ? "Admin" : userData && userData.subRole;
 
   useEffect(
     function () {
-      if (role !== "authorized" || !userData || !userData.subRole) {
+      if ((role !== "authorized" && role !== "admin") || !assignedSubRole) {
         return undefined;
       }
 
@@ -52,11 +53,11 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
           const visitor = item.data();
           const isPending = (
             visitor.purpose === "School Related" &&
-            getDestinations(visitor).includes(userData.subRole) &&
+            getDestinations(visitor).includes(assignedSubRole) &&
             visitor.status === "active" &&
             (Array.isArray(visitor.destinationConfirmations)
               ? visitor.destinationConfirmations.some(function (confirmation) {
-                return confirmation.destination === userData.subRole && confirmation.status !== "Done";
+                return confirmation.destination === assignedSubRole && confirmation.status !== "Done";
               })
               : (visitor.confirmStatus || "") !== "Done")
           );
@@ -73,7 +74,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
         unsubscribe();
       };
     },
-    [role, userData]
+    [role, assignedSubRole]
   );
 
   
@@ -109,13 +110,17 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
       { to: "/security/growth", label: "Analytics" },
       { to: "/security/logs", label: "Logs" }
     ];
-  } else if (role === "authorized") {
+  } else if (role === "authorized" || role === "admin") {
     
     menuLinks = [
       { to: "/authorized/map", label: "San Carlos College 3D" },
       { to: "/authorized", label: "Pending Confirm", count: pendingVisitorCount },
       { to: "/authorized/history", label: "History Confirmed" }
     ];
+
+    if (role === "admin") {
+      menuLinks.push({ to: "/admin/add-user", label: "Add User" });
+    }
   }
 
   
@@ -175,7 +180,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
         {}
         <nav className="nav-links">
           {menuLinks.map(function (link) {
-            const isDashboardWithCount = role === "authorized" && link.to === "/authorized" && link.count > 0;
+            const isDashboardWithCount = (role === "authorized" || role === "admin") && link.to === "/authorized" && link.count > 0;
             const isActive = location.pathname === link.to;
             let linkClassName = "";
 

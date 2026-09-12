@@ -19,6 +19,7 @@ import MapView from "./pages/MapView";
 import Logs from "./pages/security/Logs";
 import LogDetails from "./pages/security/LogDetails";
 import { SecurityAlertProvider } from "./layouts/SecurityAlertContext";
+import AddUser from "./pages/admin/AddUser";
 
 
 const initialAuthState = { status: "ready", user: null, userData: null };
@@ -45,6 +46,18 @@ function SecurityRoute({ children, user, userData }) {
   return children;
 }
 
+function AdminRoute({ children, user, userData }) {
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (!userData || userData.role !== "admin") {
+    return <Navigate to={getRedirectPath(userData)} replace />;
+  }
+
+  return children;
+}
+
 
 function buildAuthState(user, userData, status = "ready") {
   return { status, user, userData };
@@ -58,6 +71,10 @@ function getRedirectPath(userData) {
     }
 
     if (userData.role === "authorized") {
+      return "/authorized/map";
+    }
+
+    if (userData.role === "admin") {
       return "/authorized/map";
     }
   }
@@ -196,7 +213,8 @@ export default function App() {
     { path: "/authorized/history", element: <AuthorizedHistory />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/authorized/account", element: <AccountPage currentUser={authState.user} userData={authState.userData} />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/map", element: <MapView />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } },
-    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } }
+    { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } },
+    { path: "/admin/add-user", element: <AddUser />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true }, adminOnly: true }
   ];
 
   
@@ -229,6 +247,12 @@ export default function App() {
                     {route.element}
                   </Layout>
                 </SecurityRoute>
+              ) : route.adminOnly ? (
+                <AdminRoute user={authState.user} userData={authState.userData}>
+                  <Layout currentUser={authState.user} userData={authState.userData} {...(route.layoutProps || {})}>
+                    {route.element}
+                  </Layout>
+                </AdminRoute>
               ) : (
                 <PrivateRoute user={authState.user}>
                   <Layout currentUser={authState.user} userData={authState.userData} {...(route.layoutProps || {})}>

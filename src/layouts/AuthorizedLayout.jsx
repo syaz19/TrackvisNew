@@ -28,16 +28,16 @@ export default function AuthorizedLayout({ children, currentUser, userData, hide
   let pageTitle = title;
 
   if (!pageTitle) {
-    pageTitle = "AUTHORIZED PERSONNEL";
+    pageTitle = userData && userData.role === "admin" ? "ADMIN" : "AUTHORIZED PERSONNEL";
   }
 
   
   return (
     <div className="container authorized-container">
-      <Sidebar role="authorized" isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />
+      <Sidebar role={userData && userData.role === "admin" ? "admin" : "authorized"} isOpen={menuOpen} onClose={closeMenu} currentUser={currentUser} userData={userData} />
       <div className="main" onClick={handleMainClick}>
         <Topbar
-          role="authorized"
+          role={userData && userData.role === "admin" ? "admin" : "authorized"}
           title={pageTitle}
           onMenuToggle={toggleMenu}
           menuOpen={menuOpen}

@@ -588,8 +588,9 @@ export default function MapView() {
 
   const isSecurityUser = userRole === "security";
   const isAuthorizedUser = userRole === "authorized";
-  const showLabels = isAuthorizedUser || (isSecurityUser && !showRegister);
-  const showMarkers = isAuthorizedUser || (isSecurityUser && !showRegister);
+  const isAdminUser = userRole === "admin";
+  const showLabels = isAuthorizedUser || isAdminUser || (isSecurityUser && !showRegister);
+  const showMarkers = isAuthorizedUser || isAdminUser || (isSecurityUser && !showRegister);
 
   useEffect(function () {
     const timer = setTimeout(function () {
@@ -745,7 +746,7 @@ export default function MapView() {
   return (
     <div className="map-view-shell">
       <div className="map-canvas-shell" ref={canvasWrapperRef} style={{ position: "relative", width: "100%", minHeight: "90vh", height: "90vh", borderRadius: 28, overflow: "hidden", background: "#090D1A" }}>
-        {(isSecurityUser || isAuthorizedUser) && (
+        {(isSecurityUser || isAuthorizedUser || isAdminUser) && (
           <div className="map-action-controls" style={{ position: "absolute", bottom: 18, right: 18, zIndex: 100020, display: "flex", flexDirection: "column", gap: 14, pointerEvents: "auto" }}>
             {isSecurityUser && (
               <button

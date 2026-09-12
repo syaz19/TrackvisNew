@@ -37,6 +37,7 @@ export default function Dashboard() {
 
   
   const [userData, setUserData] = useState(null);
+  const assignedSubRole = userData && userData.role === "admin" ? "Admin" : userData && userData.subRole;
 
   
   useEffect(function () {
@@ -68,7 +69,7 @@ export default function Dashboard() {
 
   
   useEffect(function () {
-    if (!userData || !userData.subRole) {
+    if (!assignedSubRole) {
       return;
     }
 
@@ -84,7 +85,7 @@ export default function Dashboard() {
         .filter(function (visitor) {
           return (
             visitor.purpose === "School Related" &&
-            getDestinations(visitor).includes(userData.subRole)
+            getDestinations(visitor).includes(assignedSubRole)
           );
         });
 
@@ -95,7 +96,7 @@ export default function Dashboard() {
     return function () {
       unsubscribe();
     };
-  }, [userData]);
+  }, [userData, assignedSubRole]);
 
   
   async function handleConfirmVisitor(visitorId) {
@@ -109,7 +110,7 @@ export default function Dashboard() {
 
       const visitor = visitors.find(function (item) { return item.id === visitorId; });
       const destinationConfirmations = getDestinationConfirmations(visitor).map(function (confirmation) {
-        if (confirmation.destination !== userData.subRole) return confirmation;
+        if (confirmation.destination !== assignedSubRole) return confirmation;
         return {
           ...confirmation,
           status: "Done",
@@ -142,7 +143,7 @@ export default function Dashboard() {
   
   const pendingVisitors = visitors.filter(function (visitor) {
     const confirmation = getDestinationConfirmations(visitor).find(function (item) {
-      return item.destination === (userData ? userData.subRole : undefined);
+      return item.destination === assignedSubRole;
     });
     return visitor.status === "active" && (!confirmation || confirmation.status !== "Done");
   });
@@ -174,13 +175,13 @@ export default function Dashboard() {
           </div>
 
           {pendingVisitors.length === 0 ? (
-            <div className="empty-state">No pending visitors for {(userData && userData.subRole) || "your role"}.</div>
+            <div className="empty-state">No pending visitors for {assignedSubRole || "your role"}.</div>
           ) : (
             <div className="visitor-list authorized-pending-grid">
               {pendingVisitors.map(function (visitor) {
                 const destinationConfirmations = getDestinationConfirmations(visitor);
                 const ownConfirmation = destinationConfirmations.find(function (item) {
-                  return item.destination === (userData ? userData.subRole : undefined);
+                    return item.destination === assignedSubRole;
                 });
 
                 let timeInLabel = "N/A";

@@ -37,6 +37,7 @@ export default function History() {
 
   
   const [userData, setUserData] = useState(null);
+  const assignedSubRole = userData && userData.role === "admin" ? "Admin" : userData && userData.subRole;
 
   
   useEffect(function () {
@@ -68,7 +69,7 @@ export default function History() {
   
   useEffect(
     function () {
-      if (!userData || !userData.subRole) return;
+      if (!assignedSubRole) return;
 
       const unsubscribe = onSnapshot(collection(db, "visitors"), function (snapshot) {
         const visitorList = snapshot.docs
@@ -79,7 +80,7 @@ export default function History() {
             
             return (
               v.purpose === "School Related" &&
-              getDestinations(v).includes(userData.subRole)
+              getDestinations(v).includes(assignedSubRole)
             );
           });
 
@@ -89,7 +90,7 @@ export default function History() {
           const knownStatuses = ["deactivated", "expired", "completed", "done", "inactive", "cancelled"];
           if (knownStatuses.includes(status)) return true;
           if (getDestinationConfirmations(visitor).some(function (confirmation) {
-            return confirmation.destination === userData.subRole && confirmation.status === "Done";
+            return confirmation.destination === assignedSubRole && confirmation.status === "Done";
           })) return true;
           return Boolean(visitor.endTime || visitor.timeOut);
         });
@@ -107,7 +108,7 @@ export default function History() {
         unsubscribe();
       };
     },
-    [userData]
+    [userData, assignedSubRole]
   );
 
   if (loading) {
@@ -135,7 +136,7 @@ export default function History() {
               let statusLabel = "Processed";
               let statusClassName = "status-pill status-pill--expired";
               const ownConfirmation = getDestinationConfirmations(visitor).find(function (confirmation) {
-                return confirmation.destination === (userData ? userData.subRole : undefined);
+                return confirmation.destination === assignedSubRole;
               });
 
               const isOwnConfirmationDone = Array.isArray(visitor.destinationConfirmations)
