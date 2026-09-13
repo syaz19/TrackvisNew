@@ -37,7 +37,7 @@ export default function History() {
 
   
   const [userData, setUserData] = useState(null);
-  const assignedSubRole = userData && userData.role === "admin" ? "Admin" : userData && userData.subRole;
+  const assignedSubRole = userData && userData.role === "authorized" ? userData.subRole : null;
 
   
   useEffect(function () {

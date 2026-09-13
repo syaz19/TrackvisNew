@@ -38,7 +38,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   const navigate = useNavigate();
   const location = useLocation();
   const [pendingVisitorCount, setPendingVisitorCount] = useState(0);
-  const assignedSubRole = userData && userData.role === "admin" ? "Admin" : userData && userData.subRole;
+  const assignedSubRole = userData && userData.role === "authorized" ? userData.subRole : null;
 
   useEffect(
     function () {
