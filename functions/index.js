@@ -146,9 +146,8 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
 
 exports.scanRFID = functions.https.onRequest(async (req, res) => {
   try {
-    const { epc, location } = req.body || {};
+    const { epc, location, rssi, transmitPower } = req.body || {};
 
-    
     if (!epc || !location) {
       return res.status(400).json({
         success: false,
@@ -158,7 +157,6 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
 
     const now = FieldValue.serverTimestamp();
 
-    
     let visitorDoc = null;
 
     const visitorQuery = await db
@@ -172,12 +170,12 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       visitorDoc = visitorQuery.docs[0];
     } else {
       const directDoc = await db.collection("visitors").doc(epc).get();
+
       if (directDoc.exists && directDoc.data()?.status === "active") {
         visitorDoc = directDoc;
       }
     }
 
-      
     if (!visitorDoc) {
       return res.json({
         success: false,
@@ -185,24 +183,23 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       });
     }
 
-    
     await visitorDoc.ref.update({
       currentLocation: location,
       location,
       lastSeen: now,
     });
 
-    
     await db.collection("reader_scans").doc(epc).set(
       {
         epc,
         lastLocation: location,
         lastScan: now,
+        lastRssi: rssi ?? null,
+        lastTransmitPower: transmitPower ?? null,
       },
       { merge: true }
     );
 
-    
     await db
       .collection("reader_scans")
       .doc(epc)
@@ -210,9 +207,9 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       .add({
         location,
         timestamp: now,
+        rssi: rssi ?? null,
+        transmitPower: transmitPower ?? null,
       });
-
-    
 
     await db.collection("rfid_tags").doc(epc).set(
       {
