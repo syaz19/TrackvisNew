@@ -146,18 +146,35 @@ exports.updateRFIDLocation = functions.https.onRequest(async (req, res) => {
 
 exports.scanRFID = functions.https.onRequest(async (req, res) => {
   try {
-    const { epc, location, rssi, transmitPower } = req.body || {};
+
+    const {
+      epc,
+      location,
+      rssi,
+      transmitPower
+    } = req.body || {};
+
 
     if (!epc || !location) {
+
       return res.status(400).json({
         success: false,
         message: "Missing EPC or Location",
       });
+
     }
 
-    const now = FieldValue.serverTimestamp();
+
+    const now =
+      FieldValue.serverTimestamp();
+
 
     let visitorDoc = null;
+
+
+    /*
+     * Find an active visitor using the EPC.
+     */
 
     const visitorQuery = await db
       .collection("visitors")
@@ -166,71 +183,244 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
       .limit(1)
       .get();
 
-    if (!visitorQuery.empty) {
-      visitorDoc = visitorQuery.docs[0];
-    } else {
-      const directDoc = await db.collection("visitors").doc(epc).get();
 
-      if (directDoc.exists && directDoc.data()?.status === "active") {
+    if (!visitorQuery.empty) {
+
+      visitorDoc =
+        visitorQuery.docs[0];
+
+    } else {
+
+      /*
+       * Also check if EPC is the visitor document ID.
+       */
+
+      const directDoc =
+        await db
+          .collection("visitors")
+          .doc(epc)
+          .get();
+
+
+      if (
+        directDoc.exists &&
+        directDoc.data()?.status === "active"
+      ) {
+
         visitorDoc = directDoc;
+
       }
+
     }
+
+
+    /*
+     * ==========================================================
+     * UNREGISTERED RFID
+     * ==========================================================
+     *
+     * If the RFID is not assigned to an active visitor
+     * and the reader is located at Entrance, save the EPC
+     * as the latest RFID registration scan.
+     *
+     * RegisterVisitor.jsx listens to:
+     *
+     * rfid_registration/latest
+     *
+     * and automatically receives the EPC.
+     */
 
     if (!visitorDoc) {
+
+      if (location === "Entrance") {
+
+        await db
+          .collection("rfid_registration")
+          .doc("latest")
+          .set({
+
+            epc,
+
+            location:
+              "Entrance",
+
+            rssi:
+              rssi ?? null,
+
+            transmitPower:
+              transmitPower ?? null,
+
+            timestamp:
+              now
+
+          });
+
+
+        return res.json({
+
+          success: true,
+
+          registration: true,
+
+          message:
+            "RFID tag ready for visitor registration"
+
+        });
+
+      }
+
+
+      /*
+       * Unregistered RFID scanned somewhere other
+       * than Entrance.
+       */
+
       return res.json({
+
         success: false,
-        message: "RFID tag not assigned to an active visitor",
+
+        message:
+          "RFID tag not assigned to an active visitor",
+
       });
+
     }
 
+
+    /*
+     * ==========================================================
+     * NORMAL RFID TRACKING
+     * ==========================================================
+     *
+     * If the RFID belongs to an active visitor,
+     * continue using the existing tracking behavior.
+     */
+
+
     await visitorDoc.ref.update({
-      currentLocation: location,
-      location,
-      lastSeen: now,
+
+      currentLocation:
+        location,
+
+      location:
+        location,
+
+      lastSeen:
+        now,
+
     });
 
-    await db.collection("reader_scans").doc(epc).set(
-      {
-        epc,
-        lastLocation: location,
-        lastScan: now,
-        lastRssi: rssi ?? null,
-        lastTransmitPower: transmitPower ?? null,
-      },
-      { merge: true }
-    );
+
+    /*
+     * Save latest RFID scan information.
+     */
+
+    await db
+      .collection("reader_scans")
+      .doc(epc)
+      .set(
+        {
+
+          epc,
+
+          lastLocation:
+            location,
+
+          lastScan:
+            now,
+
+          lastRssi:
+            rssi ?? null,
+
+          lastTransmitPower:
+            transmitPower ?? null,
+
+        },
+        {
+          merge: true
+        }
+      );
+
+
+    /*
+     * Save every scan into history.
+     */
 
     await db
       .collection("reader_scans")
       .doc(epc)
       .collection("history")
       .add({
-        location,
-        timestamp: now,
-        rssi: rssi ?? null,
-        transmitPower: transmitPower ?? null,
+
+        location:
+          location,
+
+        timestamp:
+          now,
+
+        rssi:
+          rssi ?? null,
+
+        transmitPower:
+          transmitPower ?? null,
+
       });
 
-    await db.collection("rfid_tags").doc(epc).set(
-      {
-        currentLocation: location,
-        lastScan: now,
-        updatedAt: now,
-      },
-      { merge: true }
-    );
+
+    /*
+     * Update RFID tag location.
+     */
+
+    await db
+      .collection("rfid_tags")
+      .doc(epc)
+      .set(
+        {
+
+          currentLocation:
+            location,
+
+          lastScan:
+            now,
+
+          updatedAt:
+            now,
+
+        },
+        {
+          merge: true
+        }
+      );
+
+
+    /*
+     * Successful normal tracking response.
+     */
 
     res.json({
+
       success: true,
-      message: "RFID Scan Processed",
+
+      message:
+        "RFID Scan Processed",
+
     });
+
+
   } catch (error) {
+
     console.error(error);
 
+
     res.status(500).json({
+
       success: false,
-      error: error.message,
+
+      error:
+        error.message,
+
     });
+
   }
 });
 
