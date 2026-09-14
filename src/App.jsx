@@ -20,6 +20,7 @@ import Logs from "./pages/security/Logs";
 import LogDetails from "./pages/security/LogDetails";
 import { SecurityAlertProvider } from "./layouts/SecurityAlertContext";
 import AddUser from "./pages/admin/AddUser";
+import ActiveUsers from "./pages/admin/ActiveUsers";
 
 
 const initialAuthState = { status: "ready", user: null, userData: null };
@@ -214,7 +215,8 @@ export default function App() {
     { path: "/authorized/account", element: <AccountPage currentUser={authState.user} userData={authState.userData} />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true } },
     { path: "/security/map", element: <MapView />, layout: SecurityLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } },
     { path: "/authorized/map", element: <MapView />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true, isSmallTitle: true, title: "SCC 3D" } },
-    { path: "/admin/add-user", element: <AddUser />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true }, adminOnly: true }
+    { path: "/admin/add-user", element: <AddUser />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true }, adminOnly: true },
+    { path: "/admin/active-users", element: <ActiveUsers />, layout: AuthorizedLayout, layoutProps: { hideTitle: false, hideSubtitle: true }, adminOnly: true }
   ];
 
   

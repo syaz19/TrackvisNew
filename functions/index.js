@@ -22,15 +22,42 @@ const authorizedPositions = new Set([
   "Guidance Counselor",
 ]);
 
-exports.createAuthorizedUser = functions.https.onCall(async (data, context) => {
+async function getAdminProfile(context) {
   if (!context.auth || !context.auth.token.email) {
     throw new functions.https.HttpsError("unauthenticated", "You must be signed in.");
   }
 
-  const adminProfile = await db.collection("users").doc(context.auth.token.email).get();
+  const email = context.auth.token.email.toLowerCase();
+  const adminProfile = await db.collection("users").doc(email).get();
   if (!adminProfile.exists || adminProfile.data().role !== "admin") {
-    throw new functions.https.HttpsError("permission-denied", "Only Admin users can create accounts.");
+    throw new functions.https.HttpsError("permission-denied", "Only Admin users can manage Authorized Personnel accounts.");
   }
+
+  return { uid: context.auth.uid, email };
+}
+
+async function getOwnedAuthorizedUser(email, adminProfile) {
+  const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+  if (!normalizedEmail) {
+    throw new functions.https.HttpsError("invalid-argument", "A user email is required.");
+  }
+
+  const userRef = db.collection("users").doc(normalizedEmail);
+  const userDoc = await userRef.get();
+  const userData = userDoc.data() || {};
+  const isOwnedByAdmin = userDoc.exists && userData.role === "authorized" && (
+    userData.createdBy === adminProfile.uid || userData.createdByEmail === adminProfile.email
+  );
+
+  if (!isOwnedByAdmin) {
+    throw new functions.https.HttpsError("not-found", "Authorized Personnel account not found.");
+  }
+
+  return { ref: userRef, data: userData, email: normalizedEmail };
+}
+
+exports.createAuthorizedUser = functions.https.onCall(async (data, context) => {
+  const adminProfile = await getAdminProfile(context);
 
   const requestData = data || {};
   const fullName = typeof requestData.fullName === "string" ? requestData.fullName.trim() : "";
@@ -51,6 +78,10 @@ exports.createAuthorizedUser = functions.https.onCall(async (data, context) => {
       fullName,
       role: "authorized",
       subRole,
+      status: "active",
+      createdBy: adminProfile.uid,
+      createdByEmail: adminProfile.email,
+      createdAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
     if (createdUser) {
@@ -63,6 +94,62 @@ exports.createAuthorizedUser = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("internal", "Unable to create account.");
   }
 
+  return { success: true };
+});
+
+exports.listAdminAuthorizedUsers = functions.https.onCall(async (data, context) => {
+  const adminProfile = await getAdminProfile(context);
+  const snapshot = await db.collection("users").where("role", "==", "authorized").get();
+  const users = [];
+
+  snapshot.forEach((userDoc) => {
+    const userData = userDoc.data();
+    if (userData.createdBy !== adminProfile.uid && userData.createdByEmail !== adminProfile.email) {
+      return;
+    }
+
+    const status = userData.status || "active";
+    if (status.toLowerCase() !== "active") {
+      return;
+    }
+
+    users.push({
+      id: userDoc.id,
+      email: userData.email || userDoc.id,
+      fullName: userData.fullName || userData.name || "Unnamed user",
+      subRole: userData.subRole || "Not assigned",
+      status,
+      createdAt: userData.createdAt && typeof userData.createdAt.toMillis === "function"
+        ? userData.createdAt.toMillis()
+        : null,
+    });
+  });
+
+  users.sort((firstUser, secondUser) => (secondUser.createdAt || 0) - (firstUser.createdAt || 0));
+  return { users };
+});
+
+exports.requestAuthorizedPasswordReset = functions.https.onCall(async (data, context) => {
+  const adminProfile = await getAdminProfile(context);
+  const targetUser = await getOwnedAuthorizedUser(data && data.email, adminProfile);
+  return { email: targetUser.email };
+});
+
+exports.deleteAuthorizedUser = functions.https.onCall(async (data, context) => {
+  const adminProfile = await getAdminProfile(context);
+  const targetUser = await getOwnedAuthorizedUser(data && data.email, adminProfile);
+
+  try {
+    const authUser = await admin.auth().getUserByEmail(targetUser.email);
+    await admin.auth().deleteUser(authUser.uid);
+  } catch (error) {
+    if (error.code !== "auth/user-not-found") {
+      console.error(error);
+      throw new functions.https.HttpsError("internal", "Unable to delete the authentication account.");
+    }
+  }
+
+  await targetUser.ref.delete();
   return { success: true };
 });
 
