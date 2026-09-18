@@ -120,7 +120,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
 
     if (role === "admin") {
       menuLinks.push({ to: "/admin/add-user", label: "Add User" });
-      menuLinks.push({ to: "/admin/active-users", label: "Active User" });
+      menuLinks.push({ to: "/admin/active-users", label: "Active Users" });
     }
   }
 
