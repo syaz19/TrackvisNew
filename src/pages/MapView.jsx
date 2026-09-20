@@ -712,7 +712,7 @@ export default function MapView() {
   }
 
   const visibleVisitors = useMemo(() => {
-    if (isAuthorizedUser) {
+    if (isAuthorizedUser || isAdminUser) {
       if (!userSubRole) {
         return [];
       }
@@ -726,7 +726,7 @@ export default function MapView() {
     }
 
     return visitorMarkers;
-  }, [visitorMarkers, isAuthorizedUser, userSubRole]);
+  }, [visitorMarkers, isAuthorizedUser, isAdminUser, userSubRole]);
 
   const markersByLocation = useMemo(() => {
     const grouped = {

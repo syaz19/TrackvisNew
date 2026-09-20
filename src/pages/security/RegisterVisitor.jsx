@@ -225,6 +225,39 @@ export default function RegisterVisitor() {
   }
 
 
+  async function clearScannedRFID() {
+    setForm(function (current) {
+      return {
+        ...current,
+        uid: ""
+      };
+    });
+
+    try {
+      await setDoc(
+        doc(
+          db,
+          "rfid_registration",
+          "latest"
+        ),
+        {
+          epc: "",
+          location: "",
+          timestamp: Date.now()
+        },
+        {
+          merge: true
+        }
+      );
+    } catch (error) {
+      console.warn(
+        "Failed to clear RFID registration scan:",
+        error
+      );
+    }
+  }
+
+
   /*
    * RFID REGISTRATION LISTENER
    *
@@ -984,7 +1017,12 @@ export default function RegisterVisitor() {
 
         {/* RFID SCAN */}
 
-        <div className="form-control">
+        <div
+          className="form-control"
+          style={{
+            position: "relative"
+          }}
+        >
 
           <div
             style={{
@@ -1012,16 +1050,50 @@ export default function RegisterVisitor() {
 
           ) : (
 
-            <p
+            <div
               style={{
-                margin: 0,
-                color: "#2563EB",
-                fontSize: "0.95rem",
-                fontWeight: "600"
+                paddingRight: "2rem"
               }}
             >
-              RFID Tag Scanned: {form.uid}
-            </p>
+              <p
+                style={{
+                  margin: 0,
+                  color: "#2563EB",
+                  fontSize: "0.95rem",
+                  fontWeight: "600"
+                }}
+              >
+                RFID Tag Scanned: {form.uid}
+              </p>
+
+              <button
+                type="button"
+                aria-label="Clear scanned RFID tag"
+                onClick={clearScannedRFID}
+                style={{
+                  position: "absolute",
+                  top: "50%",
+                  right: "1rem",
+                  transform: "translateY(-50%)",
+                  width: "1.5rem",
+                  height: "1.5rem",
+                  border: "1px solid #6366F1",
+                  borderRadius: "50%",
+                  background: "#4338CA",
+                  color: "#FFFFFF",
+                  cursor: "pointer",
+                  fontSize: "1.1rem",
+                  fontWeight: "600",
+                  lineHeight: 1,
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                ×
+              </button>
+            </div>
 
           )}
 
