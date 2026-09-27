@@ -205,7 +205,7 @@ export default function Logs() {
                   </span>
 
                   <span>
-                    <b>RSSI:</b>{" "}
+                    <b>Tag Signal:</b>{" "}
                     {latestScan?.rssi !== null &&
                     latestScan?.rssi !== undefined
                       ? `${latestScan.rssi} dBm`
@@ -213,7 +213,7 @@ export default function Logs() {
                   </span>
 
                   <span>
-                    <b>Transmit Power:</b>{" "}
+                    <b>Reader Signal:</b>{" "}
                     {latestScan?.transmitPower !==
                       null &&
                     latestScan?.transmitPower !==

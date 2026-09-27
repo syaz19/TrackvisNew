@@ -108,7 +108,7 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
       { to: "/security", label: "Dashboard/Deactivation" },
       { to: "/security/history", label: "Visitor History" },
       { to: "/security/growth", label: "Analytics" },
-      { to: "/security/logs", label: "Logs" }
+      { to: "/security/logs", label: "Visitor Logs" }
     ];
   } else if (role === "authorized" || role === "admin") {
     
