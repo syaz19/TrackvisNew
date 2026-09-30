@@ -68,10 +68,10 @@ export default function Logs() {
       <div className="logs-header">
         <div>
           <p className="section-kicker">
-            Security Logs
+            Security - Visitor Logs
           </p>
 
-          <h1>Logs</h1>
+          <h1>Visitor Logs</h1>
 
           <p className="logs-description">
             Review every RFID scan recorded by the readers.

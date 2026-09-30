@@ -32,7 +32,7 @@ export default function LogDetails() {
           navigate("/security/logs");
         }}
       >
-        <ArrowLeft size={17} /> Back to Logs
+        <ArrowLeft size={17} /> Back to Visitor Logs
       </button>
 
       {loading ? (
