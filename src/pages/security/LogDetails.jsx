@@ -148,7 +148,7 @@ export default function LogDetails() {
 
                         <div className="scan-signal-info">
                           <span>
-                            <strong>RSSI:</strong>{" "}
+                            <strong>Tag Signal:</strong>{" "}
                             {scan.rssi !== null &&
                             scan.rssi !== undefined
                               ? `${scan.rssi} dBm`
@@ -157,7 +157,7 @@ export default function LogDetails() {
 
                           <span>
                             <strong>
-                              Transmit Power:
+                              Reader Signal:
                             </strong>{" "}
                             {scan.transmitPower !== null &&
                             scan.transmitPower !== undefined

@@ -893,11 +893,10 @@ export default function RegisterVisitor() {
                     : [
                         "Admin",
                         "Registrar",
-                        "Guidance",
                         "CABA Dean",
                         "IT Dean",
                         "Criminology Dean",
-                        "Education Dean",
+                        "SHS Coordinator",
                         "Librarian"
                       ]
 

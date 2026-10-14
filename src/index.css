@@ -111,8 +111,8 @@ a {
   border-radius: 14px;
   display: grid;
   place-items: center;
-  background: rgba(59, 130, 246, 0.16);
-  color: #60a5fa;
+  background: rgba(139, 92, 246, 0.16);
+  color: #a78bfa;
   font-weight: 700;
   font-size: 0.9rem;
 }
@@ -123,6 +123,10 @@ a {
   font-size: 0.92rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.brand-label span {
+  color: #ef4444;
 }
 
 
@@ -774,7 +778,11 @@ a {
 }
 
 .active-users-page {
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: clamp(20px, 3vw, 36px);
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -801,13 +809,14 @@ a {
 .active-users-refresh:hover:not(:disabled), .active-users-action-button:hover:not(:disabled) { background: var(--accent); }
 .active-users-spin { animation: active-users-spin 0.9s linear infinite; }
 @keyframes active-users-spin { to { transform: rotate(360deg); } }
-.active-users-table-shell { overflow: visible; border: 1px solid var(--border); border-radius: 14px; background: rgba(9, 13, 26, 0.36); }
+.active-users-table-shell { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: rgba(9, 13, 26, 0.36); }
 .active-users-table-heading { padding: 16px 20px; border-bottom: 1px solid var(--border); }
 .active-users-table-heading > div { display: flex; align-items: center; gap: 9px; font-weight: 700; }
 .active-users-count { color: var(--text-secondary); font-size: 0.86rem; }
-.active-users-table-wrap { overflow-x: auto; }
+.active-users-table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .active-users-table { width: 100%; border-collapse: collapse; min-width: 780px; }
 .active-users-table th, .active-users-table td { padding: 16px 20px; text-align: left; border-bottom: 1px solid rgba(148, 163, 184, 0.12); white-space: nowrap; }
+.active-users-table th { position: sticky; top: 0; z-index: 1; background: #11152b; }
 .active-users-table th { color: var(--text-secondary); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .active-users-table td { color: var(--text-secondary); font-size: 0.9rem; }
 .active-users-table td strong { color: var(--text-primary); }

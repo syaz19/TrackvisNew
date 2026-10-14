@@ -16,10 +16,9 @@ const authorizedPositions = new Set([
   "IT Dean",
   "CABA Dean",
   "Criminology Dean",
-  "Education Dean",
+  "SHS Coordinator",
   "Librarian",
   "Registrar",
-  "Guidance Counselor",
 ]);
 
 async function getAdminProfile(context) {

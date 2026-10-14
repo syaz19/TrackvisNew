@@ -713,7 +713,8 @@ export default function MapView() {
 
   const visibleVisitors = useMemo(() => {
     if (isAuthorizedUser || isAdminUser) {
-      if (!userSubRole) {
+      const assignedDestination = isAdminUser ? "Admin" : userSubRole;
+      if (!assignedDestination) {
         return [];
       }
 
@@ -721,7 +722,7 @@ export default function MapView() {
         const destinations = Array.isArray(visitor.destinations)
           ? visitor.destinations
           : (visitor.destination || "").toString().split(",").map((destination) => destination.trim()).filter(Boolean);
-        return destinations.some((destination) => destination.toLowerCase() === userSubRole.toString().toLowerCase());
+        return destinations.some((destination) => destination.toLowerCase() === assignedDestination.toString().toLowerCase());
       });
     }
 

@@ -7,10 +7,9 @@ const authorizedPositions = [
   "IT Dean",
   "CABA Dean",
   "Criminology Dean",
-  "Education Dean",
+  "SHS Coordinator",
   "Librarian",
-  "Registrar",
-  "Guidance Counselor"
+  "Registrar"
 ];
 
 export default function AddUser() {

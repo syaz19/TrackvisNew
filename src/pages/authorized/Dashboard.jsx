@@ -37,7 +37,11 @@ export default function Dashboard() {
 
   
   const [userData, setUserData] = useState(null);
-  const assignedSubRole = userData && userData.role === "authorized" ? userData.subRole : null;
+  const assignedSubRole = userData && userData.role === "admin"
+    ? "Admin"
+    : userData && userData.role === "authorized"
+      ? userData.subRole
+      : null;
 
   
   useEffect(function () {

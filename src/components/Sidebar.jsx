@@ -9,6 +9,7 @@ import { auth, db } from "../firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 
 import { clearAuthState } from "../authManager";
+import TrackvisLogo from "./TrackvisLogo";
 
 function getDestinations(visitor) {
   if (Array.isArray(visitor.destinations)) return visitor.destinations;
@@ -38,7 +39,11 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
   const navigate = useNavigate();
   const location = useLocation();
   const [pendingVisitorCount, setPendingVisitorCount] = useState(0);
-  const assignedSubRole = userData && userData.role === "authorized" ? userData.subRole : null;
+  const assignedSubRole = userData && userData.role === "admin"
+    ? "Admin"
+    : userData && userData.role === "authorized"
+      ? userData.subRole
+      : null;
 
   useEffect(
     function () {
@@ -164,10 +169,10 @@ export default function Sidebar({ role, isOpen, onClose, currentUser, userData }
         <div className="sidebar-header">
           <div className="brand-block">
             {}
-            <div className="brand-mark">TV</div>
+            <div className="brand-mark"><TrackvisLogo /></div>
             <div>
               {}
-              <p className="brand-label">TRACKVIS</p>
+              <p className="brand-label">TRACK<span>VIS</span></p>
               {}
               <p className="brand-subtitle">Visitor tracking v2</p>
             </div>

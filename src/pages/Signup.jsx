@@ -253,7 +253,7 @@ const styles = {
     letterSpacing: "0.02em"
   },
   brandAccent: {
-    color: "#8b5cf6"
+    color: "#ef4444"
   },
   brandSubtitle: {
     marginTop: "7px",
