@@ -236,9 +236,14 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
     const {
       epc,
       location,
+      tagSignal,
+      readerSignal,
       rssi,
       transmitPower
     } = req.body || {};
+
+    const savedTagSignal = tagSignal ?? rssi;
+    const savedReaderSignal = readerSignal ?? transmitPower;
 
 
     if (!epc || !location) {
@@ -330,11 +335,11 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
             location:
               "Entrance",
 
-            rssi:
-              rssi ?? null,
+            tagSignal:
+              savedTagSignal ?? null,
 
-            transmitPower:
-              transmitPower ?? null,
+            readerSignal:
+              savedReaderSignal ?? null,
 
             timestamp:
               now
@@ -415,11 +420,11 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
           lastScan:
             now,
 
-          lastRssi:
-            rssi ?? null,
+          lastTagSignal:
+            savedTagSignal ?? null,
 
-          lastTransmitPower:
-            transmitPower ?? null,
+          lastReaderSignal:
+            savedReaderSignal ?? null,
 
         },
         {
@@ -444,11 +449,11 @@ exports.scanRFID = functions.https.onRequest(async (req, res) => {
         timestamp:
           now,
 
-        rssi:
-          rssi ?? null,
+        tagSignal:
+          savedTagSignal ?? null,
 
-        transmitPower:
-          transmitPower ?? null,
+        readerSignal:
+          savedReaderSignal ?? null,
 
       });
 

@@ -24,8 +24,8 @@ function getSearchText(log) {
       return `${formatDate(scan.timestamp)}
       ${formatTime(scan.timestamp)}
       ${scan.location || ""}
-      ${scan.rssi ?? ""}
-      ${scan.transmitPower ?? ""}`;
+      ${scan.tagSignal ?? ""}
+      ${scan.readerSignal ?? ""}`;
     }),
   ]
     .join(" ")
@@ -206,20 +206,20 @@ export default function Logs() {
 
                   <span>
                     <b>Tag Signal:</b>{" "}
-                    {latestScan?.rssi !== null &&
-                    latestScan?.rssi !== undefined
-                      ? `${latestScan.rssi} dBm`
+                    {latestScan?.tagSignal !== null &&
+                    latestScan?.tagSignal !== undefined
+                      ? `${latestScan.tagSignal} dBm`
                       : "N/A"}
                   </span>
 
                   <span>
                     <b>Reader Signal:</b>{" "}
-                    {latestScan?.transmitPower !==
+                    {latestScan?.readerSignal !==
                       null &&
-                    latestScan?.transmitPower !==
+                    latestScan?.readerSignal !==
                       undefined
                       ? `${Number(
-                          latestScan.transmitPower
+                          latestScan.readerSignal
                         ).toFixed(2)} dBm`
                       : "N/A"}
                   </span>

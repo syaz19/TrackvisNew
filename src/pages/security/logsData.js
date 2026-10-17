@@ -157,9 +157,19 @@ export function useSecurityLogs() {
             histories.set(
               scan.epc,
               snapshot.docs.map(function (item) {
+                const scanData = item.data();
+
                 return {
                   id: item.id,
-                  ...item.data(),
+                  ...scanData,
+                  tagSignal:
+                    scanData.tagSignal ??
+                    scanData.rssi ??
+                    null,
+                  readerSignal:
+                    scanData.readerSignal ??
+                    scanData.transmitPower ??
+                    null,
                 };
               })
             );

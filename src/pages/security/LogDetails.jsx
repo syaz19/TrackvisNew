@@ -149,9 +149,9 @@ export default function LogDetails() {
                         <div className="scan-signal-info">
                           <span>
                             <strong>Tag Signal:</strong>{" "}
-                            {scan.rssi !== null &&
-                            scan.rssi !== undefined
-                              ? `${scan.rssi} dBm`
+                            {scan.tagSignal !== null &&
+                            scan.tagSignal !== undefined
+                              ? `${scan.tagSignal} dBm`
                               : "N/A"}
                           </span>
 
@@ -159,10 +159,10 @@ export default function LogDetails() {
                             <strong>
                               Reader Signal:
                             </strong>{" "}
-                            {scan.transmitPower !== null &&
-                            scan.transmitPower !== undefined
+                            {scan.readerSignal !== null &&
+                            scan.readerSignal !== undefined
                               ? `${Number(
-                                  scan.transmitPower
+                                  scan.readerSignal
                                 ).toFixed(2)} dBm`
                               : "N/A"}
                           </span>
